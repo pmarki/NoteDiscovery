@@ -21,3 +21,6 @@ data/
 # Downloaded fresh in the vendor build stage
 frontend/vendor/
 
+
+# Built into frontend/note-editor.bundle.js
+frontend/editor-src/

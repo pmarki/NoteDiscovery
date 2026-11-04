@@ -255,78 +255,99 @@
         }
         
         /* Editor styling */
-        /* Shared editor styles - MUST be identical for textarea and overlay */
-        .editor-textarea,
-        .syntax-overlay {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            tab-size: 2;
-            letter-spacing: normal;
-            word-spacing: normal;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            padding: 1.5rem;
-            margin: 0;
-            border: none;
-            box-sizing: border-box;
-        }
-        
-        .editor-textarea {
-            background-color: var(--bg-primary) !important;
-            color: var(--text-primary) !important;
-            resize: none;
-            overflow-y: scroll; /* Always show scrollbar for consistent text width */
-            overflow-x: auto;
-        }
-        
-        /* Syntax Highlighting Overlay */
         .editor-wrapper {
             position: relative;
             flex: 1;
             display: flex;
             min-height: 0;
         }
-        .editor-wrapper .editor-textarea {
-            position: relative;
-            z-index: 1;
+        .editor-surface {
             flex: 1;
+            display: flex;
+            flex-direction: column;
             width: 100%;
-        }
-        .editor-wrapper.syntax-highlight .editor-textarea {
-            color: transparent !important;
-            caret-color: var(--text-primary);
-            background: transparent !important;
-        }
-        .syntax-overlay {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            overflow-y: scroll; /* Match textarea scrollbar space */
-            overflow-x: auto; /* Match textarea for horizontal scroll sync */
-            color: var(--text-primary);
+            min-width: 0;
+            padding: 1.5rem;
+            box-sizing: border-box;
             background-color: var(--bg-primary);
-            z-index: 0;
+            color: var(--text-primary);
+            overflow-y: scroll; /* Always show scrollbar for consistent text width */
+            overflow-x: auto;
         }
-        /* Invisible scrollbar that takes EXACT same space as textarea */
-        .syntax-overlay::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
-            background: transparent;
+        .editor-surface > div:last-child {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
-        .syntax-overlay::-webkit-scrollbar-track {
-            background: var(--bg-tertiary); /* MUST match textarea track */
+        .note-editor-content {
+            flex: 1;
+            outline: none;
         }
-        .syntax-overlay::-webkit-scrollbar-thumb {
-            background: transparent;
-            border-radius: 6px;
-            border: 2px solid transparent; /* MUST match textarea's 2px border */
+        .readable-lines .note-editor-content,
+        .readable-lines .note-frontmatter {
+            width: 100%;
+            max-width: 750px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        /* Firefox - MUST match textarea's scrollbar-width: thin */
-        .syntax-overlay {
-            scrollbar-width: thin;
-            scrollbar-color: transparent var(--bg-tertiary);
+        .note-editor-content p.is-editor-empty:first-child::before {
+            content: attr(data-placeholder);
+            float: left;
+            height: 0;
+            color: var(--text-tertiary);
+            pointer-events: none;
+        }
+        .note-editor-content ul[data-type="taskList"] {
+            list-style: none;
+            padding-left: 0;
+        }
+        .note-editor-content ul[data-type="taskList"] > li {
+            display: flex;
+            gap: 0.5em;
+            align-items: flex-start;
+        }
+        .note-editor-content ul[data-type="taskList"] > li > div {
+            flex: 1;
+            min-width: 0;
+        }
+        .note-editor-content td p,
+        .note-editor-content th p {
+            margin: 0;
+        }
+        .note-editor-content .selectedCell {
+            background-color: var(--accent-light);
+        }
+        .note-editor-content .ProseMirror-selectednode {
+            outline: 2px solid var(--accent-primary);
+        }
+        .note-chip {
+            padding: 0 0.35em;
+            border-radius: 4px;
+            background-color: var(--bg-tertiary);
+            color: var(--link-internal, var(--accent-primary));
+        }
+        .note-chip-mathInline,
+        .note-math-block {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        }
+        .note-frontmatter {
+            margin-bottom: 1rem;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        .note-frontmatter summary {
+            cursor: pointer;
+        }
+        .note-frontmatter textarea {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            resize: vertical;
         }
         
         /* Zen Mode Styles */
@@ -345,8 +366,7 @@
         .zen-mode-active .zen-editor-container .editor-wrapper {
             background-color: var(--bg-primary);
         }
-        .zen-mode-active .zen-editor-container .editor-textarea,
-        .zen-mode-active .zen-editor-container .syntax-overlay {
+        .zen-mode-active .zen-editor-container .note-editor-content {
             font-size: 18px;
             line-height: 1.8;
         }
@@ -387,60 +407,14 @@
         }
         
         /* Syntax highlight colors (color-only — see issue #212) */
-        .syntax-overlay .md-heading   { color: var(--accent-primary); }
-        .syntax-overlay .md-bold      { color: var(--syntax-bold, #fbbf24); }
-        .syntax-overlay .md-italic    { color: var(--syntax-italic, #a78bfa); }
-        .syntax-overlay .md-code      { color: var(--accent-secondary, var(--accent-primary)); background: var(--bg-tertiary); border-radius: 2px; }
-        .syntax-overlay .md-link      { color: var(--link-color, var(--accent-primary)); }
-        .syntax-overlay .md-link-url  { color: var(--text-tertiary); }
-        .syntax-overlay .md-list      { color: var(--accent-primary); }
-        .syntax-overlay .md-blockquote{ color: var(--text-tertiary); }
-        .syntax-overlay .md-hr        { color: var(--border-primary); }
-        .syntax-overlay .md-wikilink  { color: var(--link-internal, var(--accent-primary)); }
-        .syntax-overlay .md-frontmatter { color: var(--text-tertiary); }
-        .syntax-overlay .md-codeblock { color: var(--text-secondary); background: var(--bg-tertiary); }
-        
         /* Link drop zone cursor */
-        .editor-textarea.link-drop-target {
+        .link-drop-target .editor-surface {
             cursor: copy !important;
+            outline: 2px dashed var(--accent-primary);
+            outline-offset: -2px;
+            box-shadow: 0 0 20px var(--accent-light);
         }
 
-        /* Wikilink / media autocomplete popup */
-        .wikilink-autocomplete {
-            min-width: 220px;
-            max-width: 360px;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 6px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-            padding: 4px;
-            overflow: hidden;
-        }
-        .wikilink-autocomplete-item {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            padding: 5px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .wikilink-autocomplete-item.active {
-            background-color: var(--bg-hover);
-        }
-        .wikilink-autocomplete-item .wl-label {
-            color: var(--text-primary);
-            font-size: 13px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .wikilink-autocomplete-item .wl-secondary {
-            color: var(--text-tertiary);
-            font-size: 11px;
-            margin-left: auto;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
         
         /* Folder tree styling - compact Obsidian-like */
         .folder-item {
@@ -766,32 +740,32 @@
         
         /* Scrollbar styling */
         .custom-scrollbar::-webkit-scrollbar,
-        .editor-textarea::-webkit-scrollbar,
+        .editor-surface::-webkit-scrollbar,
         .markdown-preview::-webkit-scrollbar {
             width: 12px;
             height: 12px;
         }
         .custom-scrollbar::-webkit-scrollbar-track,
-        .editor-textarea::-webkit-scrollbar-track,
+        .editor-surface::-webkit-scrollbar-track,
         .markdown-preview::-webkit-scrollbar-track {
             background: var(--bg-tertiary);
         }
         .custom-scrollbar::-webkit-scrollbar-thumb,
-        .editor-textarea::-webkit-scrollbar-thumb,
+        .editor-surface::-webkit-scrollbar-thumb,
         .markdown-preview::-webkit-scrollbar-thumb {
             background: var(--border-secondary);
             border-radius: 6px;
             border: 2px solid var(--bg-tertiary);
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover,
-        .editor-textarea::-webkit-scrollbar-thumb:hover,
+        .editor-surface::-webkit-scrollbar-thumb:hover,
         .markdown-preview::-webkit-scrollbar-thumb:hover {
             background: var(--text-tertiary);
         }
         
         /* Firefox scrollbar */
         .custom-scrollbar,
-        .editor-textarea,
+        .editor-surface,
         .markdown-preview {
             scrollbar-width: thin;
             scrollbar-color: var(--border-secondary) var(--bg-tertiary);
@@ -1875,24 +1849,6 @@
                                     </select>
                                 </div>
                                 
-                                <!-- Syntax Highlighting Toggle -->
-                                <div class="mb-4">
-                                    <label class="flex items-center justify-between gap-3 cursor-pointer">
-                                        <span class="text-xs font-medium flex-1 min-w-0" style="color: var(--text-secondary);" x-text="t('syntax_highlight.title')"></span>
-                                        <div 
-                                            @click="toggleSyntaxHighlight()"
-                                            class="relative w-10 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0"
-                                            :style="syntaxHighlightEnabled ? 'background-color: var(--accent-primary)' : 'background-color: var(--bg-tertiary)'"
-                                        >
-                                            <div 
-                                                class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform"
-                                                :style="'background-color: var(--bg-primary);' + (syntaxHighlightEnabled ? ' transform: translateX(20px);' : '')"
-                                            ></div>
-                                        </div>
-                                    </label>
-                                    <p class="text-xs mt-1" style="color: var(--text-tertiary);" x-text="t('syntax_highlight.description')"></p>
-                                </div>
-                                
                                 <!-- Readable Line Length Toggle -->
                                 <div class="mb-4">
                                     <label class="flex items-center justify-between gap-3 cursor-pointer">
@@ -2466,9 +2422,9 @@
                             <!-- Undo Button (note history or drawing strokes when viewing a drawing) -->
                             <button 
                                 @click="currentMediaType === 'drawing' ? drawingUndo() : undo()"
-                                :disabled="currentMediaType === 'drawing' ? drawingOps.length === 0 : undoHistory.length <= 1"
+                                :disabled="currentMediaType === 'drawing' ? drawingOps.length === 0 : !canUndo"
                                 class="p-2 rounded-lg"
-                                :style="(currentMediaType === 'drawing' ? drawingOps.length === 0 : undoHistory.length <= 1) ? 'color: var(--text-tertiary); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-secondary);'"
+                                :style="(currentMediaType === 'drawing' ? drawingOps.length === 0 : !canUndo) ? 'color: var(--text-tertiary); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-secondary);'"
                                 onmouseover="if(!this.disabled) this.style.backgroundColor='var(--bg-hover)'"
                                 onmouseout="this.style.backgroundColor='transparent'"
                                 :title="t('toolbar.undo')"
@@ -2481,9 +2437,9 @@
                             <!-- Redo Button -->
                             <button 
                                 @click="currentMediaType === 'drawing' ? drawingRedo() : redo()"
-                                :disabled="currentMediaType === 'drawing' ? drawingRedoStack.length === 0 : redoHistory.length === 0"
+                                :disabled="currentMediaType === 'drawing' ? drawingRedoStack.length === 0 : !canRedo"
                                 class="p-2 rounded-lg"
-                                :style="(currentMediaType === 'drawing' ? drawingRedoStack.length === 0 : redoHistory.length === 0) ? 'color: var(--text-tertiary); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-secondary);'"
+                                :style="(currentMediaType === 'drawing' ? drawingRedoStack.length === 0 : !canRedo) ? 'color: var(--text-tertiary); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-secondary);'"
                                 onmouseover="if(!this.disabled) this.style.backgroundColor='var(--bg-hover)'"
                                 onmouseout="this.style.backgroundColor='transparent'"
                                 :title="t('toolbar.redo')"
@@ -2854,34 +2810,14 @@
                             </div>
                             <div 
                                 class="editor-wrapper"
-                                :class="{'syntax-highlight': syntaxHighlightEnabled}"
+                                :class="{ 'readable-lines': readableLineLength, 'link-drop-target': (draggedItem || externalDragActive) && dropTarget === 'editor' }"
+                                x-init="mountNoteEditor($el.querySelector('#note-editor'))"
+                                @drop="onEditorDrop($event)"
+                                @dragover.prevent="onEditorDragOver($event)"
+                                @dragenter="onEditorDragEnter($event)"
+                                @dragleave="onEditorDragLeave($event)"
                             >
-                                <div 
-                                    id="syntax-overlay"
-                                    class="syntax-overlay"
-                                    x-show="syntaxHighlightEnabled"
-                                    x-html="syntaxHighlightEnabled ? highlightMarkdown(noteContent) : ''"
-                                ></div>
-                                <textarea
-                                    id="note-editor"
-                                    x-model="noteContent"
-                                    @keydown="wlOnKeydown($event)"
-                                    @input="autoSave(); updateSyntaxHighlight(); wlDetectToken()"
-                                    @scroll="syncOverlayScroll()"
-                                    @keydown.enter="handleEditorEnterKey($event)"
-                                    @keydown.tab="handleTabKey($event)"
-                                    @click="wlDetectToken()"
-                                    @blur="wlClose()"
-                                    @dblclick="trimSelectionTrailingSpace($event)"
-                                    @drop="onEditorDrop($event)"
-                                    @dragover.prevent="onEditorDragOver($event)"
-                                    @dragenter="onEditorDragEnter($event)"
-                                    @dragleave="onEditorDragLeave($event)"
-                                    @paste="handlePaste($event)"
-                                    :class="'flex-1 w-full resize-none focus:outline-none editor-textarea' + ((draggedItem || externalDragActive) && dropTarget === 'editor' ? ' link-drop-target' : '')"
-                                    :style="'background-color: var(--bg-primary); color: var(--text-primary);' + ((draggedItem || externalDragActive) && dropTarget === 'editor' ? ' outline: 2px dashed var(--accent-primary); outline-offset: -2px; box-shadow: 0 0 20px var(--accent-light);' : '')"
-                                    :placeholder="(draggedItem || externalDragActive) && dropTarget === 'editor' ? t('editor.drop_hint') : t('editor.placeholder')"
-                                ></textarea>
+                                <div id="note-editor" class="editor-surface" x-ignore></div>
                             </div>
                         </div>
                         
@@ -3345,23 +3281,6 @@
                 <span x-text="t('sidebar.new_drawing')"></span>
             </button>
         </div>
-    </div>
-
-    <!-- Wikilink / media autocomplete popup -->
-    <div x-show="wikilinkAutocomplete.open"
-         @mousedown.prevent
-         class="wikilink-autocomplete"
-         :style="`position: fixed; top: ${wikilinkAutocomplete.position.top}px; left: ${wikilinkAutocomplete.position.left}px; z-index: 1200;`"
-         x-cloak>
-        <template x-for="(item, idx) in wikilinkAutocomplete.items" :key="item.insert + idx">
-            <div class="wikilink-autocomplete-item"
-                 :class="{'active': idx === wikilinkAutocomplete.activeIndex}"
-                 @mouseenter="wikilinkAutocomplete.activeIndex = idx"
-                 @click="wlAccept(item)">
-                <span class="wl-label" x-text="item.label"></span>
-                <span class="wl-secondary" x-show="item.secondary" x-text="item.secondary"></span>
-            </div>
-        </template>
     </div>
 
     <!-- Template Selection Modal -->
@@ -3914,7 +3833,7 @@
     </nav>
     
     <!-- ?v= is the app version, so a release cannot be served from a stale cache -->
-    <script src="/static/editor-markdown-continue.js?v=__APP_VERSION__"></script>
+    <script src="/static/note-editor.bundle.js?v=__APP_VERSION__"></script>
     <script src="/static/app.js?v=__APP_VERSION__"></script>
     
     <!-- PWA Service Worker Registration -->

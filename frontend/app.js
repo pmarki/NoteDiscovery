@@ -1,5 +1,11 @@
 // NoteDiscovery Frontend Application
 
+// The live Tiptap editor. Kept out of noteApp()'s data: Alpine's reactive proxies break ProseMirror.
+let noteEditor = null;
+
+// The editor reuses the preview's styles and comes first in the DOM, so .markdown-preview alone finds it.
+const PREVIEW_SELECTOR = '.markdown-preview:not(.note-editor-content)';
+
 // Configuration constants
 const CONFIG = {
     AUTOSAVE_DELAY: 1000,              // ms - Fallback only; runtime value lives on this.autosaveDelayMs (hydrated from /api/config). Used by autoSave() and _drawingScheduleAutosave().
@@ -26,7 +32,6 @@ const CONFIG = {
     SCROLL_SYNC_DELAY: 50,             // ms - Delay to prevent scroll sync interference
     SCROLL_SYNC_MAX_RETRIES: 10,       // Maximum attempts to find editor/preview elements
     SCROLL_SYNC_RETRY_INTERVAL: 100,   // ms - Time between setupScrollSync retries
-    MAX_UNDO_HISTORY: 50,              // Maximum number of undo steps to keep
     DEFAULT_SIDEBAR_WIDTH: 256,        // px - Default sidebar width (w-64 in Tailwind)
     TOAST_MAX_VISIBLE: 4,              // Max stacked toasts; oldest dropped when exceeded
     TOAST_DURATION_ERROR_MS: 7000,
@@ -52,7 +57,6 @@ const SLUG_TRANSLITERATION_RE = new RegExp(`[${Object.keys(SLUG_TRANSLITERATIONS
 // localStorage settings configuration - centralized definition of all persisted settings
 const LOCAL_SETTINGS = {
     // Boolean settings
-    syntaxHighlightEnabled: { key: 'syntaxHighlightEnabled', type: 'boolean', default: false },
     readableLineLength: { key: 'readableLineLength', type: 'boolean', default: true },
     favoritesExpanded: { key: 'favoritesExpanded', type: 'boolean', default: true },
     tagsExpanded: { key: 'tagsExpanded', type: 'boolean', default: false },
@@ -210,86 +214,6 @@ const MEDIA_FORMATS_DISPLAY = 'JPG, PNG, GIF, WebP, MP3, MP4, PDF, MD';
  *  Missing a task marked renders is the one unsafe direction: see _scanTaskLines. */
 const TASK_ITEM_RE = /^(\s*(?:(?:[-*+]|\d{1,9}[.)]) +|>\s*)*(?:[-*+]|\d{1,9}[.)]) +\[)([ xX])(?=\] )/;
 
-function editorIndentRemoveLen(lineSegment) {
-    if (!lineSegment || lineSegment.length === 0) return 0;
-    if (lineSegment.charCodeAt(0) === 9 /* \t */) return 1;
-    let i = 0;
-    const max = Math.min(EDITOR_TAB_OUTDENT_MAX_SPACES, lineSegment.length);
-    while (i < max && lineSegment[i] === ' ') i++;
-    return i;
-}
-
-function editorOutdentChunk(chunk) {
-    if (chunk.length === 0) return { newChunk: chunk, changed: false };
-    const lines = chunk.split('\n');
-    const newLines = lines.map((line) => {
-        const n = editorIndentRemoveLen(line);
-        return n > 0 ? line.slice(n) : line;
-    });
-    const newChunk = newLines.join('\n');
-    return { newChunk, changed: newChunk !== chunk };
-}
-
-function editorRemovedBeforeInChunk(chunk, rel) {
-    const target = Math.min(Math.max(rel, 0), chunk.length);
-    let off = 0;
-    let removed = 0;
-    while (off < chunk.length && off < target) {
-        const nl = chunk.indexOf('\n', off);
-        const lineEnd = nl === -1 ? chunk.length : nl;
-        const lineSlice = chunk.slice(off, lineEnd);
-        const n = editorIndentRemoveLen(lineSlice);
-        if (target >= lineEnd) {
-            removed += n;
-            if (nl === -1) break;
-            off = lineEnd + 1;
-        } else {
-            const col = target - off;
-            removed += Math.min(col, n);
-            break;
-        }
-    }
-    return removed;
-}
-
-function editorMapCaretAfterOutdent(chunk, newChunk, rel) {
-    const r = Math.max(0, rel);
-    if (r >= chunk.length) return newChunk.length;
-    return r - editorRemovedBeforeInChunk(chunk, r);
-}
-
-/**
- * Shift+Tab outdent while “tab inserts tab” is enabled: remove one leading \t or up to 4 spaces per affected line.
- * @returns {{ changed: boolean, text: string, selStart: number, selEnd: number }}
- */
-function applyEditorOutdent(text, selStart, selEnd) {
-    const a = Math.min(selStart, selEnd);
-    const b = Math.max(selStart, selEnd);
-    const blockStart = text.lastIndexOf('\n', Math.max(0, a - 1)) + 1;
-    const ref = b > a ? b - 1 : a;
-    let blockEnd = text.indexOf('\n', ref);
-    if (blockEnd === -1) blockEnd = text.length;
-
-    const chunk = text.slice(blockStart, blockEnd);
-    const { newChunk, changed } = editorOutdentChunk(chunk);
-    if (!changed) {
-        return { changed: false, text, selStart, selEnd };
-    }
-
-    const newText = text.slice(0, blockStart) + newChunk + text.slice(blockEnd);
-    const anchorRel = a - blockStart;
-    const focusRel = b - blockStart;
-    const newA = blockStart + editorMapCaretAfterOutdent(chunk, newChunk, anchorRel);
-    const newB = blockStart + editorMapCaretAfterOutdent(chunk, newChunk, focusRel);
-
-    return {
-        changed: true,
-        text: newText,
-        selStart: Math.min(newA, newB),
-        selEnd: Math.max(newA, newB),
-    };
-}
-
 function noteApp() {
     return {
         // App state
@@ -376,8 +300,6 @@ function noteApp() {
         translations: window.__preloadedTranslations || {},
         
         // Syntax highlighting
-        syntaxHighlightEnabled: false,
-        syntaxHighlightTimeout: null,
         
         // Readable line length (preview max-width)
         readableLineLength: true,
@@ -425,12 +347,12 @@ function noteApp() {
         dropTarget: null,   // 'editor' | 'folder' | null
         externalDragActive: false,  // true while OS files (not sidebar items) are being dragged over the editor
         
-        // Undo/Redo history
-        undoHistory: [],
-        redoHistory: [],
-        maxHistorySize: CONFIG.MAX_UNDO_HISTORY,
-        isUndoRedo: false,
-        hasPendingHistoryChanges: false,
+        // What the undo and redo buttons can do right now
+        canUndo: false,
+        canRedo: false,
+
+        // The noteContent the editor is showing. Anything else came from outside the editor.
+        _editorMarkdown: '',
 
         // Per-note editor scroll position, keyed by note path. Captured when leaving a note in
         // loadNote() and restored when returning to the same note in the same session. Stays
@@ -463,16 +385,6 @@ function noteApp() {
         dropdownTargetFolder: null, // Folder context for "New" dropdown ('' = root, null = not set)
         dropdownPosition: { top: 0, left: 0 }, // Position for contextual dropdown
 
-        // Wikilink / media autocomplete (triggered by [[ for notes, ![[ for media)
-        wikilinkAutocomplete: {
-            open: false,
-            mode: 'note',        // 'note' | 'media'
-            query: '',
-            tokenStart: 0,       // index in noteContent right after the opening [[
-            items: [],           // [{label, secondary, insert, kind, prefix, modified}]
-            activeIndex: 0,
-            position: { top: 0, left: 0 },
-        },
         _noteNameCounts: new Map(), // lower note stem -> count, for name-vs-path insertion
         
         // Template state
@@ -798,6 +710,23 @@ function noteApp() {
             await this.checkStatsPlugin();
             this.loadLocalSettings();
             
+            // Outside changes (preview task toggles, closing a note) must reach the editor
+            this.$watch('noteContent', (value) => {
+                if (value !== this._editorMarkdown) {
+                    this._showInEditor(value, { resetHistory: !this.currentNote });
+                }
+            });
+            
+            // Timers won't run once the page is gone, so save on the way out
+            const saveOnLeave = () => {
+                noteEditor?.flush();
+                if (this.saveTimeout) this.saveNote({ keepalive: true });
+            };
+            window.addEventListener('pagehide', saveOnLeave);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) saveOnLeave();
+            });
+            
             // Parse URL and load specific note if provided
             this.loadItemFromURL();
             
@@ -828,6 +757,7 @@ function noteApp() {
                     this.viewMedia(e.state.mediaPath, null, false);
                 } else {
                     // Navigating back to homepage
+                    this._commitPendingEdits();
                     this.currentNote = '';
                     this.noteContent = '';
                     this.currentNoteName = '';
@@ -889,7 +819,7 @@ function noteApp() {
                     this.$nextTick(() => {
                         setTimeout(() => {
                             // Don't focus editor during content changes (false)
-                            this.highlightSearchTerm(this.currentSearchHighlight, false);
+                            this.highlightSearchTerm(this.currentSearchHighlight);
                         }, 50);
                     });
                 }
@@ -941,12 +871,15 @@ function noteApp() {
                         this.createFolder();
                     }
                     
+                    // Inside the editor, Tiptap's keymap has already handled undo and redo
+                    const inEditor = e.target.closest?.('#note-editor');
+                    
                     // Ctrl/Cmd + Z for undo (drawing vs note editor)
                     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
                         if (this.currentMedia && this.currentMediaType === 'drawing') {
                             e.preventDefault();
                             this.drawingUndo();
-                        } else {
+                        } else if (!inEditor) {
                             e.preventDefault();
                             this.undo();
                         }
@@ -957,7 +890,7 @@ function noteApp() {
                         if (this.currentMedia && this.currentMediaType === 'drawing') {
                             e.preventDefault();
                             this.drawingRedo();
-                        } else {
+                        } else if (!inEditor) {
                             e.preventDefault();
                             this.redo();
                         }
@@ -966,7 +899,7 @@ function noteApp() {
                         if (this.currentMedia && this.currentMediaType === 'drawing') {
                             e.preventDefault();
                             this.drawingRedo();
-                        } else {
+                        } else if (!inEditor) {
                             e.preventDefault();
                             this.redo();
                         }
@@ -1028,31 +961,18 @@ function noteApp() {
                         }
                     }
                     
-                    // Only apply markdown shortcuts when editor is focused and a note is open
-                    const isEditorFocused = document.activeElement?.id === 'note-editor';
-                    if (isEditorFocused && this.currentNote) {
-                        // Ctrl/Cmd + B for bold
-                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-                            e.preventDefault();
-                            this.wrapSelection('**', '**', 'bold text');
-                        }
-                        
-                        // Ctrl/Cmd + I for italic
-                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
-                            e.preventDefault();
-                            this.wrapSelection('*', '*', 'italic text');
-                        }
-                        
+                    // Bold, italic and the rest come from Tiptap's keymap
+                    if (noteEditor?.isFocused() && this.currentNote) {
                         // Ctrl/Cmd + K for link
                         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                             e.preventDefault();
-                            this.insertLink();
+                            this.formatText('link');
                         }
                         
                         // Ctrl/Cmd + Alt/Option + T for table
                         if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 't') {
                             e.preventDefault();
-                            this.insertTable();
+                            this.formatText('table');
                         }
                     }
                     
@@ -1159,15 +1079,6 @@ function noteApp() {
             await this.applyTheme(themeId);
         },
         
-        // Syntax highlighting toggle
-        toggleSyntaxHighlight() {
-            this.syntaxHighlightEnabled = !this.syntaxHighlightEnabled;
-            localStorage.setItem('syntaxHighlightEnabled', this.syntaxHighlightEnabled);
-            if (this.syntaxHighlightEnabled) {
-                this.updateSyntaxHighlight();
-            }
-        },
-        
         // Load all localStorage settings at once using centralized config
         loadLocalSettings() {
             for (const [prop, config] of Object.entries(LOCAL_SETTINGS)) {
@@ -1265,60 +1176,6 @@ function noteApp() {
             }
         },
 
-        // Handle Tab key in editor (inserts tab if setting enabled; Shift+Tab outdents matching lines)
-        handleTabKey(event) {
-            if (!this.tabInsertsTab) return;
-
-            const textarea = event.target;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-
-            if (event.shiftKey) {
-                const result = applyEditorOutdent(this.noteContent, start, end);
-                if (!result.changed) return;
-                event.preventDefault();
-                this.noteContent = result.text;
-                this.$nextTick(() => {
-                    textarea.selectionStart = result.selStart;
-                    textarea.selectionEnd = result.selEnd;
-                });
-                this.autoSave();
-                return;
-            }
-
-            event.preventDefault();
-            this.noteContent = this.noteContent.substring(0, start) + '\t' + this.noteContent.substring(end);
-            this.$nextTick(() => {
-                textarea.selectionStart = textarea.selectionEnd = start + 1;
-            });
-            this.autoSave();
-        },
-
-        /**
-         * Enter: continue blockquote / bullet / ordered list / task list; second Enter on empty item exits (see editor-markdown-continue.js).
-         */
-        handleEditorEnterKey(event) {
-            if (typeof EditorMarkdownContinue === 'undefined') return;
-            const textarea = event.target;
-            if (!textarea || textarea.id !== 'note-editor') return;
-
-            const result = EditorMarkdownContinue.tryEnter(
-                this.noteContent,
-                textarea.selectionStart,
-                textarea.selectionEnd,
-                event
-            );
-            if (!result.handled) return;
-
-            event.preventDefault();
-            this.noteContent = result.text;
-            this.$nextTick(() => {
-                textarea.selectionStart = textarea.selectionEnd = result.cursor;
-            });
-            this.autoSave();
-            this.updateSyntaxHighlight();
-        },
-
         // Sort mode configuration
         sortModes: ['a-z', 'z-a', 'newest', 'oldest', 'largest', 'smallest'],
         sortModeIcons: {
@@ -1373,111 +1230,6 @@ function noteApp() {
             return (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
         },
 
-        // Update syntax highlight overlay (debounced, called on input)
-        updateSyntaxHighlight() {
-            if (!this.syntaxHighlightEnabled) return;
-            
-            clearTimeout(this.syntaxHighlightTimeout);
-            this.syntaxHighlightTimeout = setTimeout(() => {
-                const overlay = document.getElementById('syntax-overlay');
-                if (overlay) {
-                    overlay.innerHTML = this.highlightMarkdown(this.noteContent);
-                }
-            }, 50); // 50ms debounce
-        },
-        
-        // Sync overlay scroll with textarea. Per-note scroll restoration is captured separately
-        // inside the _editorScrollHandler / _previewScrollHandler in setupScrollSync(), where
-        // the existing isScrolling guard ensures we only record user-driven scrolls (not the
-        // programmatic mirrors between panes), and where we have access to the pane the user
-        // actually scrolled — important because the textarea's scroll event never fires in
-        // preview-only mode (the textarea is display:none).
-        syncOverlayScroll() {
-            const textarea = document.getElementById('note-editor');
-            const overlay = document.getElementById('syntax-overlay');
-            if (textarea && overlay) {
-                overlay.scrollTop = textarea.scrollTop;
-                overlay.scrollLeft = textarea.scrollLeft;
-            }
-            if (this.wikilinkAutocomplete.open) this.wlUpdatePosition();
-        },
-        
-        // Highlight markdown syntax
-        highlightMarkdown(text) {
-            if (!text) return '';
-            
-            // Escape HTML first
-            let html = this.escapeHtml(text);
-            
-            // Store code blocks and inline code with placeholders to protect from other patterns
-            const codePlaceholders = [];
-            
-            // Code blocks FIRST - protect them before anything else
-            html = html.replace(/(```[\s\S]*?```)/g, (match) => {
-                codePlaceholders.push('<span class="md-codeblock">' + match + '</span>');
-                return `\x00CODE${codePlaceholders.length - 1}\x00`;
-            });
-            
-            // Frontmatter (must be at VERY start of document, not any line)
-            if (html.startsWith('---\n')) {
-                html = html.replace(/^(---\n[\s\S]*?\n---)/, (match) => {
-                    codePlaceholders.push('<span class="md-frontmatter">' + match + '</span>');
-                    return `\x00CODE${codePlaceholders.length - 1}\x00`;
-                });
-            }
-            
-            // Inline code - protect it
-            html = html.replace(/`([^`\n]+)`/g, (match) => {
-                codePlaceholders.push('<span class="md-code">' + match + '</span>');
-                return `\x00CODE${codePlaceholders.length - 1}\x00`;
-            });
-            
-            // Now apply other patterns (they won't match inside protected code)
-            
-            // Headings - capture the whitespace to preserve exact characters (tabs vs spaces)
-            // This prevents cursor/selection misalignment
-            html = html.replace(/^(#{1,6})(\s)(.*)$/gm, '<span class="md-heading">$1$2$3</span>');
-            
-            // Bold (must come before italic)
-            html = html.replace(/\*\*([^*]+)\*\*/g, '<span class="md-bold">**$1**</span>');
-            html = html.replace(/__([^_]+)__/g, '<span class="md-bold">__$1__</span>');
-            
-            // Italic
-            html = html.replace(/(?<![*\\])\*([^*\n]+)\*(?!\*)/g, '<span class="md-italic">*$1*</span>');
-            html = html.replace(/(?<![_\\])_([^_\n]+)_(?!_)/g, '<span class="md-italic">_$1_</span>');
-            
-            // Wikilinks [[...]]
-            html = html.replace(/\[\[([^\]]+)\]\]/g, '<span class="md-wikilink">[[$1]]</span>');
-            
-            // Links [text](url)
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="md-link">[$1]</span><span class="md-link-url">($2)</span>');
-            
-            // Lists - use ([ \t]) to capture the space/tab and preserve exact characters
-            // IMPORTANT: Don't add any characters (like \u200B) that aren't in the original,
-            // as this breaks cursor/selection alignment between textarea and overlay
-            html = html.replace(/^(\s*)([-*+])([ \t])(.*)$/gm, (match, indent, bullet, space, rest) => {
-                return `${indent}<span class="md-list">${bullet}</span>${space}${rest}`;
-            });
-            html = html.replace(/^(\s*)(\d+\.)([ \t])(.*)$/gm, (match, indent, bullet, space, rest) => {
-                return `${indent}<span class="md-list">${bullet}</span>${space}${rest}`;
-            });
-            
-            // Blockquotes
-            html = html.replace(/^(&gt;.*)$/gm, '<span class="md-blockquote">$1</span>');
-            
-            // Horizontal rules
-            html = html.replace(/^([-*_]{3,})$/gm, '<span class="md-hr">$1</span>');
-            
-            // Restore protected code blocks
-            html = html.replace(/\x00CODE(\d+)\x00/g, (match, index) => codePlaceholders[parseInt(index)]);
-            
-            // Add trailing space to match textarea's phantom line for cursor
-            // This ensures the overlay and textarea have the same content height
-            html += '\n ';
-            
-            return html;
-        },
-        
         // Apply theme to document
         async applyTheme(themeId) {
             // Load theme CSS from file. The head preload may already have inserted
@@ -1521,7 +1273,7 @@ function noteApp() {
                     // Small delay to allow theme CSS to load
                     setTimeout(() => {
                         // Clear existing Mermaid renders
-                        const previewContent = document.querySelector('.markdown-preview');
+                        const previewContent = document.querySelector(PREVIEW_SELECTOR);
                         if (previewContent) {
                             const mermaidContainers = previewContent.querySelectorAll('.mermaid-rendered');
                             mermaidContainers.forEach(container => {
@@ -1813,209 +1565,6 @@ function noteApp() {
             return this._mediaLookup.get(nameLower) || null;
         },
 
-        // ---- Wikilink / media autocomplete -------------------------------------
-        // Triggered while typing inside [[ (notes) or ![[ (media). Suggestions are
-        // computed client-side from the already-loaded notes list; no backend calls.
-
-        // Inspect the text before the caret and open/refresh the popup when the
-        // caret sits inside an unfinished [[ / ![[ token.
-        wlDetectToken() {
-            const textarea = document.getElementById('note-editor');
-            if (!textarea || document.activeElement !== textarea) { this.wlClose(); return; }
-            if (textarea.selectionStart !== textarea.selectionEnd) { this.wlClose(); return; }
-
-            const caret = textarea.selectionStart;
-            const before = this.noteContent.substring(0, caret);
-            const idx = before.lastIndexOf('[[');
-            if (idx === -1) { this.wlClose(); return; }
-
-            const query = before.substring(idx + 2);
-            // A valid in-progress target has no bracket, pipe, or newline, and stays short.
-            if (query.length > 100 || /[\[\]\n|]/.test(query)) { this.wlClose(); return; }
-
-            this.wikilinkAutocomplete.mode = (idx > 0 && before[idx - 1] === '!') ? 'media' : 'note';
-            this.wikilinkAutocomplete.tokenStart = idx + 2;
-            this.wikilinkAutocomplete.query = query;
-            this.wlComputeItems();
-
-            if (this.wikilinkAutocomplete.items.length === 0) { this.wlClose(); return; }
-            this.wikilinkAutocomplete.activeIndex = 0;
-            this.wikilinkAutocomplete.open = true;
-            this.$nextTick(() => this.wlUpdatePosition());
-        },
-
-        // Build the (capped) suggestion list for the current query and mode.
-        wlComputeItems() {
-            const WL_LIMIT = 8;
-            const q = this.wikilinkAutocomplete.query.trim().toLowerCase();
-            const isMedia = this.wikilinkAutocomplete.mode === 'media';
-            const results = [];
-
-            for (const note of this.notes) {
-                if (isMedia ? note.type === 'note' : note.type !== 'note') continue;
-
-                const path = note.path;
-                const folder = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
-
-                let label, insert;
-                if (isMedia) {
-                    label = path.split('/').pop();   // filename with extension
-                    insert = label;
-                } else {
-                    const stem = note.name.replace(/\.md$/i, '');
-                    label = stem;
-                    // Bare name when unique, else folder-relative path (no extension).
-                    insert = (this._noteNameCounts.get(stem.toLowerCase()) || 0) > 1
-                        ? path.replace(/\.md$/i, '')
-                        : stem;
-                }
-
-                const labelLower = label.toLowerCase();
-                const pathLower = path.toLowerCase();
-                if (q && !labelLower.includes(q) && !pathLower.includes(q)) continue;
-
-                results.push({
-                    label,
-                    secondary: folder,
-                    insert,
-                    kind: note.type,
-                    prefix: q ? labelLower.startsWith(q) : false,
-                    modified: note.modified || '',
-                });
-            }
-
-            // Prefix matches first, then most-recently-modified, then alphabetical.
-            // `modified` is an ISO timestamp, so lexical compare orders by time.
-            results.sort((a, b) =>
-                (b.prefix - a.prefix) || b.modified.localeCompare(a.modified) || a.label.localeCompare(b.label));
-            this.wikilinkAutocomplete.items = results.slice(0, WL_LIMIT);
-        },
-
-        // Keyboard handling while the popup is open. Runs before the editor's
-        // Enter/Tab handlers (registered later on the same element), so
-        // stopImmediatePropagation keeps list-continuation and indent from firing.
-        wlOnKeydown(event) {
-            if (!this.wikilinkAutocomplete.open) return;
-            const wa = this.wikilinkAutocomplete;
-
-            switch (event.key) {
-                case 'ArrowDown':
-                    event.preventDefault(); event.stopImmediatePropagation();
-                    this.wlMove(1);
-                    return;
-                case 'ArrowUp':
-                    event.preventDefault(); event.stopImmediatePropagation();
-                    this.wlMove(-1);
-                    return;
-                case 'Enter':
-                case 'Tab':
-                    event.preventDefault(); event.stopImmediatePropagation();
-                    if (wa.items[wa.activeIndex]) this.wlAccept(wa.items[wa.activeIndex]);
-                    return;
-                case 'Escape':
-                    event.preventDefault(); event.stopImmediatePropagation();
-                    this.wlClose();
-                    return;
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                case 'Home':
-                case 'End':
-                    this.wlClose();
-                    return;
-            }
-        },
-
-        wlMove(delta) {
-            const n = this.wikilinkAutocomplete.items.length;
-            if (!n) return;
-            this.wikilinkAutocomplete.activeIndex =
-                (this.wikilinkAutocomplete.activeIndex + delta + n) % n;
-        },
-
-        // Replace the in-progress token with the chosen target and close it off
-        // with ]] (reusing an existing trailing ]] if present).
-        wlAccept(item) {
-            if (!item) return;
-            const textarea = document.getElementById('note-editor');
-            if (!textarea) return;
-
-            const caret = textarea.selectionStart;
-            const before = this.noteContent.substring(0, this.wikilinkAutocomplete.tokenStart);
-            const after = this.noteContent.substring(caret);
-            const head = before + item.insert;
-
-            const hasClosing = after.startsWith(']]');
-            this.noteContent = hasClosing ? (head + after) : (head + ']]' + after);
-            const newCaret = head.length + 2; // after the ]]
-
-            this.wlClose();
-            this.$nextTick(() => {
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = newCaret;
-                this.autoSave();
-                this.updateSyntaxHighlight();
-            });
-        },
-
-        wlClose() {
-            if (this.wikilinkAutocomplete.open) this.wikilinkAutocomplete.open = false;
-        },
-
-        // Position the popup just below the caret, clamped to the viewport.
-        wlUpdatePosition() {
-            const textarea = document.getElementById('note-editor');
-            if (!textarea) return;
-            const coords = this.wlCaretCoords(textarea, textarea.selectionStart);
-
-            const POPUP_W = 360;
-            const POPUP_H = 8 * 30 + 8; // rough height for up to 8 rows
-            let left = coords.left;
-            let top = coords.top;
-            if (left + POPUP_W > window.innerWidth) left = Math.max(4, window.innerWidth - POPUP_W - 4);
-            if (top + POPUP_H > window.innerHeight) top = Math.max(4, coords.top - coords.height - POPUP_H);
-            this.wikilinkAutocomplete.position = { top, left };
-        },
-
-        // Caret pixel coordinates inside a textarea via a hidden mirror element.
-        // Mirrors the textarea-caret-position technique (a plain textarea exposes
-        // no native caret geometry). Returns viewport-relative top/left of the line
-        // below the caret, plus the line height.
-        wlCaretCoords(textarea, position) {
-            const props = [
-                'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
-                'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle',
-                'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-                'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize', 'fontSizeAdjust',
-                'lineHeight', 'fontFamily', 'textAlign', 'textTransform', 'textIndent', 'textDecoration',
-                'letterSpacing', 'wordSpacing', 'tabSize', 'MozTabSize',
-            ];
-            const computed = window.getComputedStyle(textarea);
-            const div = document.createElement('div');
-            const style = div.style;
-            style.position = 'absolute';
-            style.visibility = 'hidden';
-            style.whiteSpace = 'pre-wrap';
-            style.wordWrap = 'break-word';
-            props.forEach(p => { style[p] = computed[p]; });
-
-            div.textContent = textarea.value.substring(0, position);
-            const span = document.createElement('span');
-            span.textContent = textarea.value.substring(position) || '.';
-            div.appendChild(span);
-            document.body.appendChild(div);
-
-            const lineHeight = parseInt(computed.lineHeight, 10) || parseInt(computed.fontSize, 10) * 1.2;
-            const top = span.offsetTop + parseInt(computed.borderTopWidth, 10);
-            const left = span.offsetLeft + parseInt(computed.borderLeftWidth, 10);
-            document.body.removeChild(div);
-
-            const rect = textarea.getBoundingClientRect();
-            return {
-                top: rect.top + top - textarea.scrollTop + lineHeight,
-                left: rect.left + left - textarea.scrollLeft,
-                height: lineHeight,
-            };
-        },
         
         // Resolve a Markdown image path to a vault-relative path (forward slashes).
         // Relative paths use the note file's directory as base (same rules as CommonMark / browsers).
@@ -2324,7 +1873,7 @@ function noteApp() {
         scrollToHeading(heading) {
             if (this.viewMode === 'preview' || this.viewMode === 'split') {
                 // In preview/split mode, scroll the preview pane
-                const preview = document.querySelector('.markdown-preview');
+                const preview = document.querySelector(PREVIEW_SELECTOR);
                 if (preview) {
                     // Find the heading element by text content (more reliable than ID)
                     const headingElements = preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -2340,29 +1889,6 @@ function noteApp() {
                             return;
                         }
                     }
-                }
-            }
-            
-            if (this.viewMode === 'edit' || this.viewMode === 'split') {
-                // In edit/split mode, scroll the editor to the line
-                const textarea = document.querySelector('.editor-textarea');
-                if (textarea && heading.line) {
-                    const lines = textarea.value.split('\n');
-                    let charPos = 0;
-                    
-                    // Calculate character position of the heading line
-                    for (let i = 0; i < heading.line - 1 && i < lines.length; i++) {
-                        charPos += lines[i].length + 1; // +1 for newline
-                    }
-                    
-                    // Set cursor position and scroll
-                    textarea.focus();
-                    textarea.setSelectionRange(charPos, charPos);
-                    
-                    // Calculate scroll position (approximate)
-                    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 24;
-                    const scrollTop = (heading.line - 1) * lineHeight - textarea.clientHeight / 3;
-                    textarea.scrollTop = Math.max(0, scrollTop);
                 }
             }
         },
@@ -2420,7 +1946,7 @@ function noteApp() {
                     if (this.currentNote && this.noteContent) {
                         this.currentSearchHighlight = this.searchQuery;
                         this.$nextTick(() => {
-                            this.highlightSearchTerm(this.searchQuery, false);
+                            this.highlightSearchTerm(this.searchQuery);
                         });
                     }
                 } catch (error) {
@@ -3194,52 +2720,6 @@ function noteApp() {
             this.dropTarget = 'editor';
             if (isFileDrag) this.externalDragActive = true;
             
-            // Focus the textarea
-            const textarea = event.target;
-            if (textarea.tagName !== 'TEXTAREA') return;
-            
-            textarea.focus();
-            
-            // Calculate cursor position from mouse coordinates
-            const pos = this.getTextareaCursorFromPoint(textarea, event.clientX, event.clientY);
-            if (pos >= 0) {
-                textarea.setSelectionRange(pos, pos);
-            }
-        },
-        
-        // Calculate textarea cursor position from mouse coordinates
-        getTextareaCursorFromPoint(textarea, x, y) {
-            const rect = textarea.getBoundingClientRect();
-            const style = window.getComputedStyle(textarea);
-            const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
-            const paddingTop = parseFloat(style.paddingTop) || 0;
-            const paddingLeft = parseFloat(style.paddingLeft) || 0;
-            
-            // Calculate which line we're on
-            const relativeY = y - rect.top - paddingTop + textarea.scrollTop;
-            const lineIndex = Math.max(0, Math.floor(relativeY / lineHeight));
-            
-            // Split content into lines
-            const lines = textarea.value.split('\n');
-            
-            // Find the character position at the start of this line
-            let charPos = 0;
-            for (let i = 0; i < Math.min(lineIndex, lines.length); i++) {
-                charPos += lines[i].length + 1; // +1 for newline
-            }
-            
-            // If we're beyond the last line, position at end
-            if (lineIndex >= lines.length) {
-                return textarea.value.length;
-            }
-            
-            // Approximate character position within the line based on X coordinate
-            const relativeX = x - rect.left - paddingLeft;
-            const charWidth = parseFloat(style.fontSize) * 0.6; // Approximate for monospace
-            const charInLine = Math.max(0, Math.floor(relativeX / charWidth));
-            const lineLength = lines[lineIndex]?.length || 0;
-            
-            return charPos + Math.min(charInLine, lineLength);
         },
         
         // Handle dragenter on editor
@@ -3255,7 +2735,7 @@ function noteApp() {
         onEditorDragLeave(event) {
             // Only clear dropTarget if we're actually leaving the editor
             // (not just moving between child elements)
-            if (event.target.tagName === 'TEXTAREA') {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
                 this.dropTarget = null;
                 this.externalDragActive = false;
             }
@@ -3263,6 +2743,8 @@ function noteApp() {
         
         // Handle drop into editor to create internal link or upload media
         async onEditorDrop(event) {
+            // Already handled by the editor itself
+            if (event.defaultPrevented) return;
             event.preventDefault();
             this.dropTarget = null;
             this.externalDragActive = false;
@@ -3291,24 +2773,7 @@ function noteApp() {
                 link = `[${noteName}](${encodedPath})`;
             }
             
-            // Insert at drop position
-            const textarea = event.target;
-            // Recalculate position from drop coordinates for accuracy
-            let cursorPos = this.getTextareaCursorFromPoint(textarea, event.clientX, event.clientY);
-            if (cursorPos < 0) cursorPos = textarea.selectionStart || 0;
-            const textBefore = this.noteContent.substring(0, cursorPos);
-            const textAfter = this.noteContent.substring(cursorPos);
-            
-            this.noteContent = textBefore + link + textAfter;
-            
-            // Move cursor after the link
-            this.$nextTick(() => {
-                textarea.selectionStart = textarea.selectionEnd = cursorPos + link.length;
-                textarea.focus();
-            });
-            
-            // Trigger autosave
-            this.autoSave();
+            noteEditor?.insertMarkdown(link, this._editorDropPosition(event));
             
             this.draggedItem = null;
         },
@@ -3352,20 +2817,14 @@ function noteApp() {
                 return;
             }
             
-            const textarea = event.target;
             const notePath = this.resolveUploadNotePath();
-            // Calculate cursor position from drop coordinates (only meaningful when a note is open)
-            let cursorPos = 0;
-            if (this.currentNote && textarea && textarea.tagName === 'TEXTAREA') {
-                cursorPos = this.getTextareaCursorFromPoint(textarea, event.clientX, event.clientY);
-                if (cursorPos < 0) cursorPos = textarea.selectionStart || 0;
-            }
+            const position = this.currentNote ? this._editorDropPosition(event) : null;
             
             for (const file of mediaFiles) {
                 try {
                     const mediaPath = await this.uploadMedia(file, notePath);
                     if (mediaPath && this.currentNote) {
-                        await this.insertMediaMarkdown(mediaPath, file.name, cursorPos);
+                        await this.insertMediaMarkdown(mediaPath, file.name, position);
                     }
                 } catch (error) {
                     ErrorHandler.handle(`upload file ${file.name}`, error);
@@ -3377,7 +2836,7 @@ function noteApp() {
             if (markdownFiles.length > 0 && this.currentNote) {
                 for (const file of markdownFiles) {
                     try {
-                        await this.importMarkdownFile(file, cursorPos);
+                        await this.importMarkdownFile(file, position);
                     } catch (error) {
                         ErrorHandler.handle(`import markdown ${file.name}`, error);
                     }
@@ -3387,11 +2846,11 @@ function noteApp() {
         
         /**
          * Import a dropped .md file as a new note in the current note's folder, then insert
-         * a `[Name](path)` link at cursorPos (same shape as sidebar note drops). Filename
+         * a `[Name](path)` link at position (same shape as sidebar note drops). Filename
          * collisions get a yyyymmddHHmmss suffix. Size cap comes from UPLOAD_MAX_NOTE_MB —
          * file.text() would otherwise OOM the browser on a huge drop.
          */
-        async importMarkdownFile(file, cursorPos) {
+        async importMarkdownFile(file, position) {
             if (!this.currentNote) return;
             
             const maxBytes = this.uploadMaxNoteMb * 1024 * 1024;
@@ -3443,10 +2902,7 @@ function noteApp() {
             const encodedPath = targetPath.split('/').map(seg => encodeURIComponent(seg)).join('/');
             const link = `[${noteName}](${encodedPath})`;
             
-            const textBefore = this.noteContent.substring(0, cursorPos);
-            const textAfter = this.noteContent.substring(cursorPos);
-            this.noteContent = textBefore + link + '\n' + textAfter;
-            this.autoSave();
+            noteEditor?.insertMarkdown(link, position);
         },
         
         // Upload a media file (image, audio, video, PDF)
@@ -3484,7 +2940,7 @@ function noteApp() {
         // Insert media markdown at cursor position using wiki-style syntax
         // (media links don't break when notes are moved). The uploaded file is
         // already in this.notes thanks to uploadMedia()'s optimistic add.
-        async insertMediaMarkdown(mediaPath, altText, cursorPos) {
+        async insertMediaMarkdown(mediaPath, altText, position = null) {
             const filename = mediaPath.split('/').pop();
             const filenameWithoutExt = filename.replace(/\.[^/.]+$/, '');
             const altWithoutExt = altText.replace(/\.[^/.]+$/, '');
@@ -3492,46 +2948,27 @@ function noteApp() {
                 ? `![[${filename}|${altWithoutExt}]]`
                 : `![[${filename}]]`;
             
-            const textBefore = this.noteContent.substring(0, cursorPos);
-            const textAfter = this.noteContent.substring(cursorPos);
-            this.noteContent = textBefore + markdown + '\n' + textAfter;
-            this.autoSave();
+            noteEditor?.insertMarkdown(markdown, position);
         },
         
-        // Handle paste event for clipboard media (images)
-        async handlePaste(event) {
-            if (!this.currentNote) return;
+        // Upload an image pasted into the editor and embed it at the cursor
+        async pasteImage(blob) {
+            if (!this.currentNote || !blob) return;
             
-            const items = event.clipboardData?.items;
-            if (!items) return;
-            
-            for (const item of items) {
-                if (item.type.startsWith('image/')) {
-                    event.preventDefault();
-                    
-                    const blob = item.getAsFile();
-                    if (blob) {
-                        try {
-                            const textarea = event.target;
-                            const cursorPos = textarea.selectionStart || 0;
-                            
-                            // Create a simple filename - backend will add timestamp to prevent collisions
-                            const ext = item.type.split('/')[1] || 'png';
-                            const filename = `pasted-image.${ext}`;
-                            
-                            // Create a File from the blob
-                            const file = new File([blob], filename, { type: item.type });
-                            
-                            const mediaPath = await this.uploadMedia(file, this.currentNote);
-                            if (mediaPath) {
-                                await this.insertMediaMarkdown(mediaPath, filename, cursorPos);
-                            }
-                        } catch (error) {
-                            ErrorHandler.handle('paste media', error);
-                        }
-                    }
-                    break; // Only handle first media item
+            try {
+                // Create a simple filename - backend will add timestamp to prevent collisions
+                const ext = blob.type.split('/')[1] || 'png';
+                const filename = `pasted-image.${ext}`;
+                
+                // Create a File from the blob
+                const file = new File([blob], filename, { type: blob.type });
+                
+                const mediaPath = await this.uploadMedia(file, this.currentNote);
+                if (mediaPath) {
+                    await this.insertMediaMarkdown(mediaPath, filename);
                 }
+            } catch (error) {
+                ErrorHandler.handle('paste media', error);
             }
         },
         
@@ -3596,6 +3033,7 @@ function noteApp() {
                 this._drawingDisconnectResizeObserver();
                 this._drawingCancelAutosave();
             }
+            this._commitPendingEdits();
             // Close mobile sidebar when a media file is selected, same as loadNote
             this.mobileSidebarOpen = false;
             this.showGraph = false; // Ensure graph is closed
@@ -4683,6 +4121,7 @@ function noteApp() {
         toggleTaskFromPreview(event) {
             const box = this._taskBoxForClick(event);
             if (!box) return false;
+            noteEditor?.flush();
 
             // Ctrl (Cmd on a Mac) applies the change to every task in the note. Ctrl
             // leaves the text selection alone, unlike Shift, so the guards in
@@ -4971,6 +4410,8 @@ function noteApp() {
         // Load a specific note
         async loadNote(notePath, updateHistory = true, searchQuery = '') {
             try {
+                await this._commitPendingEdits();
+                
                 // Close mobile sidebar when a note is selected
                 this.mobileSidebarOpen = false;
 
@@ -4999,6 +4440,7 @@ function noteApp() {
                 this._cachedRenderedHTML = '';
                 this._initializedVideoSources = new Set(); // Clear video cache for new note
                 this.noteContent = data.content;
+                this._showInEditor(data.content, { resetHistory: true });
                 this.noteBaseHash = data.hash || null;
                 // Note: scroll restoration happens later in the post-$nextTick block below
                 // (where the existing scrollToTop call used to live), via _restoreNoteScroll().
@@ -5018,11 +4460,6 @@ function noteApp() {
                 // Store backlinks from API response
                 this.backlinks = data.backlinks || [];
 
-                // Initialize undo/redo history for this note (with cursor at start)
-                this.undoHistory = [{ content: data.content, cursorPos: 0 }];
-                this.redoHistory = [];
-                this.hasPendingHistoryChanges = false;
-                
                 // Update browser URL and history
                 if (updateHistory) {
                     // Encode the path properly (spaces become %20, etc.)
@@ -5086,8 +4523,7 @@ function noteApp() {
 
                         // Apply or clear search highlighting
                         if (searchQuery) {
-                            // Pass true to focus editor when loading from search result
-                            this.highlightSearchTerm(searchQuery, true);
+                            this.highlightSearchTerm(searchQuery);
                         } else {
                             this.clearSearchHighlights();
                         }
@@ -5149,17 +4585,14 @@ function noteApp() {
             }
         },
         
-        // Highlight search term in editor and preview
-        highlightSearchTerm(query, focusEditor = false) {
+        // Highlight search term in the preview
+        highlightSearchTerm(query) {
             if (!query || !query.trim()) {
                 this.clearSearchHighlights();
                 return;
             }
             
             const searchTerm = query.trim();
-            
-            // Highlight in editor (textarea)
-            this.highlightInEditor(searchTerm, focusEditor);
             
             // Highlight in preview (rendered HTML)
             this.highlightInPreview(searchTerm);
@@ -5225,40 +4658,9 @@ function noteApp() {
             return spans;
         },
         
-        // Highlight search term in the editor textarea
-        highlightInEditor(searchTerm, shouldFocus = false) {
-            const editor = this._domCache.editor || document.getElementById('editor');
-            if (!editor) return;
-            
-            // For textarea, we can't directly highlight text, but we can scroll to first match
-            const content = editor.value;
-            const [match] = this.findFoldedMatches(content, searchTerm, 1);
-            
-            if (match) {
-                const [index, matchEnd] = match;
-                
-                // Calculate line number to scroll to
-                const textBefore = content.substring(0, index);
-                const lineNumber = textBefore.split('\n').length;
-                
-                // Scroll to approximate position
-                const lineHeight = 20; // Approximate line height in pixels
-                editor.scrollTop = (lineNumber - 5) * lineHeight; // Scroll a bit above to show context
-                
-                // Only focus and select if explicitly requested (e.g., from search result click)
-                if (shouldFocus) {
-                    editor.focus();
-                    editor.setSelectionRange(index, matchEnd);
-                    
-                    // Blur immediately so the selection stays visible but editor isn't focused
-                    setTimeout(() => editor.blur(), 100);
-                }
-            }
-        },
-        
         // Highlight search term in the preview pane
         highlightInPreview(searchTerm) {
-            const preview = document.querySelector('.markdown-preview');
+            const preview = document.querySelector(PREVIEW_SELECTOR);
             if (!preview) return;
             
             // Remove existing highlights
@@ -5359,7 +4761,7 @@ function noteApp() {
         
         // Scroll to a specific match index
         scrollToMatch(index) {
-            const preview = document.querySelector('.markdown-preview');
+            const preview = document.querySelector(PREVIEW_SELECTOR);
             if (!preview) return;
             
             const allMatches = preview.querySelectorAll('mark.search-highlight');
@@ -5381,7 +4783,7 @@ function noteApp() {
         
         // Clear search highlights
         clearSearchHighlights() {
-            const preview = document.querySelector('.markdown-preview');
+            const preview = document.querySelector(PREVIEW_SELECTOR);
             if (!preview) return;
             
             const highlights = preview.querySelectorAll('mark.search-highlight');
@@ -5492,10 +4894,7 @@ function noteApp() {
                 this.saveViewMode();
             }
             // Focus the editor after a short delay to ensure DOM is updated
-            this.$nextTick(() => {
-                const editor = document.getElementById('note-editor');
-                if (editor) editor.focus();
-            });
+            this.$nextTick(() => noteEditor?.focus());
         },
         
         async createNote(folderPath = null, directPath = null) {
@@ -5854,11 +5253,6 @@ function noteApp() {
             
             this.lastSaved = false;
             
-            // Push to undo history (but not during undo/redo operations)
-            if (!this.isUndoRedo) {
-                this.pushToHistory();
-            }
-            
             // Calculate stats in real-time if plugin enabled
             if (this.statsPluginEnabled) {
                 this.calculateStats();
@@ -5871,340 +5265,98 @@ function noteApp() {
             this.extractOutline(this.noteContent);
             
             this.saveTimeout = setTimeout(() => {
-                // Commit to undo history when autosave triggers (same debounce timing)
-                if (this.hasPendingHistoryChanges) {
-                    this.commitToHistory();
-                }
+                this.saveTimeout = null;
                 this.saveNote();
             }, this.autosaveDelayMs);
         },
         
-        // Mark that we have pending changes (called on each keystroke)
-        pushToHistory() {
-            this.hasPendingHistoryChanges = true;
+        // Create the editor. The mount lives inside an x-if, so this runs each time it appears.
+        mountNoteEditor(element) {
+            noteEditor?.destroy();
+            this._editorMarkdown = this.noteContent;
+            noteEditor = NoteEditor.create({
+                element,
+                markdown: this.noteContent,
+                placeholder: () => this.t('editor.placeholder'),
+                resolveImageSrc: (src) => this._editorImageSrc(src),
+                onChange: (value) => this._onEditorChange(value),
+                onHistoryChange: (canUndo, canRedo) => {
+                    this.canUndo = canUndo;
+                    this.canRedo = canRedo;
+                },
+                onPasteImage: (file) => this.pasteImage(file),
+                onDrop: (event) => {
+                    if (!this.draggedItem && !event.dataTransfer?.files?.length) return false;
+                    this.onEditorDrop(event);
+                    return true;
+                },
+            });
         },
         
-        // Immediately commit pending changes to history (call before undo/redo)
-        flushHistory() {
-            if (this.hasPendingHistoryChanges) {
-                this.commitToHistory();
+        _onEditorChange(value) {
+            this._editorMarkdown = value;
+            if (value === this.noteContent) return;
+            this.noteContent = value;
+            this.autoSave();
+        },
+        
+        _showInEditor(value, options) {
+            this._editorMarkdown = value;
+            noteEditor?.setMarkdown(value, options);
+        },
+        
+        // Same mapping as the preview: local paths are served by /api/media/
+        _editorImageSrc(src) {
+            if (!src || /^(https?:)?\/\//.test(src) || src.startsWith('data:') || src.startsWith('/api/media/')) return src;
+            const vaultRelative = this.currentNote
+                ? this.resolveMarkdownMediaPathForNote(this.currentNote, src)
+                : src.split('#')[0].split('?')[0];
+            return `/api/media/${this.encodeVaultRelativePathForMediaApi(vaultRelative)}`;
+        },
+        
+        _editorDropPosition(event) {
+            return noteEditor?.positionAt(event.clientX, event.clientY) ?? null;
+        },
+        
+        // Write out everything typed so far. Call before leaving a note: a timer that
+        // fires afterwards would save the next note's content instead.
+        async _commitPendingEdits() {
+            noteEditor?.flush();
+            if (this.saveTimeout) await this.saveNote();
+            while (this.isSaving) {
+                await new Promise((resolve) => setTimeout(resolve, 20));
             }
         },
         
-        // Actually commit to undo history (internal)
-        commitToHistory() {
-            const editor = document.getElementById('note-editor');
-            const cursorPos = editor ? editor.selectionStart : 0;
-            
-            // Only push if content actually changed from last history entry
-            if (this.undoHistory.length > 0 && 
-                this.undoHistory[this.undoHistory.length - 1].content === this.noteContent) {
-                this.hasPendingHistoryChanges = false;
-                return;
-            }
-            
-            this.undoHistory.push({ content: this.noteContent, cursorPos });
-            
-            // Limit history size
-            if (this.undoHistory.length > this.maxHistorySize) {
-                this.undoHistory.shift();
-            }
-            
-            // Clear redo history when new change is made
-            this.redoHistory = [];
-            this.hasPendingHistoryChanges = false;
-        },
-        
-        // Undo last change
         undo() {
-            if (!this.currentNote) return;
-            
-            // Flush any pending history changes first (so we don't lose unsaved edits)
-            this.flushHistory();
-            
-            if (this.undoHistory.length <= 1) return;
-            
-            const editor = document.getElementById('note-editor');
-            
-            // Pop current state to redo history
-            const currentState = this.undoHistory.pop();
-            this.redoHistory.push(currentState);
-            
-            // Get previous state
-            const previousState = this.undoHistory[this.undoHistory.length - 1];
-            
-            // Apply previous state
-            this.isUndoRedo = true;
-            this.noteContent = previousState.content;
-            
-            // Recalculate stats with new content
-            if (this.statsPluginEnabled) {
-                this.calculateStats();
-            }
-            
-            // Restore cursor position from the state we're going back to
-            this.$nextTick(() => {
-                this.saveNote();
-                this.isUndoRedo = false;
-                if (editor) {
-                    setTimeout(() => {
-                        const newPos = Math.min(previousState.cursorPos, this.noteContent.length);
-                        editor.setSelectionRange(newPos, newPos);
-                        editor.focus();
-                    }, 0);
-                }
-            });
+            if (this.currentNote) noteEditor?.undo();
         },
         
-        // Redo last undone change
         redo() {
-            if (!this.currentNote) return;
-            
-            // Flush any pending history changes first
-            this.flushHistory();
-            
-            if (this.redoHistory.length === 0) return;
-            
-            const editor = document.getElementById('note-editor');
-            
-            // Pop from redo history
-            const nextState = this.redoHistory.pop();
-            
-            // Push to undo history
-            this.undoHistory.push(nextState);
-            
-            // Apply next state
-            this.isUndoRedo = true;
-            this.noteContent = nextState.content;
-            
-            // Recalculate stats with new content
-            if (this.statsPluginEnabled) {
-                this.calculateStats();
-            }
-            
-            // Restore cursor position from the state we're going forward to
-            this.$nextTick(() => {
-                this.saveNote();
-                this.isUndoRedo = false;
-                if (editor) {
-                    setTimeout(() => {
-                        const newPos = Math.min(nextState.cursorPos, this.noteContent.length);
-                        editor.setSelectionRange(newPos, newPos);
-                        editor.focus();
-                    }, 0);
-                }
-            });
+            if (this.currentNote) noteEditor?.redo();
         },
         
-        // Markdown formatting helpers
-        // Trim trailing whitespace from double-click word selections.
-        // No-op on browsers that already exclude it (Firefox, Safari).
-        trimSelectionTrailingSpace(event) {
-            const editor = event && event.target;
-            if (!editor) return;
-            const start = editor.selectionStart;
-            let end = editor.selectionEnd;
-            if (start >= end) return;
-            const text = editor.value;
-            while (end > start && /\s/.test(text.charAt(end - 1))) end--;
-            if (end !== editor.selectionEnd) {
-                editor.setSelectionRange(start, end);
-            }
-        },
-
-        wrapSelection(before, after, placeholder) {
-            const editor = document.getElementById('note-editor');
-            if (!editor) return;
-            
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            const selectedText = this.noteContent.substring(start, end);
-
-            // Push edge whitespace OUTSIDE inline wrappers — "**house **" is
-            // invalid per CommonMark. Block wrappers (with \n) keep it intact.
-            const isInline = !before.includes('\n') && !after.includes('\n');
-            let leading = '', trailing = '', core = selectedText;
-            if (isInline && selectedText) {
-                const m = selectedText.match(/^(\s*)([\s\S]*?)(\s*)$/);
-                leading = m[1];
-                core = m[2];
-                trailing = m[3];
-            }
-            const textToWrap = core || placeholder;
-            
-            // Build the new text
-            const newText = leading + before + textToWrap + after + trailing;
-            
-            // Update content
-            this.noteContent = this.noteContent.substring(0, start) + newText + this.noteContent.substring(end);
-            
-            this.$nextTick(() => {
-                const coreStart = start + leading.length + before.length;
-                const coreEnd = coreStart + textToWrap.length;
-                editor.setSelectionRange(coreStart, coreEnd);
-                editor.focus();
-            });
-            
-            // Trigger autosave
-            this.autoSave();
-        },
-        
-        insertLink() {
-            const editor = document.getElementById('note-editor');
-            if (!editor) return;
-            
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            const selectedText = this.noteContent.substring(start, end);
-            
-            // If text is selected, use it as link text; otherwise use placeholder
-            const linkText = selectedText || 'link text';
-            const linkUrl = 'url';
-            
-            // Build the markdown link
-            const newText = `[${linkText}](${linkUrl})`;
-            
-            // Update content
-            this.noteContent = this.noteContent.substring(0, start) + newText + this.noteContent.substring(end);
-            
-            // Set cursor position to select the URL part for easy editing
-            this.$nextTick(() => {
-                const urlStart = start + linkText.length + 3; // After "[linkText]("
-                const urlEnd = urlStart + linkUrl.length;
-                editor.setSelectionRange(urlStart, urlEnd);
-                editor.focus();
-            });
-            
-            // Trigger autosave
-            this.autoSave();
-        },
-        
-        // Insert a markdown table placeholder
-        insertTable() {
-            const editor = document.getElementById('note-editor');
-            if (!editor) return;
-            
-            const cursorPos = editor.selectionStart;
-            
-            // Basic 3x3 table placeholder
-            const table = `| Header 1 | Header 2 | Header 3 |
-|----------|----------|----------|
-| Cell 1   | Cell 2   | Cell 3   |
-| Cell 4   | Cell 5   | Cell 6   |
-`;
-            
-            // Add newline before if not at start of line
-            const textBefore = this.noteContent.substring(0, cursorPos);
-            const needsNewlineBefore = textBefore.length > 0 && !textBefore.endsWith('\n');
-            const prefix = needsNewlineBefore ? '\n\n' : '';
-            
-            // Insert the table
-            this.noteContent = textBefore + prefix + table + this.noteContent.substring(cursorPos);
-            
-            // Position cursor at first header for easy editing
-            this.$nextTick(() => {
-                const newPos = cursorPos + prefix.length + 2; // After "| "
-                editor.setSelectionRange(newPos, newPos + 8); // Select "Header 1"
-                editor.focus();
-            });
-            
-            // Trigger autosave
-            this.autoSave();
-        },
-        
-        // Format selected text or insert formatting at cursor
+        // Toolbar buttons and shortcuts. Link and image ask for an address until Phase 2 adds real editing.
         formatText(type) {
-            // Simple wrap cases - reuse wrapSelection()
-            const wrapFormats = {
-                'bold': ['**', '**', 'bold'],
-                'italic': ['*', '*', 'italic'],
-                'strikethrough': ['~~', '~~', 'strikethrough'],
-                'code': ['`', '`', 'code']
-            };
-            
-            if (wrapFormats[type]) {
-                const [before, after, placeholder] = wrapFormats[type];
-                this.wrapSelection(before, after, placeholder);
+            if (type === 'link' || type === 'image') {
+                const address = window.prompt(this.t(`format.${type}`));
+                if (!address) return;
+                if (type === 'link') noteEditor?.setLink(address);
+                else noteEditor?.insertImage(address);
                 return;
             }
-            
-            // Special cases that need custom handling
-            switch (type) {
-                case 'heading':
-                    this.insertLinePrefix('## ', 'Heading');
-                    break;
-                case 'quote':
-                    this.insertLinePrefix('> ', 'quote');
-                    break;
-                case 'bullet':
-                    this.insertLinePrefix('- ', 'item');
-                    break;
-                case 'numbered':
-                    this.insertLinePrefix('1. ', 'item');
-                    break;
-                case 'checkbox':
-                    this.insertLinePrefix('- [ ] ', 'task');
-                    break;
-                case 'link':
-                    this.insertLink();
-                    break;
-                case 'image':
-                    this.wrapSelection('![', '](image-url)', 'alt text');
-                    break;
-                case 'codeblock':
-                    this.wrapSelection('```\n', '\n```', 'code');
-                    break;
-                case 'table':
-                    this.insertTable();
-                    break;
-            }
-        },
-        
-        // Insert a line prefix (for headings, lists, quotes)
-        insertLinePrefix(prefix, placeholder) {
-            const editor = document.getElementById('note-editor');
-            if (!editor) return;
-            
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            const selectedText = this.noteContent.substring(start, end);
-            const beforeText = this.noteContent.substring(0, start);
-            const afterText = this.noteContent.substring(end);
-            
-            // Check if at start of line
-            const atLineStart = beforeText.endsWith('\n') || beforeText === '';
-            const newline = atLineStart ? '' : '\n';
-            
-            let replacement;
-            if (selectedText) {
-                // Prefix each line of selection
-                replacement = newline + selectedText.split('\n').map((line, i) => {
-                    // For numbered lists, increment the number
-                    if (prefix === '1. ') return `${i + 1}. ${line}`;
-                    return prefix + line;
-                }).join('\n');
-            } else {
-                replacement = newline + prefix + placeholder;
-            }
-            
-            this.noteContent = beforeText + replacement + afterText;
-            
-            this.$nextTick(() => {
-                if (selectedText) {
-                    editor.setSelectionRange(start + newline.length, start + replacement.length);
-                } else {
-                    const placeholderStart = start + newline.length + prefix.length;
-                    editor.setSelectionRange(placeholderStart, placeholderStart + placeholder.length);
-                }
-                editor.focus();
-            });
-            
-            this.autoSave();
+            noteEditor?.format(type);
         },
         
         // Save current note
-        async saveNote() {
+        async saveNote({ keepalive = false } = {}) {
             if (!this.currentNote) return;
+            // Pick up the last keystrokes. This save covers their autosave, so cancel it.
+            noteEditor?.flush();
+            if (this.saveTimeout) {
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = null;
+            }
             // The "changed elsewhere" prompt is open: nothing is written until the user chooses.
             if (this._saveConflictOpen) return;
             // One save at a time. A second request sent before the first returns would
@@ -6218,12 +5370,15 @@ function noteApp() {
             const notePath = this.currentNote;
 
             try {
+                // base_hash lets the server refuse (409) a write over a file that
+                // changed on disk since we read it.
+                const body = JSON.stringify({ content: this.noteContent, base_hash: this.noteBaseHash });
                 const response = await fetch(`/api/notes/${encodeVaultPath(notePath)}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // base_hash lets the server refuse (409) a write over a file that
-                    // changed on disk since we read it.
-                    body: JSON.stringify({ content: this.noteContent, base_hash: this.noteBaseHash })
+                    body,
+                    // Outlives the page, but browsers refuse keepalive bodies over 64 KiB.
+                    keepalive: keepalive && new Blob([body]).size < 60000
                 });
 
                 if (response.status === 409) {
@@ -6366,7 +5521,7 @@ function noteApp() {
             // A pending autosave targets currentNote, which is already the new
             // path. Let it fire and it would create the destination before the
             // move, and the move would refuse to overwrite that file.
-            this.flushHistory();
+            noteEditor?.flush();
             if (this.saveTimeout) {
                 clearTimeout(this.saveTimeout);
                 this.saveTimeout = null;
@@ -6493,7 +5648,7 @@ function noteApp() {
             if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
                 // Use a small delay to ensure DOM is updated
                 setTimeout(() => {
-                    const previewContent = document.querySelector('.markdown-preview');
+                    const previewContent = document.querySelector(PREVIEW_SELECTOR);
                     if (previewContent) {
                         MathJax.typesetPromise([previewContent]).catch((err) => {
                             console.error('MathJax typesetting failed:', err);
@@ -6525,7 +5680,7 @@ function noteApp() {
         async renderMermaid() {
             // Use requestAnimationFrame for better performance than setTimeout
             requestAnimationFrame(async () => {
-                const previewContent = document.querySelector('.markdown-preview');
+                const previewContent = document.querySelector(PREVIEW_SELECTOR);
                 if (!previewContent) return;
                 
                 // Find all code blocks with language 'mermaid'
@@ -7115,7 +6270,7 @@ function noteApp() {
             // Apply syntax highlighting and add copy buttons to code blocks
             setTimeout(() => {
                 // Use cached reference if available, otherwise query
-                const previewEl = this._domCache.previewContent || document.querySelector('.markdown-preview');
+                const previewEl = this._domCache.previewContent || document.querySelector(PREVIEW_SELECTOR);
                 if (previewEl) {
                     // Exclude code blocks that are rendered by other tools (e.g., Mermaid diagrams)
                     // Note: MathJax uses $$...$$ delimiters (not code blocks) so no exclusion needed
@@ -7155,8 +6310,8 @@ function noteApp() {
         
         // Refresh DOM element cache
         refreshDOMCache() {
-            this._domCache.editor = document.querySelector('.editor-textarea');
-            this._domCache.previewContent = document.querySelector('.markdown-preview');
+            this._domCache.editor = document.getElementById('note-editor');
+            this._domCache.previewContent = document.querySelector(PREVIEW_SELECTOR);
             this._domCache.previewContainer = this._domCache.previewContent ? this._domCache.previewContent.parentElement : null;
         },
         
@@ -7571,149 +6726,16 @@ function noteApp() {
         },
 
         /**
-         * Measure pixel Y positions of source lines as rendered in the textarea, using the
-         * "mirror div" technique: a hidden div styled identically to the textarea, with
-         * marker spans at the target lines. Wrapping matches pixel-for-pixel only as long
-         * as every wrap-affecting property is copied. Returns { line -> pixelY } for the
-         * requested lines; missing lines get no entry.
-         */
-        _measureEditorLinePositions(source, editor, targetLines) {
-            if (!editor || typeof source !== 'string' || !targetLines || targetLines.length === 0) {
-                return {};
-            }
-
-            const cs = window.getComputedStyle(editor);
-            const div = document.createElement('div');
-
-            // Every CSS property that affects textarea line wrapping and
-            // vertical stacking. Border/padding are re-set below so they
-            // don't double-apply on top of our explicit width override.
-            const props = [
-                'direction',
-                'fontFamily', 'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch',
-                'fontSize', 'fontSizeAdjust', 'lineHeight',
-                'letterSpacing', 'wordSpacing',
-                'tabSize', 'MozTabSize',
-                'textIndent', 'textAlign', 'textTransform', 'textDecoration',
-            ];
-            for (const prop of props) {
-                div.style[prop] = cs[prop];
-            }
-
-            // Force mirror's content area to be the exact wrapping width of
-            // the textarea's content area. editor.clientWidth includes padding
-            // but excludes borders and scrollbar; subtracting horizontal
-            // padding gives the true wrapping width.
-            //
-            // Padding is KEPT on the mirror (matching textarea's) because a
-            // textarea's padding lives inside its scrollable content — line 0
-            // sits at Y = paddingTop within scroll coordinates, not Y = 0.
-            // Zeroing the mirror's padding would produce Y values shifted up
-            // by paddingTop and every anchor would land that many pixels off.
-            // Border is zeroed because it lives OUTSIDE the scrollable area.
-            const paddingLeft = parseFloat(cs.paddingLeft) || 0;
-            const paddingRight = parseFloat(cs.paddingRight) || 0;
-            const contentWidth = Math.max(0, editor.clientWidth - paddingLeft - paddingRight);
-            div.style.boxSizing = 'content-box';
-            div.style.width = contentWidth + 'px';
-            div.style.paddingTop = cs.paddingTop;
-            div.style.paddingRight = cs.paddingRight;
-            div.style.paddingBottom = cs.paddingBottom;
-            div.style.paddingLeft = cs.paddingLeft;
-            div.style.borderWidth = '0';
-            // Grow to content, off-screen, no scrolling.
-            div.style.height = 'auto';
-            div.style.overflow = 'hidden';
-            div.style.position = 'absolute';
-            div.style.top = '0';
-            div.style.left = '-99999px';
-            div.style.visibility = 'hidden';
-            // Match textarea's line-wrapping behavior.
-            div.style.whiteSpace = 'pre-wrap';
-            div.style.wordWrap = 'break-word';
-            div.style.overflowWrap = 'break-word';
-
-            // Populate: text nodes for regular lines, marker spans at target
-            // lines. Using textContent (not innerHTML) is safe against markup
-            // in the source being interpreted as HTML.
-            const lines = source.split('\n');
-            const needed = new Set(targetLines);
-            for (let i = 0; i < lines.length; i++) {
-                if (needed.has(i)) {
-                    const marker = document.createElement('span');
-                    marker.setAttribute('data-line', String(i));
-                    // Zero-width space so empty-line markers still have a
-                    // measurable position (a truly empty <span> collapses).
-                    marker.textContent = lines[i].length ? lines[i] : '\u200B';
-                    div.appendChild(marker);
-                } else {
-                    div.appendChild(document.createTextNode(lines[i]));
-                }
-                if (i < lines.length - 1) {
-                    div.appendChild(document.createTextNode('\n'));
-                }
-            }
-
-            document.body.appendChild(div);
-            const divRect = div.getBoundingClientRect();
-            const positions = {};
-            for (const marker of div.querySelectorAll('span[data-line]')) {
-                const line = parseInt(marker.dataset.line, 10);
-                if (Number.isFinite(line)) {
-                    positions[line] = marker.getBoundingClientRect().top - divRect.top;
-                }
-            }
-            document.body.removeChild(div);
-            return positions;
-        },
-
-        /**
-         * Return sorted anchors: [{ line, previewTop, editorY }, ...]. previewTop is
-         * measured live each call since top values shift on resize/MathJax/image-load;
-         * editorY comes from the mirror div (cached by content + width + font metrics)
-         * and is what makes sync robust to non-uniform prose wrapping.
+         * Return sorted anchors: [{ line, previewTop }, ...]. previewTop is measured
+         * live each call since top values shift on resize/MathJax/image-load.
          */
         _getScrollAnchors() {
             const container = this._domCache.previewContainer;
             const previewRoot = this._domCache.previewContent;
-            const editor = this._domCache.editor;
             if (!container || !previewRoot) return null;
 
             const els = previewRoot.querySelectorAll('[data-source-line]');
             if (els.length === 0) return [];
-
-            // Collect landmark source lines we need editor Y for.
-            const lines = [];
-            for (const el of els) {
-                const line = parseInt(el.getAttribute('data-source-line'), 10);
-                if (Number.isFinite(line)) lines.push(line);
-            }
-
-            // Editor line-position cache. Invalidates when any of:
-            // - note content changes
-            // - editor width changes (split resize, window resize)
-            // - font metrics change (theme switch)
-            // Fresh measurement is O(N) DOM work; cached lookup is O(1).
-            let editorPositions = {};
-            if (editor && lines.length > 0 && editor.scrollHeight > 0) {
-                const cs = window.getComputedStyle(editor);
-                const cacheKey = [
-                    editor.clientWidth,
-                    cs.fontSize,
-                    cs.fontFamily,
-                    cs.lineHeight,
-                    cs.letterSpacing,
-                ].join('|');
-                const content = this.noteContent || '';
-                if (this._editorPosCache
-                    && this._editorPosCache.content === content
-                    && this._editorPosCache.key === cacheKey) {
-                    editorPositions = this._editorPosCache.positions;
-                } else {
-                    editorPositions = this._measureEditorLinePositions(content, editor, lines);
-                    this._editorPosCache = { content, key: cacheKey, positions: editorPositions };
-                }
-            }
 
             const cRect = container.getBoundingClientRect();
             const containerScroll = container.scrollTop;
@@ -7722,12 +6744,7 @@ function noteApp() {
                 const line = parseInt(el.getAttribute('data-source-line'), 10);
                 if (!Number.isFinite(line)) continue;
                 const previewTop = el.getBoundingClientRect().top - cRect.top + containerScroll;
-                const editorY = editorPositions[line];
-                anchors.push({
-                    line,
-                    previewTop,
-                    editorY: Number.isFinite(editorY) ? editorY : null,
-                });
+                anchors.push({ line, previewTop });
             }
             anchors.sort((a, b) => a.line - b.line);
             return anchors;
@@ -7735,16 +6752,11 @@ function noteApp() {
 
         /**
          * Build the anchor list bracketed by virtual doc-start/doc-end entries, each
-         * { editorPct, previewTop }. Both axes are pixel-derived so non-uniform editor
-         * wrapping stays correct; landmarks missing a measured editorY fall back to
-         * sourceLine/(totalLines-1). With no landmarks it collapses to percentage sync.
+         * { editorPct, previewTop }. Landmarks sit at sourceLine/(totalLines-1) on the
+         * editor axis. With no landmarks it collapses to percentage sync.
          */
         _buildAnchorRange(anchors, editor, previewContainer, totalSourceLines) {
             const maxPreviewTop = Math.max(0, previewContainer.scrollHeight - previewContainer.clientHeight);
-            const editorMeasurable = editor && editor.scrollHeight > 0;
-            const editorScrollable = editorMeasurable
-                ? Math.max(0, editor.scrollHeight - editor.clientHeight)
-                : 0;
             const denom = Math.max(1, totalSourceLines - 1);
 
             const list = [{ editorPct: 0, previewTop: 0 }];
@@ -7758,18 +6770,9 @@ function noteApp() {
                     // monotonicity check, and blocks the doc-end anchor below - which
                     // left the preview stopping short of the bottom.
                     if (a.previewTop >= maxPreviewTop) continue;
-                    let editorPct;
-                    if (editorMeasurable && Number.isFinite(a.editorY) && a.editorY >= 0 && editorScrollable > 0) {
-                        // Real measurement path.
-                        if (a.editorY >= editorScrollable) continue;
-                        editorPct = a.editorY / editorScrollable;
-                    } else {
-                        // Fallback: uniform-wrap approximation. Used when the
-                        // editor is hidden (preview-only mode) or when mirror
-                        // measurement returned no entry for this line.
-                        editorPct = Math.max(0, Math.min(1, a.line / denom));
-                        if (editorPct >= 1) continue;
-                    }
+                    // Uniform-wrap approximation: rendered editor lines don't map to source lines.
+                    const editorPct = Math.max(0, Math.min(1, a.line / denom));
+                    if (editorPct >= 1) continue;
                     const last = list[list.length - 1];
                     // Enforce strict monotonicity on both axes so the bracket
                     // search below is correct. Anchors that would violate
@@ -9208,10 +8211,7 @@ function noteApp() {
                 }
                 
                 // Focus editor after transition
-                setTimeout(() => {
-                    const editor = document.getElementById('note-editor');
-                    if (editor) editor.focus();
-                }, 300);
+                setTimeout(() => noteEditor?.focus(), 300);
             } else {
                 // Exiting Zen Mode
                 this.zenMode = false;
@@ -9239,6 +8239,7 @@ function noteApp() {
             this.homepageNameQuery = '';
             
             // Clear editor state to show landing page
+            this._commitPendingEdits();
             this.currentNote = '';
             this.currentNoteName = '';
             this.noteContent = '';
@@ -9260,6 +8261,7 @@ function noteApp() {
         
         // Navigate to homepage root and clear all editor state
         goHome() {
+            this._commitPendingEdits();
             this.showGraph = false; // Close graph when going home
             this.selectedHomepageFolder = '';
             this.homepageNameQuery = '';
@@ -9271,11 +8273,6 @@ function noteApp() {
             this.backlinks = [];
             this.mobileSidebarOpen = false;
             document.title = this.appName;
-            
-            // Clear undo/redo history
-            this.undoHistory = [];
-            this.redoHistory = [];
-            this.hasPendingHistoryChanges = false;
             
             // Invalidate cache to force recalculation
             this._homepageCache = {

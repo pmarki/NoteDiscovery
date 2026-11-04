@@ -11,7 +11,8 @@ const CACHE_NAME = 'notediscovery-__APP_VERSION__';
 const PRECACHE_ASSETS = [
   '/static/logo.svg',
   '/static/favicon.svg',
-  '/static/app.js?v=__APP_VERSION__'
+  '/static/app.js?v=__APP_VERSION__',
+  '/static/note-editor.bundle.js?v=__APP_VERSION__'
 ];
 
 // Install event - cache essential assets

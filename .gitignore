@@ -61,3 +61,6 @@ frontend/vendor/
 
 # Local test suite, not shipped
 tests/
+
+# Dev-only dependencies of the editor bundle
+node_modules/
