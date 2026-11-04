@@ -325,7 +325,14 @@
     "bullet_list": "Маркированный список",
     "numbered_list": "Нумерованный список",
     "checkbox": "Чекбокс",
-    "table": "Таблица"
+    "table": "Таблица",
+    "add_row": "Добавить строку",
+    "add_column": "Добавить столбец",
+    "delete_row": "Удалить строку",
+    "delete_column": "Удалить столбец",
+    "delete_table": "Удалить таблицу",
+    "invalid_link": "Этот адрес не разрешён",
+    "open_link": "Открыть"
   },
   "validation": {
     "forbidden_chars": "Имя содержит запрещённые символы: {{chars}}",

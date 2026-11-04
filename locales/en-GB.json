@@ -325,7 +325,14 @@
     "bullet_list": "Bullet list",
     "numbered_list": "Numbered list",
     "checkbox": "Checkbox",
-    "table": "Table"
+    "table": "Table",
+    "add_row": "Add row",
+    "add_column": "Add column",
+    "delete_row": "Delete row",
+    "delete_column": "Delete column",
+    "delete_table": "Delete table",
+    "invalid_link": "That address isn't allowed",
+    "open_link": "Open"
   },
   "validation": {
     "forbidden_chars": "Name contains forbidden characters: {{chars}}",

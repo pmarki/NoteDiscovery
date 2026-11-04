@@ -325,7 +325,14 @@
     "bullet_list": "Lista con viñetas",
     "numbered_list": "Lista numerada",
     "checkbox": "Casilla de verificación",
-    "table": "Tabla"
+    "table": "Tabla",
+    "add_row": "Añadir fila",
+    "add_column": "Añadir columna",
+    "delete_row": "Eliminar fila",
+    "delete_column": "Eliminar columna",
+    "delete_table": "Eliminar tabla",
+    "invalid_link": "Esa dirección no está permitida",
+    "open_link": "Abrir"
   },
   "validation": {
     "forbidden_chars": "El nombre contiene caracteres no permitidos: {{chars}}",

@@ -453,6 +453,49 @@
             text-overflow: ellipsis;
         }
         
+        /* Link / image address popover */
+        .link-prompt {
+            display: flex;
+            gap: 4px;
+            width: 340px;
+            max-width: calc(100vw - 8px);
+            padding: 6px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        .link-prompt input {
+            flex: 1;
+            min-width: 0;
+            padding: 4px 8px;
+            font-size: 13px;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            outline: none;
+        }
+        .link-popup-address {
+            flex: 1;
+            min-width: 0;
+            padding: 4px;
+            overflow: hidden;
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .link-prompt button {
+            padding: 4px 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-radius: 4px;
+        }
+        .link-prompt button:hover {
+            background-color: var(--bg-hover);
+        }
+        
         /* Folder tree styling - compact Obsidian-like */
         .folder-item {
             user-select: none;
@@ -2826,6 +2869,26 @@
                                 <button @click="formatText('table')" class="format-btn" :title="t('format.table') + ' (Ctrl+Alt+T)'">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                 </button>
+                                <template x-if="inTable">
+                                    <div class="flex items-center gap-1">
+                                        <div class="w-px h-4 mx-1" style="background-color: var(--border-primary);"></div>
+                                        <button @click="formatText('addRow')" class="format-btn" :title="t('format.add_row')">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 5h16M4 10h16M12 14v7M8.5 17.5h7"></path></svg>
+                                        </button>
+                                        <button @click="formatText('addColumn')" class="format-btn" :title="t('format.add_column')">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 4v16M10 4v16M14 12h7M17.5 8.5v7"></path></svg>
+                                        </button>
+                                        <button @click="formatText('deleteRow')" class="format-btn" :title="t('format.delete_row')">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 5h16M4 10h16M8.5 17.5h7"></path></svg>
+                                        </button>
+                                        <button @click="formatText('deleteColumn')" class="format-btn" :title="t('format.delete_column')">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 4v16M10 4v16M14 12h7"></path></svg>
+                                        </button>
+                                        <button @click="formatText('deleteTable')" class="format-btn" :title="t('format.delete_table')" style="color: var(--error);">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path></svg>
+                                        </button>
+                                    </div>
+                                </template>
                             </div>
                             <div 
                                 class="editor-wrapper"
@@ -3317,6 +3380,34 @@
                 <span class="wl-secondary" x-show="item.secondary" x-text="item.secondary"></span>
             </div>
         </template>
+    </div>
+
+    <!-- Shown while the cursor sits in a link. mousedown.prevent keeps the cursor in the editor. -->
+    <div x-show="linkPopup.open"
+         @mousedown.prevent
+         class="link-prompt"
+         :style="`position: fixed; top: ${linkPopup.position.top}px; left: ${linkPopup.position.left}px; z-index: 1190; ${linkPopup.position.above ? 'transform: translateY(-100%);' : ''}`"
+         x-cloak>
+        <span class="link-popup-address" x-text="linkPopup.href" :title="linkPopup.href"></span>
+        <button type="button" @click="openLinkPrompt('link')" x-text="t('editor.mode_edit')"></button>
+        <button type="button" @click="openLinkAddress(linkPopup.href)" x-text="t('format.open_link')"></button>
+    </div>
+
+    <!-- Link / image address popover -->
+    <div x-show="linkPrompt.open" class="fixed inset-0" style="z-index: 1199;" @click="closeLinkPrompt()" x-cloak></div>
+    <div x-show="linkPrompt.open"
+         class="link-prompt"
+         :style="`position: fixed; top: ${linkPrompt.position.top}px; left: ${linkPrompt.position.left}px; z-index: 1200; ${linkPrompt.position.above ? 'transform: translateY(-100%);' : ''}`"
+         x-cloak>
+        <input id="link-prompt-input"
+               type="text"
+               x-model="linkPrompt.href"
+               :aria-label="t(`format.${linkPrompt.type}`)"
+               placeholder="https://"
+               @keydown.enter.prevent="applyLinkPrompt()"
+               @keydown.escape.stop="closeLinkPrompt()">
+        <button type="button" @click="applyLinkPrompt()" x-text="t('common.ok')"></button>
+        <button type="button" x-show="linkPrompt.canRemove" @click="removeLinkFromPrompt()" x-text="t('common.delete')"></button>
     </div>
 
     <!-- Template Selection Modal -->

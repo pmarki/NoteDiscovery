@@ -325,7 +325,14 @@
     "bullet_list": "Seznam z oznakami",
     "numbered_list": "Oštevilčen seznam",
     "checkbox": "Potrditveno polje",
-    "table": "Tabela"
+    "table": "Tabela",
+    "add_row": "Dodaj vrstico",
+    "add_column": "Dodaj stolpec",
+    "delete_row": "Izbriši vrstico",
+    "delete_column": "Izbriši stolpec",
+    "delete_table": "Izbriši tabelo",
+    "invalid_link": "Ta naslov ni dovoljen",
+    "open_link": "Odpri"
   },
   "validation": {
     "forbidden_chars": "Ime vsebuje prepovedane znake: {{chars}}",

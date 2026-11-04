@@ -348,6 +348,7 @@ function noteApp() {
         // What the undo and redo buttons can do right now
         canUndo: false,
         canRedo: false,
+        inTable: false,
 
         // The noteContent the editor is showing. Anything else came from outside the editor.
         _editorMarkdown: '',
@@ -393,6 +394,23 @@ function noteApp() {
             position: { top: 0, left: 0, above: false },
         },
         _wlClientRect: null, // Caret rectangle getter from the editor
+
+        // Address popover for the link and image buttons
+        linkPrompt: {
+            open: false,
+            type: 'link',        // 'link' | 'image'
+            href: '',
+            canRemove: false,
+            position: { top: 0, left: 0, above: false },
+        },
+
+        // Shown while the cursor sits in a link
+        linkPopup: {
+            open: false,
+            href: '',
+            position: { top: 0, left: 0, above: false },
+        },
+        _linkOutOfView: false, // Hidden only by scrolling, so scrolling back restores it
         _noteNameCounts: new Map(), // lower note stem -> count, for name-vs-path insertion
         
         // Template state
@@ -4285,16 +4303,24 @@ function noteApp() {
             const href = link.getAttribute('href');
             if (!href) return;
             
-            // Check if it's an external link or API path (media files, etc.)
-            // Safe external protocols: http, https, mailto, tel, ssh, ftp, sftp, and app deep links
-            const externalProtocols = ['http://', 'https://', '//', 'mailto:', 'tel:', 'ssh:', 'ftp:', 'sftp:', 'slack:', 'discord:', 'teams:', 'vscode:', 'zoom:', 'whatsapp:', 'telegram:', 'signal:', 'spotify:', 'steam:', 'magnet:', '/api/'];
-            if (externalProtocols.some(p => href.startsWith(p))) {
+            if (this._isExternalHref(href)) {
                 return; // Let external links and API paths work normally
             }
             
             // Prevent default navigation for internal links
             event.preventDefault();
-            
+            this._openInternalHref(href);
+        },
+        
+        // Check if it's an external link or API path (media files, etc.)
+        // Safe external protocols: http, https, mailto, tel, ssh, ftp, sftp, and app deep links
+        _isExternalHref(href) {
+            const externalProtocols = ['http://', 'https://', '//', 'mailto:', 'tel:', 'ssh:', 'ftp:', 'sftp:', 'slack:', 'discord:', 'teams:', 'vscode:', 'zoom:', 'whatsapp:', 'telegram:', 'signal:', 'spotify:', 'steam:', 'magnet:', '/api/'];
+            return externalProtocols.some(p => href.startsWith(p));
+        },
+        
+        // Open the note an internal href points to, offering to create it if missing
+        _openInternalHref(href) {
             // Parse href into note path and anchor (e.g., "note.md#section" -> notePath="note.md", anchor="section")
             const decodedHref = decodeURIComponent(href);
             const hashIndex = decodedHref.indexOf('#');
@@ -5416,10 +5442,13 @@ function noteApp() {
                 placeholder: () => this.t('editor.placeholder'),
                 resolveImageSrc: (src) => this._editorImageSrc(src),
                 onChange: (value) => this._onEditorChange(value),
-                onHistoryChange: (canUndo, canRedo) => {
+                onStateChange: ({ canUndo, canRedo, inTable, link }) => {
                     this.canUndo = canUndo;
                     this.canRedo = canRedo;
+                    this.inTable = inTable;
+                    this._updateLinkPopup(link);
                 },
+                onOpenLink: (event) => this.openEditorLink(event),
                 onSuggest: (suggestion) => this.wlUpdate(suggestion),
                 onSuggestKey: (event) => this.wlOnKeydown(event),
                 onPasteImage: (file) => this.pasteImage(file),
@@ -5431,6 +5460,7 @@ function noteApp() {
             });
             element.addEventListener('scroll', () => {
                 if (this.wikilinkAutocomplete.open) this.wlUpdatePosition();
+                if (this.linkPopup.open || this._linkOutOfView) this._updateLinkPopup(noteEditor?.linkAtSelection());
             });
         },
         
@@ -5477,16 +5507,95 @@ function noteApp() {
             if (this.currentNote) noteEditor?.redo();
         },
         
-        // Toolbar buttons and shortcuts. Link and image ask for an address until Phase 2 adds real editing.
+        // Toolbar buttons and shortcuts
         formatText(type) {
             if (type === 'link' || type === 'image') {
-                const address = window.prompt(this.t(`format.${type}`));
-                if (!address) return;
-                if (type === 'link') noteEditor?.setLink(address);
-                else noteEditor?.insertImage(address);
+                this.openLinkPrompt(type);
                 return;
             }
             noteEditor?.format(type);
+        },
+        
+        // Just below the caret, or just above it when there's no room. Above, the popup
+        // hangs from its bottom edge, so its real height doesn't matter.
+        _linkPopupPosition(rect) {
+            const POPUP_W = 340;
+            const POPUP_H = 46;
+            const GAP = 6;
+            const above = rect.bottom + GAP + POPUP_H > window.innerHeight;
+            return {
+                top: above ? rect.top - GAP : rect.bottom + GAP,
+                left: Math.max(4, Math.min(rect.left, window.innerWidth - POPUP_W - 4)),
+                above,
+            };
+        },
+        
+        _updateLinkPopup(link) {
+            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
+            // The caret can scroll out of the editor while the popup is open
+            const visible = link && surface && link.rect.top >= surface.top && link.rect.bottom <= surface.bottom;
+            this._linkOutOfView = !!link && !visible;
+            if (!visible) {
+                this.linkPopup.open = false;
+                return;
+            }
+            this.linkPopup = { open: true, href: link.href, position: this._linkPopupPosition(link.rect) };
+        },
+        
+        // Ask for an address at the cursor, starting from the link already there
+        openLinkPrompt(type) {
+            if (!noteEditor) return;
+            const { href, rect } = noteEditor.linkAtSelection();
+            const existing = type === 'link' ? href : '';
+            this.linkPrompt = {
+                open: true,
+                type,
+                href: existing,
+                canRemove: !!existing,
+                position: this._linkPopupPosition(rect),
+            };
+            this.$nextTick(() => {
+                const input = document.getElementById('link-prompt-input');
+                input?.focus();
+                input?.select();
+            });
+        },
+        
+        applyLinkPrompt() {
+            const address = this.linkPrompt.href.trim();
+            if (!address) {
+                this.closeLinkPrompt();
+                return;
+            }
+            const applied = this.linkPrompt.type === 'link'
+                ? noteEditor?.setLink(address)
+                : noteEditor?.insertImage(address);
+            if (!applied) {
+                this.toast(this.t('format.invalid_link'), { type: 'warning' });
+                return;
+            }
+            this.linkPrompt.open = false;
+        },
+        
+        removeLinkFromPrompt() {
+            noteEditor?.removeLink();
+            this.linkPrompt.open = false;
+        },
+        
+        closeLinkPrompt() {
+            this.linkPrompt.open = false;
+            noteEditor?.focus();
+        },
+        
+        // Ctrl/Cmd+click on a link in the editor: a plain click only places the cursor
+        openEditorLink(event) {
+            this.openLinkAddress(event.target.closest('a')?.getAttribute('href'));
+        },
+        
+        openLinkAddress(href) {
+            if (!href) return;
+            if (this._isExternalHref(href)) window.open(href, '_blank', 'noopener');
+            else this._openInternalHref(href);
         },
         
         // Save current note

@@ -325,7 +325,14 @@
     "bullet_list": "Elenco puntato",
     "numbered_list": "Elenco numerato",
     "checkbox": "Casella di controllo",
-    "table": "Tabella"
+    "table": "Tabella",
+    "add_row": "Aggiungi riga",
+    "add_column": "Aggiungi colonna",
+    "delete_row": "Elimina riga",
+    "delete_column": "Elimina colonna",
+    "delete_table": "Elimina tabella",
+    "invalid_link": "Questo indirizzo non è consentito",
+    "open_link": "Apri"
   },
   "validation": {
     "forbidden_chars": "Il nome contiene caratteri non consentiti: {{chars}}",

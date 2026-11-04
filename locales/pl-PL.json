@@ -325,7 +325,14 @@
     "bullet_list": "Wypunktowanie",
     "numbered_list": "Lista numerowana",
     "checkbox": "Pole wyboru",
-    "table": "Tabela"
+    "table": "Tabela",
+    "add_row": "Dodaj wiersz",
+    "add_column": "Dodaj kolumnę",
+    "delete_row": "Usuń wiersz",
+    "delete_column": "Usuń kolumnę",
+    "delete_table": "Usuń tabelę",
+    "invalid_link": "Ten adres jest niedozwolony",
+    "open_link": "Otwórz"
   },
   "validation": {
     "forbidden_chars": "Nazwa zawiera niedozwolone znaki: {{chars}}",

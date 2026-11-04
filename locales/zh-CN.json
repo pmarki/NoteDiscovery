@@ -325,7 +325,14 @@
     "bullet_list": "无序列表",
     "numbered_list": "有序列表",
     "checkbox": "复选框",
-    "table": "表格"
+    "table": "表格",
+    "add_row": "添加行",
+    "add_column": "添加列",
+    "delete_row": "删除行",
+    "delete_column": "删除列",
+    "delete_table": "删除表格",
+    "invalid_link": "不允许使用此地址",
+    "open_link": "打开"
   },
   "validation": {
     "forbidden_chars": "名称包含禁止的字符：{{chars}}",

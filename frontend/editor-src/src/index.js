@@ -72,9 +72,10 @@ export function create({
     debounceMs = 150,
     resolveImageSrc = (src) => src,
     onChange = () => {},
-    onHistoryChange = () => {},
+    onStateChange = () => {},
     onSuggest = () => {},
     onSuggestKey = () => false,
+    onOpenLink = () => {},
     onPasteImage = () => {},
     onDrop = () => false,
 }) {
@@ -94,7 +95,19 @@ export function create({
         cancel();
         timer = setTimeout(flush, debounceMs);
     };
-    const reportHistory = (target) => onHistoryChange(target.can().undo(), target.can().redo());
+    const linkAtSelection = (target) => ({
+        href: target.getAttributes('link').href || '',
+        rect: target.view.coordsAtPos(target.state.selection.from),
+    });
+    // `showLink: false` keeps the link popup away while the text is being changed.
+    const reportState = (target, { showLink = true } = {}) => onStateChange({
+        canUndo: target.can().undo(),
+        canRedo: target.can().redo(),
+        inTable: target.isActive('table'),
+        link: showLink && target.isFocused && target.state.selection.empty && target.isActive('link')
+            ? linkAtSelection(target)
+            : null,
+    });
 
     const suggestion = wikilinkSuggestion({ onChange: onSuggest, onKeyDown: onSuggestKey });
     const frontmatter = buildFrontmatterField(frontmatterLabel, schedule);
@@ -105,13 +118,22 @@ export function create({
         element: content,
         extensions: buildExtensions({ placeholder, resolveImageSrc, suggestion }),
         onUpdate: schedule,
-        onBlur: () => onSuggest(null),
-        onTransaction: ({ editor: target }) => reportHistory(target),
+        onBlur: ({ editor: target }) => {
+            onSuggest(null);
+            reportState(target);
+        },
+        onTransaction: ({ editor: target, transaction }) => reportState(target, { showLink: !transaction.docChanged }),
+        onFocus: ({ editor: target }) => reportState(target),
         editorProps: {
             attributes: { class: 'markdown-preview note-editor-content' },
             // Ctrl+Alt+1-3 switch the app's view mode: keep Tiptap's heading shortcuts out of it.
             handleKeyDown: (view, event) => (event.ctrlKey || event.metaKey) && event.altKey
                 && /^Digit[1-3]$/.test(event.code),
+            handleClick(view, pos, event) {
+                if (!(event.ctrlKey || event.metaKey) || !event.target.closest('a')) return false;
+                onOpenLink(event);
+                return true;
+            },
             handlePaste(view, event) {
                 const items = Array.from(event.clipboardData?.items || []);
                 const image = items.find((item) => item.type.startsWith('image/'));
@@ -143,7 +165,7 @@ export function create({
         const { schema, state } = editor;
         const doc = json.content?.length ? schema.nodeFromJSON(json) : schema.topNodeType.createAndFill();
         editor.view.updateState(EditorState.create({ doc, plugins: state.plugins }));
-        reportHistory(editor);
+        reportState(editor, { showLink: false });
     }
 
     const FORMATS = {
@@ -158,6 +180,11 @@ export function create({
         checkbox: (chain) => chain.toggleTaskList(),
         codeblock: (chain) => chain.toggleCodeBlock(),
         table: (chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
+        addRow: (chain) => chain.addRowAfter(),
+        addColumn: (chain) => chain.addColumnAfter(),
+        deleteRow: (chain) => chain.deleteRow(),
+        deleteColumn: (chain) => chain.deleteColumn(),
+        deleteTable: (chain) => chain.deleteTable(),
     };
 
     const scrollToPosition = (position, block) => {
@@ -172,12 +199,24 @@ export function create({
         getMarkdown,
         flush,
         format: (type) => FORMATS[type]?.(editor.chain().focus()).run(),
-        setLink: (href) => {
+        linkAtSelection: () => linkAtSelection(editor),
+        // False when the address isn't allowed, such as javascript:
+        setLink(href) {
+            if (!editor.can().setLink({ href })) return false;
             const chain = editor.chain().focus();
+            if (editor.isActive('link')) {
+                // Back to the old cursor, or the next keystroke would replace the whole link.
+                const { from, to } = editor.state.selection;
+                return chain.extendMarkRange('link').setLink({ href }).setTextSelection({ from, to }).run();
+            }
             if (editor.state.selection.empty) {
                 return chain.insertContent({ type: 'text', text: href, marks: [{ type: 'link', attrs: { href } }] }).run();
             }
             return chain.setLink({ href }).run();
+        },
+        removeLink() {
+            const { from, to } = editor.state.selection;
+            return editor.chain().focus().extendMarkRange('link').unsetLink().setTextSelection({ from, to }).run();
         },
         insertImage: (src, alt = '') => editor.chain().focus().setImage({ src, alt }).run(),
         insertMarkdown(value, position = null) {

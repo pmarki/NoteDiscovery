@@ -325,7 +325,14 @@
     "bullet_list": "Pontozott lista",
     "numbered_list": "Számozott lista",
     "checkbox": "Jelölőnégyzet",
-    "table": "Táblázat"
+    "table": "Táblázat",
+    "add_row": "Sor hozzáadása",
+    "add_column": "Oszlop hozzáadása",
+    "delete_row": "Sor törlése",
+    "delete_column": "Oszlop törlése",
+    "delete_table": "Táblázat törlése",
+    "invalid_link": "Ez a cím nem engedélyezett",
+    "open_link": "Megnyitás"
   },
   "validation": {
     "forbidden_chars": "A név tiltott karaktereket tartalmaz: {{chars}}",

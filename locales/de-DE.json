@@ -325,7 +325,14 @@
     "bullet_list": "Aufzählungsliste",
     "numbered_list": "Nummerierte Liste",
     "checkbox": "Kontrollkästchen",
-    "table": "Tabelle"
+    "table": "Tabelle",
+    "add_row": "Zeile hinzufügen",
+    "add_column": "Spalte hinzufügen",
+    "delete_row": "Zeile löschen",
+    "delete_column": "Spalte löschen",
+    "delete_table": "Tabelle löschen",
+    "invalid_link": "Diese Adresse ist nicht erlaubt",
+    "open_link": "Öffnen"
   },
   "validation": {
     "forbidden_chars": "Der Name enthält unzulässige Zeichen: {{chars}}",

@@ -325,7 +325,14 @@
     "bullet_list": "Liste à puces",
     "numbered_list": "Liste numérotée",
     "checkbox": "Case à cocher",
-    "table": "Tableau"
+    "table": "Tableau",
+    "add_row": "Ajouter une ligne",
+    "add_column": "Ajouter une colonne",
+    "delete_row": "Supprimer la ligne",
+    "delete_column": "Supprimer la colonne",
+    "delete_table": "Supprimer le tableau",
+    "invalid_link": "Cette adresse n'est pas autorisée",
+    "open_link": "Ouvrir"
   },
   "validation": {
     "forbidden_chars": "Le nom contient des caractères interdits : {{chars}}",

@@ -325,7 +325,14 @@
     "bullet_list": "箇条書き",
     "numbered_list": "番号付きリスト",
     "checkbox": "チェックボックス",
-    "table": "表"
+    "table": "表",
+    "add_row": "行を追加",
+    "add_column": "列を追加",
+    "delete_row": "行を削除",
+    "delete_column": "列を削除",
+    "delete_table": "表を削除",
+    "invalid_link": "このアドレスは使用できません",
+    "open_link": "開く"
   },
   "validation": {
     "forbidden_chars": "名前に使用できない文字が含まれています: {{chars}}",
