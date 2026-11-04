@@ -32,7 +32,9 @@ export function escapeMarkdownText(text) {
         .replace(/_/g, (bar, i, s) => (/[\p{L}\p{N}]/u.test(s[i - 1] ?? '') && /[\p{L}\p{N}]/u.test(s[i + 1] ?? '') ? bar : '\\_'))
         // Brackets only matter as [[wikilink]], [text](url) or [text][ref].
         .replace(/\[\[/g, '\\[\\[')
-        .replace(/\](?=[([])/g, '\\]');
+        .replace(/\](?=[([])/g, '\\]')
+        // A paragraph starting with a real tab would reload as a code block.
+        .replace(/^\t/, '&#9;');
 }
 
 // Private in Tiptap, so test/markdown.test.mjs fails if an upgrade renames it.

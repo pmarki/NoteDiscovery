@@ -9,6 +9,9 @@ import StarterKit from '@tiptap/starter-kit';
 
 import { joinFrontmatter, splitFrontmatter } from './markdown.js';
 import { Embed, MathBlock, MathInline, Wikilink } from './nodes.js';
+import { highlightMatches, SearchHighlight } from './search.js';
+import { wikilinkSuggestion } from './suggest.js';
+import { TabKey } from './tab.js';
 
 /** Keeps the Markdown `src` in the document and only rewrites it for display. */
 const NoteImage = Image.extend({
@@ -22,7 +25,7 @@ const NoteImage = Image.extend({
     },
 });
 
-function buildExtensions({ placeholder, resolveImageSrc }) {
+function buildExtensions({ placeholder, resolveImageSrc, suggestion }) {
     return [
         StarterKit.configure({
             underline: false, // No Markdown form the preview renders
@@ -38,6 +41,9 @@ function buildExtensions({ placeholder, resolveImageSrc }) {
         Embed,
         MathInline,
         MathBlock,
+        SearchHighlight,
+        TabKey,
+        suggestion.extension,
     ];
 }
 
@@ -67,6 +73,8 @@ export function create({
     resolveImageSrc = (src) => src,
     onChange = () => {},
     onHistoryChange = () => {},
+    onSuggest = () => {},
+    onSuggestKey = () => false,
     onPasteImage = () => {},
     onDrop = () => false,
 }) {
@@ -88,14 +96,16 @@ export function create({
     };
     const reportHistory = (target) => onHistoryChange(target.can().undo(), target.can().redo());
 
+    const suggestion = wikilinkSuggestion({ onChange: onSuggest, onKeyDown: onSuggestKey });
     const frontmatter = buildFrontmatterField(frontmatterLabel, schedule);
     const content = document.createElement('div');
     element.replaceChildren(frontmatter.details, content);
 
     const editor = new Editor({
         element: content,
-        extensions: buildExtensions({ placeholder, resolveImageSrc }),
+        extensions: buildExtensions({ placeholder, resolveImageSrc, suggestion }),
         onUpdate: schedule,
+        onBlur: () => onSuggest(null),
         onTransaction: ({ editor: target }) => reportHistory(target),
         editorProps: {
             attributes: { class: 'markdown-preview note-editor-content' },
@@ -150,6 +160,11 @@ export function create({
         table: (chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
     };
 
+    const scrollToPosition = (position, block) => {
+        const { node } = editor.view.domAtPos(position);
+        (node.nodeType === 1 ? node : node.parentElement).scrollIntoView({ block });
+    };
+
     setMarkdown(markdown, { resetHistory: true });
 
     return {
@@ -171,6 +186,21 @@ export function create({
             // The note may have shrunk while an upload was running.
             const target = Math.min(position, editor.state.doc.content.size);
             return editor.chain().focus().insertContentAt(target, value, options).run();
+        },
+        acceptSuggestion: suggestion.accept,
+        highlight(findSpans, { scroll = false } = {}) {
+            const first = highlightMatches(editor.view, findSpans);
+            if (scroll && first !== null) scrollToPosition(first, 'center');
+        },
+        jumpToHeading(text) {
+            let target = null;
+            editor.state.doc.descendants((node, pos) => {
+                if (target === null && node.type.name === 'heading' && node.textContent.trim() === text) target = pos + 1;
+                return target === null;
+            });
+            if (target === null) return;
+            editor.chain().focus().setTextSelection(target).run();
+            scrollToPosition(target, 'start');
         },
         positionAt: (left, top) => editor.view.posAtCoords({ left, top })?.pos ?? null,
         undo: () => editor.commands.undo(),

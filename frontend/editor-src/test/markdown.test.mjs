@@ -20,10 +20,12 @@ const { create } = await import('../src/index.js');
 const { escapeMarkdownText } = await import('../src/markdown.js');
 
 const changes = [];
+let suggestion = null;
 const editor = create({
     element: document.getElementById('root'),
     debounceMs: 0,
     onChange: (value) => changes.push(value),
+    onSuggest: (value) => { suggestion = value; },
 });
 const roundTrip = (markdown) => {
     editor.setMarkdown(markdown, { resetHistory: true });
@@ -65,6 +67,9 @@ const EXACT = {
     quote: '> quoted\n',
     heading: '## Title\n\nBody\n',
     rule: 'a\n\n---\n\nb\n',
+    'tab inside a line': 'a\tb\n',
+    'tab starting a paragraph': '&#9;indented\n',
+    'tab in code': '```\n\tx\n```\n',
     empty: '',
 };
 for (const [name, markdown] of Object.entries(EXACT)) {
@@ -136,6 +141,39 @@ test('chips render note text as text, never markup', () => {
     // assert on a live editor node walks the whole view and can exhaust memory.
     assert.equal(document.querySelectorAll('#root img:not(.ProseMirror-separator)').length, 0);
     assert.ok(document.querySelector('#root .note-chip').textContent.includes('<img'));
+});
+
+test('[[ reports a note query and accepting it makes a wikilink', () => {
+    editor.setMarkdown('', { resetHistory: true });
+    editor.insertMarkdown('See [[So');
+    assert.equal(suggestion?.query, 'So');
+    assert.equal(suggestion?.isMedia, false);
+    editor.acceptSuggestion('Some Note');
+    assert.equal(editor.getMarkdown(), 'See [[Some Note]]\n');
+    assert.equal(suggestion, null);
+});
+
+test('![[ reports a media query and accepting it makes an embed', () => {
+    editor.setMarkdown('', { resetHistory: true });
+    editor.insertMarkdown('![[ph');
+    assert.equal(suggestion?.isMedia, true);
+    editor.acceptSuggestion('photo.png');
+    assert.equal(editor.getMarkdown(), '![[photo.png]]\n');
+});
+
+test('no suggestions inside code', () => {
+    editor.setMarkdown('```\nx\n```\n', { resetHistory: true });
+    editor.insertMarkdown('[[So');
+    assert.equal(suggestion, null);
+});
+
+test('search highlights never reach the Markdown', () => {
+    editor.setMarkdown('find me and find you\n', { resetHistory: true });
+    editor.highlight((text) => [...text.matchAll(/find/g)].map((m) => [m.index, m.index + 4]));
+    assert.equal(document.querySelectorAll('#root .search-highlight').length, 2);
+    assert.equal(editor.getMarkdown(), 'find me and find you\n');
+    editor.highlight(null);
+    assert.equal(document.querySelectorAll('#root .search-highlight').length, 0);
 });
 
 console.log(results.join('\n'));

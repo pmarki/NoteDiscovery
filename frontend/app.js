@@ -61,7 +61,6 @@ const LOCAL_SETTINGS = {
     favoritesExpanded: { key: 'favoritesExpanded', type: 'boolean', default: true },
     tagsExpanded: { key: 'tagsExpanded', type: 'boolean', default: false },
     hideUnderscoreFolders: { key: 'hideUnderscoreFolders', type: 'boolean', default: false },
-    tabInsertsTab: { key: 'tabInsertsTab', type: 'boolean', default: false },
     sidebarPanelCollapsed: { key: 'sidebarPanelCollapsed', type: 'boolean', default: false },
     autoFillNoteTitle: { key: 'autoFillNoteTitle', type: 'boolean', default: false },
     // String settings
@@ -309,7 +308,6 @@ function noteApp() {
         hideUnderscoreFolders: localStorage.getItem('hideUnderscoreFolders') === 'true',
 
         // Tab key inserts tab character instead of changing focus
-        tabInsertsTab: localStorage.getItem('tabInsertsTab') === 'true',
 
         // Note sorting mode (a-z, z-a, newest, oldest, largest, smallest)
         sortMode: localStorage.getItem('sortMode') || 'a-z',
@@ -385,6 +383,16 @@ function noteApp() {
         dropdownTargetFolder: null, // Folder context for "New" dropdown ('' = root, null = not set)
         dropdownPosition: { top: 0, left: 0 }, // Position for contextual dropdown
 
+        // Wikilink / media autocomplete (triggered by [[ for notes, ![[ for media)
+        wikilinkAutocomplete: {
+            open: false,
+            mode: 'note',        // 'note' | 'media'
+            query: '',
+            items: [],           // [{label, secondary, insert, kind, prefix, modified}]
+            activeIndex: 0,
+            position: { top: 0, left: 0, above: false },
+        },
+        _wlClientRect: null, // Caret rectangle getter from the editor
         _noteNameCounts: new Map(), // lower note stem -> count, for name-vs-path insertion
         
         // Template state
@@ -1135,12 +1143,6 @@ function noteApp() {
             }
         },
 
-        // Tab inserts tab toggle (Tab key inserts tab character instead of changing focus)
-        toggleTabInsertsTab() {
-            this.tabInsertsTab = !this.tabInsertsTab;
-            localStorage.setItem('tabInsertsTab', this.tabInsertsTab);
-        },
-
         // Hide / show only the sidebar PANEL (files, search, outline, etc.); the icon rail
         // stays put so users can still switch panels with one click after re-expanding.
         // Width is animated via CSS; sidebarWidth itself is intentionally NOT touched, so a
@@ -1566,6 +1568,130 @@ function noteApp() {
         },
 
         
+        // ---- Wikilink / media autocomplete -------------------------------------
+        // Triggered while typing inside [[ (notes) or ![[ (media). Suggestions are
+        // computed client-side from the already-loaded notes list; no backend calls.
+
+        // The editor reports the unfinished token, or null once it ends.
+        wlUpdate(suggestion) {
+            if (!suggestion) { this.wlClose(); return; }
+
+            this.wikilinkAutocomplete.mode = suggestion.isMedia ? 'media' : 'note';
+            this.wikilinkAutocomplete.query = suggestion.query;
+            this._wlClientRect = suggestion.clientRect;
+            this.wlComputeItems();
+            if (this.wikilinkAutocomplete.items.length === 0) { this.wlClose(); return; }
+            this.wikilinkAutocomplete.activeIndex = 0;
+            this.wikilinkAutocomplete.open = true;
+            this.wlUpdatePosition();
+        },
+
+        // Rebuild the suggestion list for the current query/mode.
+        wlComputeItems() {
+            const WL_LIMIT = 8;
+            const q = this.wikilinkAutocomplete.query.trim().toLowerCase();
+            const isMedia = this.wikilinkAutocomplete.mode === 'media';
+            const results = [];
+
+            for (const note of this.notes) {
+                if (isMedia ? note.type === 'note' : note.type !== 'note') continue;
+
+                const path = note.path;
+                const folder = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+
+                let label, insert;
+                if (isMedia) {
+                    label = path.split('/').pop();   // filename with extension
+                    insert = label;
+                } else {
+                    const stem = note.name.replace(/\.md$/i, '');
+                    label = stem;
+                    // Bare name when unique, else folder-relative path (no extension).
+                    insert = (this._noteNameCounts.get(stem.toLowerCase()) || 0) > 1
+                        ? path.replace(/\.md$/i, '')
+                        : stem;
+                }
+
+                const labelLower = label.toLowerCase();
+                const pathLower = path.toLowerCase();
+                if (q && !labelLower.includes(q) && !pathLower.includes(q)) continue;
+
+                results.push({
+                    label,
+                    secondary: folder,
+                    insert,
+                    kind: note.type,
+                    prefix: q ? labelLower.startsWith(q) : false,
+                    modified: note.modified || '',
+                });
+            }
+
+            // Prefix matches first, then most-recently-modified, then alphabetical.
+            // `modified` is an ISO timestamp, so lexical compare orders by time.
+            results.sort((a, b) =>
+                (b.prefix - a.prefix) || b.modified.localeCompare(a.modified) || a.label.localeCompare(b.label));
+            this.wikilinkAutocomplete.items = results.slice(0, WL_LIMIT);
+        },
+
+        // Keyboard handling while the popup is open. True means the key was used,
+        // so the editor leaves it alone. Stopped here too, or Escape would also leave Zen mode.
+        wlOnKeydown(event) {
+            const wa = this.wikilinkAutocomplete;
+            if (!wa.open) return false;
+
+            switch (event.key) {
+                case 'ArrowDown':
+                    this.wlMove(1);
+                    break;
+                case 'ArrowUp':
+                    this.wlMove(-1);
+                    break;
+                case 'Enter':
+                case 'Tab':
+                    this.wlAccept(wa.items[wa.activeIndex]);
+                    break;
+                case 'Escape':
+                    this.wlClose();
+                    break;
+                default:
+                    return false;
+            }
+            event.stopPropagation();
+            return true;
+        },
+
+        wlMove(delta) {
+            const n = this.wikilinkAutocomplete.items.length;
+            if (!n) return;
+            this.wikilinkAutocomplete.activeIndex =
+                (this.wikilinkAutocomplete.activeIndex + delta + n) % n;
+        },
+
+        wlAccept(item) {
+            if (!item) return;
+            noteEditor?.acceptSuggestion(item.insert);
+            this.wlClose();
+        },
+
+        wlClose() {
+            if (this.wikilinkAutocomplete.open) this.wikilinkAutocomplete.open = false;
+        },
+
+        // Position the popup just below the caret, clamped to the viewport.
+        wlUpdatePosition() {
+            const rect = this._wlClientRect?.();
+            if (!rect) return;
+
+            const POPUP_W = 360;
+            const popupHeight = this.wikilinkAutocomplete.items.length * 30 + 8; // rough row height
+            let left = rect.left;
+            if (left + POPUP_W > window.innerWidth) left = Math.max(4, window.innerWidth - POPUP_W - 4);
+            // Above the caret the popup hangs from its bottom edge, so it stays
+            // against the line whatever its real height is.
+            const above = rect.bottom + popupHeight > window.innerHeight;
+            this.wikilinkAutocomplete.position = { top: above ? rect.top : rect.bottom, left, above };
+        },
+
         // Resolve a Markdown image path to a vault-relative path (forward slashes).
         // Relative paths use the note file's directory as base (same rules as CommonMark / browsers).
         // A leading "/" (not "//") means vault-root-relative.
@@ -1871,7 +1997,9 @@ function noteApp() {
         
         // Scroll to a heading in the editor or preview
         scrollToHeading(heading) {
-            if (this.viewMode === 'preview' || this.viewMode === 'split') {
+            if (this.viewMode === 'edit') {
+                noteEditor?.jumpToHeading(heading.text);
+            } else {
                 // In preview/split mode, scroll the preview pane
                 const preview = document.querySelector(PREVIEW_SELECTOR);
                 if (preview) {
@@ -4585,7 +4713,7 @@ function noteApp() {
             }
         },
         
-        // Highlight search term in the preview
+        // Highlight search term in editor and preview
         highlightSearchTerm(query) {
             if (!query || !query.trim()) {
                 this.clearSearchHighlights();
@@ -4596,6 +4724,12 @@ function noteApp() {
             
             // Highlight in preview (rendered HTML)
             this.highlightInPreview(searchTerm);
+            
+            // After the preview: it starts by clearing every highlight
+            noteEditor?.highlight(
+                (text) => this.findFoldedMatches(text, searchTerm),
+                { scroll: this.viewMode === 'edit' }
+            );
         },
         
         // Fold text the way the backend search does (case and accents ignored),
@@ -4783,6 +4917,8 @@ function noteApp() {
         
         // Clear search highlights
         clearSearchHighlights() {
+            noteEditor?.highlight(null);
+            
             const preview = document.querySelector(PREVIEW_SELECTOR);
             if (!preview) return;
             
@@ -5284,12 +5420,17 @@ function noteApp() {
                     this.canUndo = canUndo;
                     this.canRedo = canRedo;
                 },
+                onSuggest: (suggestion) => this.wlUpdate(suggestion),
+                onSuggestKey: (event) => this.wlOnKeydown(event),
                 onPasteImage: (file) => this.pasteImage(file),
                 onDrop: (event) => {
                     if (!this.draggedItem && !event.dataTransfer?.files?.length) return false;
                     this.onEditorDrop(event);
                     return true;
                 },
+            });
+            element.addEventListener('scroll', () => {
+                if (this.wikilinkAutocomplete.open) this.wlUpdatePosition();
             });
         },
         
