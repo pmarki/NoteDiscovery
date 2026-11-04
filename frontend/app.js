@@ -2049,6 +2049,54 @@ function noteApp() {
             }
         },
         
+        // The address of a file on our own media endpoint, or null for anything else.
+        // Parsed rather than prefix-matched, so /api/media/../x cannot pass and
+        // javascript: resolves to a foreign origin.
+        safeMediaApiSrc(src) {
+            try {
+                const url = new URL(src, window.location.origin);
+                if (url.origin === window.location.origin && url.pathname.startsWith('/api/media/')) {
+                    return url.pathname + url.search + url.hash;
+                }
+            } catch (e) {
+                // Unparseable, so not one of ours
+            }
+            return null;
+        },
+
+        // Embed for local audio, video or PDF, or null if src is not local media.
+        // These are created after DOMPurify has run, so nothing sanitizes them
+        // later: the values must go in through DOM properties, never through markup.
+        buildMediaEmbed(mediaType, src, altText) {
+            const safeSrc = this.safeMediaApiSrc(src);
+            const kinds = {
+                audio: { tag: 'audio', wrapperClass: 'media-audio' },
+                video: { tag: 'video', wrapperClass: 'media-video' },
+                document: { tag: 'iframe', wrapperClass: 'media-pdf' },
+            };
+            const kind = kinds[mediaType];
+            if (!safeSrc || !kind) return null;
+
+            const element = document.createElement(kind.tag);
+            element.setAttribute('src', safeSrc);
+            element.setAttribute('title', altText);
+            if (mediaType !== 'document') {
+                element.setAttribute('controls', '');
+                element.setAttribute('preload', 'none');
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = `media-embed ${kind.wrapperClass}`;
+            wrapper.appendChild(element);
+            if (mediaType === 'audio') {
+                const caption = document.createElement('span');
+                caption.className = 'media-caption';
+                caption.textContent = altText;
+                wrapper.appendChild(caption);
+            }
+            return wrapper;
+        },
+
         encodeVaultRelativePathForMediaApi(vaultRelativePath) {
             if (!vaultRelativePath) return '';
             return vaultRelativePath.split('/').map(segment => {
@@ -6978,29 +7026,13 @@ function noteApp() {
                     // Check if this is non-image media and convert to appropriate element
                     const mediaType = self.getMediaType(src);
                     const altText = img.getAttribute('alt') || src.split('/').pop().replace(/\.[^/.]+$/, '');
-                    const safeAlt = altText.replace(/"/g, '&quot;');
                     
                     // Only convert LOCAL media to embedded elements (security)
                     // External non-image media gets styled links instead
                     if (isLocal || src.startsWith('/api/media/')) {
-                        if (mediaType === 'audio') {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'media-embed media-audio';
-                            wrapper.innerHTML = `<audio controls preload="none" src="${src}" title="${safeAlt}"></audio><span class="media-caption">${safeAlt}</span>`;
-                            img.replaceWith(wrapper);
-                            return;
-                        } else if (mediaType === 'video') {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'media-embed media-video';
-                            wrapper.innerHTML = `<video controls preload="none" poster="" src="${src}" title="${safeAlt}"></video>`;
-                            img.replaceWith(wrapper);
-                            return;
-                        } else if (mediaType === 'document') {
-                            // Local PDFs: show iframe preview
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'media-embed media-pdf';
-                            wrapper.innerHTML = `<iframe src="${src}" title="${safeAlt}"></iframe>`;
-                            img.replaceWith(wrapper);
+                        const embed = self.buildMediaEmbed(mediaType, src, altText);
+                        if (embed) {
+                            img.replaceWith(embed);
                             return;
                         }
                     } else if (isExternal && mediaType === 'document') {
@@ -7010,8 +7042,14 @@ function noteApp() {
                         link.target = '_blank';
                         link.rel = 'noopener noreferrer';
                         link.className = 'pdf-link';
-                        link.title = `Open ${safeAlt}`;
-                        link.innerHTML = `<span class="pdf-link-content">📄 ${safeAlt}</span><span class="pdf-link-note">Opens in new tab</span>`;
+                        link.title = `Open ${altText}`;
+                        const linkContent = document.createElement('span');
+                        linkContent.className = 'pdf-link-content';
+                        linkContent.textContent = `📄 ${altText}`;
+                        const linkNote = document.createElement('span');
+                        linkNote.className = 'pdf-link-note';
+                        linkNote.textContent = 'Opens in new tab';
+                        link.append(linkContent, linkNote);
                         img.replaceWith(link);
                         return;
                     }
@@ -7028,14 +7066,13 @@ function noteApp() {
             // Upgrade PDF sentinels emitted by the wiki-embed pre-processor.
             // Must run AFTER DOMPurify because iframes are stripped by the sanitizer.
             tempDiv.querySelectorAll('span.md-pdf-embed').forEach(span => {
-                const src = span.dataset.src || '';
-                const alt = span.dataset.alt || '';
-                if (!src) return;
-                const safeAlt = alt.replace(/"/g, '&quot;');
-                const wrapper = document.createElement('div');
-                wrapper.className = 'media-embed media-pdf';
-                wrapper.innerHTML = `<iframe src="${src}" title="${safeAlt}"></iframe>`;
-                span.replaceWith(wrapper);
+                // A note can contain this span as raw HTML, so its data is untrusted
+                const embed = self.buildMediaEmbed('document', span.dataset.src || '', span.dataset.alt || '');
+                if (embed) {
+                    span.replaceWith(embed);
+                } else {
+                    span.remove();
+                }
             });
 
             // marked renders these disabled, and a disabled input fires no click event.
