@@ -75,15 +75,14 @@
     "placeholder": "Inizia a scrivere in markdown...",
     "drop_hint": "💡 Rilascia qui per inserire alla posizione del cursore...",
     "mode_edit": "Modifica",
-    "mode_split": "Dividi",
-    "mode_preview": "Anteprima",
     "edited": "Modificato {{time}}",
     "just_now": "adesso",
     "minutes_ago": "{{count}}m fa",
     "hours_ago": "{{count}}h fa",
     "days_ago": "{{count}}g fa",
     "tasks_all_checked": "{{changed}} di {{total}} attività selezionate",
-    "tasks_all_unchecked": "{{changed}} di {{total}} attività deselezionate"
+    "tasks_all_unchecked": "{{changed}} di {{total}} attività deselezionate",
+    "mode_read": "Lettura"
   },
   "notes": {
     "confirm_delete": "Eliminare \"{{name}}\"?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "MODALITÀ DEMO",
     "warning": "I contenuti vengono ripristinati ogni giorno. Le modifiche potrebbero essere sovrascritte da altri utenti."
+  },
+  "embed": {
+    "download": "Scarica",
+    "open_new_tab": "Apri in una nuova scheda",
+    "formula": "Formula",
+    "diagram": "Diagramma"
   }
 }

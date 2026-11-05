@@ -75,15 +75,14 @@
     "placeholder": "Schreibe in Markdown...",
     "drop_hint": "💡 Hier ablegen, um an Cursorposition einzufügen...",
     "mode_edit": "Bearbeiten",
-    "mode_split": "Geteilt",
-    "mode_preview": "Vorschau",
     "edited": "Bearbeitet {{time}}",
     "just_now": "gerade eben",
     "minutes_ago": "vor {{count}}m",
     "hours_ago": "vor {{count}}h",
     "days_ago": "vor {{count}}T",
     "tasks_all_checked": "{{changed}} von {{total}} Aufgaben als erledigt markiert",
-    "tasks_all_unchecked": "{{changed}} von {{total}} Aufgaben als offen markiert"
+    "tasks_all_unchecked": "{{changed}} von {{total}} Aufgaben als offen markiert",
+    "mode_read": "Lesen"
   },
   "notes": {
     "confirm_delete": "\"{{name}}\" löschen?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "DEMO-MODUS",
     "warning": "Inhalte werden täglich zurückgesetzt. Änderungen können von anderen Benutzern überschrieben werden."
+  },
+  "embed": {
+    "download": "Herunterladen",
+    "open_new_tab": "In neuem Tab öffnen",
+    "formula": "Formel",
+    "diagram": "Diagramm"
   }
 }

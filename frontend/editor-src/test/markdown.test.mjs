@@ -15,6 +15,7 @@ window.requestAnimationFrame = globalThis.requestAnimationFrame;
 window.Range.prototype.getClientRects = () => [];
 window.Range.prototype.getBoundingClientRect = () => ({});
 document.elementFromPoint = () => null;
+window.Element.prototype.scrollIntoView = () => {};
 
 const { create } = await import('../src/index.js');
 const { escapeMarkdownText } = await import('../src/markdown.js');
@@ -54,6 +55,11 @@ const EXACT = {
     'block math': '$$\nx_1^2 * y\n$$\n',
     'price is not math': 'It costs $5 and $6 today\n',
     'mermaid fence': '```mermaid\ngraph TD; A-->B\n```\n',
+    'mermaid with backticks': '````mermaid\ngraph TD; A["```"]\n````\n',
+    callout: '> [!TIP] Be careful\n> First *para*\n>\n> Second\n',
+    'callout with code': '> [!WARNING]\n> ```js\n> a()\n> ```\n',
+    'sized image': '![photo|100x200](a.png)\n',
+    'sized embed': '![[photo.png|100]]\n',
     'code fence': '```python\nprint("a_b")\n\nx = 1 * 2\n```\n',
     tasks: '- [ ] a\n- [x] b\n  - [ ] nested\n',
     'ordered list': '3. three\n4. four\n',
@@ -151,6 +157,56 @@ test('[[ reports a note query and accepting it makes a wikilink', () => {
     editor.acceptSuggestion('Some Note');
     assert.equal(editor.getMarkdown(), 'See [[Some Note]]\n');
     assert.equal(suggestion, null);
+});
+
+test('every sample loads as a valid document', () => {
+    for (const markdown of [...Object.values(EXACT), '![a](b.png)\n\ntext\n', '- ![a](b.png)\n', '> ![a](b.png)\n']) {
+        editor.setMarkdown(markdown, { resetHistory: true });
+        assert.equal(editor.isValid(), true, markdown);
+    }
+});
+
+test('other math delimiters load as math and save as dollars', () => {
+    assert.equal(roundTrip('Inline \\(a_1\\) here\n'), 'Inline $a_1$ here\n');
+    assert.equal(roundTrip('\\[\nx_1\n\\]\n'), '$$\nx_1\n$$\n');
+});
+
+test('a tilde mermaid fence is a diagram', () => {
+    assert.equal(roundTrip('~~~mermaid\ngraph TD\n~~~\n'), '```mermaid\ngraph TD\n```\n');
+});
+
+test('selected source can be replaced, undone and deleted', () => {
+    editor.setMarkdown('$$\na\n$$\n\ntext\n', { resetHistory: true });
+    editor.selectNodeAt(0);
+    assert.equal(editor.itemAtSelection().kind, 'mathBlock');
+    assert.equal(editor.itemAtSelection().attrs.source, 'a');
+    assert.equal(editor.updateSelectedNode({ source: 'b' }), true);
+    assert.equal(editor.getMarkdown(), '$$\nb\n$$\n\ntext\n');
+    assert.equal(editor.itemAtSelection().kind, 'mathBlock');
+    editor.undo();
+    assert.equal(editor.getMarkdown(), '$$\na\n$$\n\ntext\n');
+    editor.selectNodeAt(0);
+    editor.deleteSelectedNode();
+    assert.equal(editor.getMarkdown(), 'text\n');
+});
+
+test('read-only mode keeps the note and reports no item', () => {
+    editor.setMarkdown('[[A]]\n', { resetHistory: true });
+    editor.setEditable(false);
+    assert.equal(editor.itemAtSelection(), null);
+    assert.equal(editor.getMarkdown(), '[[A]]\n');
+    editor.setEditable(true);
+});
+
+test('search counts matches and moves between them without touching the Markdown', () => {
+    editor.setMarkdown('one two one\n\none\n', { resetHistory: true });
+    const find = (text) => [...text.matchAll(/one/g)].map((match) => [match.index, match.index + 3]);
+    assert.equal(editor.highlight(find), 3);
+    editor.gotoMatch(2);
+    assert.equal(document.querySelectorAll('.search-highlight').length, 3);
+    assert.equal(document.querySelectorAll('.active-match').length, 1);
+    assert.equal(editor.getMarkdown(), 'one two one\n\none\n');
+    assert.equal(editor.highlight(null), 0);
 });
 
 test('![[ reports a media query and accepting it makes an embed', () => {

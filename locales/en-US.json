@@ -75,15 +75,14 @@
     "placeholder": "Start writing in markdown...",
     "drop_hint": "💡 Drop here to insert at cursor position...",
     "mode_edit": "Edit",
-    "mode_split": "Split",
-    "mode_preview": "Preview",
     "edited": "Edited {{time}}",
     "just_now": "just now",
     "minutes_ago": "{{count}}m ago",
     "hours_ago": "{{count}}h ago",
     "days_ago": "{{count}}d ago",
     "tasks_all_checked": "{{changed}} of {{total}} tasks checked",
-    "tasks_all_unchecked": "{{changed}} of {{total}} tasks unchecked"
+    "tasks_all_unchecked": "{{changed}} of {{total}} tasks unchecked",
+    "mode_read": "Read"
   },
   "notes": {
     "confirm_delete": "Delete \"{{name}}\"?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "DEMO MODE",
     "warning": "Contents reset daily. Changes may be overwritten by other users."
+  },
+  "embed": {
+    "download": "Download",
+    "open_new_tab": "Open in new tab",
+    "formula": "Formula",
+    "diagram": "Diagram"
   }
 }

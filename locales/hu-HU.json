@@ -75,15 +75,14 @@
     "placeholder": "Kezdj el írni markdown-ban...",
     "drop_hint": "💡 Beszúrás ide...",
     "mode_edit": "Szerkesztés",
-    "mode_split": "Osztott nézet",
-    "mode_preview": "Előnézet",
     "edited": "Szerkesztve {{time}}",
     "just_now": "éppen most",
     "minutes_ago": "{{count}} perce",
     "hours_ago": "{{count}} órája",
     "days_ago": "{{count}} napja",
     "tasks_all_checked": "{{total}} feladatból {{changed}} bejelölve",
-    "tasks_all_unchecked": "{{total}} feladatból {{changed}} jelölése törölve"
+    "tasks_all_unchecked": "{{total}} feladatból {{changed}} jelölése törölve",
+    "mode_read": "Olvasás"
   },
   "notes": {
     "confirm_delete": "Biztos törlöd a következőt: \"{{name}}\"?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "DEMÓ MÓD",
     "warning": "A tartalom naponta visszaáll. A módosításokat más felhasználók felülírhatják."
+  },
+  "embed": {
+    "download": "Letöltés",
+    "open_new_tab": "Megnyitás új lapon",
+    "formula": "Képlet",
+    "diagram": "Diagram"
   }
 }

@@ -20,23 +20,24 @@ export const SearchHighlight = Extension.create({
 });
 
 /**
- * Mark what `findSpans(text)` returns as [from, to] pairs, or clear with null.
- * Text is searched one node at a time, so a match across a formatting change is missed.
- * Returns the first match's position, or null.
+ * Mark what `findSpans(text)` returns as [from, to] pairs, or clear with null. The match
+ * at `active` stands out. Text is searched one node at a time, so a match across a
+ * formatting change is missed. Returns each match's start position.
  */
-export function highlightMatches(view, findSpans) {
+export function highlightMatches(view, findSpans, active = 0) {
     const { doc, tr } = view.state;
     const decorations = [];
     if (findSpans) {
         doc.descendants((node, pos) => {
             if (!node.isText) return;
             for (const [from, to] of findSpans(node.text)) {
-                decorations.push(Decoration.inline(pos + from, pos + to, { class: 'search-highlight' }));
+                const className = decorations.length === active ? 'search-highlight active-match' : 'search-highlight';
+                decorations.push(Decoration.inline(pos + from, pos + to, { class: className }));
             }
         });
     }
     // Read before create(), which empties the array as it builds the set.
-    const first = decorations[0]?.from ?? null;
+    const positions = decorations.map(({ from }) => from);
     view.dispatch(tr.setMeta(key, DecorationSet.create(doc, decorations)));
-    return first;
+    return positions;
 }

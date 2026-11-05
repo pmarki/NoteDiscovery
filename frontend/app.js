@@ -3,8 +3,51 @@
 // The live Tiptap editor. Kept out of noteApp()'s data: Alpine's reactive proxies break ProseMirror.
 let noteEditor = null;
 
-// The editor reuses the preview's styles and comes first in the DOM, so .markdown-preview alone finds it.
-const PREVIEW_SELECTOR = '.markdown-preview:not(.note-editor-content)';
+// MathJax can't typeset two things at once, so formulas wait their turn here.
+let mathQueue = Promise.resolve();
+
+// Parses an Obsidian-style inline image size spec from an alt-like string.
+// Returns { alt, width, height } — width/height are null when not specified.
+//
+//   parseImageSizeSpec("caption")            -> {alt:"caption",  w:null, h:null}
+//   parseImageSizeSpec("caption|100")        -> {alt:"caption",  w:100,  h:null}
+//   parseImageSizeSpec("caption|100x200")    -> {alt:"caption",  w:100,  h:200}
+//   parseImageSizeSpec("100", {allowSolo})   -> {alt:"",         w:100,  h:null}   (wikilink only)
+//   parseImageSizeSpec("100x200",{allowSolo})-> {alt:"",         w:100,  h:200}    (wikilink only)
+//
+// A dimension of 0 is treated as "unset" (Obsidian convention: |0x200 = height only).
+// allowSolo=true accepts a bare `<digits>` string as a size; used for wikilinks
+// where `![[img|100]]` unambiguously means "size 100" (no alt to confuse). For
+// standard markdown `![100](x)` we default allowSolo=false so "100" stays as alt.
+function parseImageSizeSpec(text, opts = {}) {
+    const allowSolo = opts.allowSolo === true;
+    if (!text) return { alt: '', width: null, height: null };
+    const trimmed = text.trim();
+    if (allowSolo) {
+        const solo = trimmed.match(/^(\d+)(?:[xX](\d+))?$/);
+        if (solo) {
+            const w = parseInt(solo[1], 10);
+            const h = solo[2] !== undefined ? parseInt(solo[2], 10) : null;
+            return {
+                alt: '',
+                width: w > 0 ? w : null,
+                height: (h !== null && h > 0) ? h : null,
+            };
+        }
+    }
+    const idx = trimmed.lastIndexOf('|');
+    if (idx === -1) return { alt: trimmed, width: null, height: null };
+    const size = trimmed.slice(idx + 1).trim();
+    const m = size.match(/^(\d+)(?:[xX](\d+))?$/);
+    if (!m) return { alt: trimmed, width: null, height: null };
+    const w = parseInt(m[1], 10);
+    const h = m[2] !== undefined ? parseInt(m[2], 10) : null;
+    return {
+        alt: trimmed.slice(0, idx).trim(),
+        width: w > 0 ? w : null,
+        height: (h !== null && h > 0) ? h : null,
+    };
+}
 
 // Configuration constants
 const CONFIG = {
@@ -29,9 +72,6 @@ const CONFIG = {
     SHARE_SLUG_WORDS: 4,               // Words pulled from a note when suggesting a link name
     SHARE_SLUG_CHECK_DEBOUNCE: 300,    // ms - Delay before asking the server whether a name is free
     SAVE_INDICATOR_DURATION: 2000,     // ms - How long to show "saved" indicator
-    SCROLL_SYNC_DELAY: 50,             // ms - Delay to prevent scroll sync interference
-    SCROLL_SYNC_MAX_RETRIES: 10,       // Maximum attempts to find editor/preview elements
-    SCROLL_SYNC_RETRY_INTERVAL: 100,   // ms - Time between setupScrollSync retries
     DEFAULT_SIDEBAR_WIDTH: 256,        // px - Default sidebar width (w-64 in Tailwind)
     TOAST_MAX_VISIBLE: 4,              // Max stacked toasts; oldest dropped when exceeded
     TOAST_DURATION_ERROR_MS: 7000,
@@ -72,9 +112,8 @@ const LOCAL_SETTINGS = {
     lastUsedTemplate: { key: 'lastUsedTemplate', type: 'string', default: '' },
     // Number settings with validation
     sidebarWidth: { key: 'sidebarWidth', type: 'number', default: CONFIG.DEFAULT_SIDEBAR_WIDTH, min: 200, max: 600 },
-    editorWidth: { key: 'editorWidth', type: 'number', default: 50, min: 20, max: 80 },
     // String settings with validation
-    viewMode: { key: 'viewMode', type: 'string', default: 'split', valid: ['edit', 'split', 'preview'] },
+    viewMode: { key: 'viewMode', type: 'string', default: 'edit', valid: ['edit', 'read'] },
     // Homepage layout. Cards stay the default so existing vaults look unchanged.
     homepageView: { key: 'homepageView', type: 'string', default: 'cards', valid: ['cards', 'list'] },
     // JSON settings
@@ -237,7 +276,7 @@ function noteApp() {
         currentNote: '',
         currentNoteName: '',
         noteContent: '',
-        viewMode: 'split', // 'edit', 'split', 'preview'
+        viewMode: 'edit', // 'edit', 'read'
         searchQuery: '',
         
         // Graph state (separate overlay, doesn't affect viewMode)
@@ -261,7 +300,7 @@ function noteApp() {
         // LOCAL_SETTINGS so it survives reload; hydrated by loadLocalSettings() at app init,
         // which is why the initial value here matches the LOCAL_SETTINGS default.
         sidebarPanelCollapsed: false,
-        previousViewMode: 'split',
+        previousViewMode: 'edit',
         favorites: [],
         favoritesSet: new Set(), // For O(1) lookups
         favoritesExpanded: true,
@@ -282,11 +321,6 @@ function noteApp() {
         
         // Preview rendering debounce
         _previewDebounceTimeout: null,
-        _lastRenderedContent: '',
-        _lastRenderedNote: '',
-        _cachedRenderedHTML: '',
-        _mathDebounceTimeout: null,
-        _mermaidDebounceTimeout: null,
         
         // Theme state
         currentTheme: 'light',
@@ -338,7 +372,6 @@ function noteApp() {
         backlinks: [], // [{path: 'note.md', name: 'Note', references: [{line_number: 5, context: '...', type: 'wikilink'}]}]
 
         // Scroll sync state
-        isScrolling: false,
         
         // Unified drag state for notes, folders, and media
         draggedItem: null,  // { path: string, type: 'note' | 'folder' | 'image' | 'audio' | 'video' | 'document' }
@@ -376,8 +409,6 @@ function noteApp() {
         mobileSidebarOpen: false,
         
         // Split view resize state
-        editorWidth: 50, // percentage
-        isResizingSplit: false,
         
         // Dropdown state
         showNewDropdown: false,
@@ -398,19 +429,29 @@ function noteApp() {
         // Address popover for the link and image buttons
         linkPrompt: {
             open: false,
-            type: 'link',        // 'link' | 'image'
+            type: 'link',        // 'link' | 'image' | 'wikilink'
             href: '',
             canRemove: false,
             position: { top: 0, left: 0, above: false },
         },
 
-        // Shown while the cursor sits in a link
-        linkPopup: {
+        // Shown while a link, formula, diagram or media file is selected
+        itemPopup: {
             open: false,
-            href: '',
+            label: '',
+            actions: [],         // { label, run }
             position: { top: 0, left: 0, above: false },
         },
-        _linkOutOfView: false, // Hidden only by scrolling, so scrolling back restores it
+        _itemOutOfView: false, // Hidden only by scrolling, so scrolling back restores it
+
+        // Source of a formula or diagram
+        sourcePrompt: {
+            open: false,
+            label: '',
+            value: '',
+            isNew: false,        // Nothing was written yet, so cancelling removes the item
+            position: { top: 0, left: 0, above: false },
+        },
         _noteNameCounts: new Map(), // lower note stem -> count, for name-vs-path insertion
         
         // Template state
@@ -662,6 +703,8 @@ function noteApp() {
         
         // Mermaid state cache
         lastMermaidTheme: null,
+        _mermaidCount: 0,
+        _scrollRestorePending: false, // A note is loading, so scrolling says nothing about where it was left
         
         // Media viewer state
         currentMedia: '',  // Path to current media file (kept as 'currentMedia' for compatibility)
@@ -703,9 +746,7 @@ function noteApp() {
         
         // DOM element cache (to avoid repeated querySelector calls)
         _domCache: {
-            editor: null,
-            previewContainer: null,
-            previewContent: null
+            editor: null
         },
         
         // Initialize app
@@ -820,22 +861,10 @@ function noteApp() {
                 this.refreshDOMCache();
             });
             
-            // Setup mobile view mode handler
-            this.setupMobileViewMode();
-            
             // Watch view mode changes and auto-save
             this.$watch('viewMode', (newValue) => {
                 this.saveViewMode();
-                // Re-apply the saved scroll position to whichever pane just became visible.
-                // x-show toggles display:none/block; an overflow:auto element resets its
-                // scrollTop on that transition, so the previously-hidden pane lands at 0
-                // unless we explicitly restore. $nextTick waits for Alpine to flush the
-                // x-show change, the rAF then waits for layout so scrollHeight is valid.
-                this.$nextTick(() => {
-                    requestAnimationFrame(() => {
-                        this._restoreNoteScroll();
-                    });
-                });
+                noteEditor?.setEditable(newValue === 'edit');
             });
             
             // Watch for changes in note content to re-apply search highlights
@@ -955,31 +984,21 @@ function noteApp() {
                     
                     // View-mode shortcuts (global — fire regardless of focus):
                     //   Ctrl/Cmd + Alt/Option + 1  → Edit
-                    //   Ctrl/Cmd + Alt/Option + 2  → Split  (falls back to Edit on mobile)
-                    //   Ctrl/Cmd + Alt/Option + 3  → Preview
-                    //   Ctrl/Cmd + Alt/Option + V  → Cycle Edit → Split → Preview → Edit
+                    //   Ctrl/Cmd + Alt/Option + 3  → Read
+                    //   Ctrl/Cmd + Alt/Option + V  → Toggle between them
                     // Skipped when no note is open, in Zen mode (edit-only), or while the graph
                     // overlay is showing. Uses e.code for digits so the physical top-row keys
                     // fire on AZERTY/QWERTZ layouts (where 1/2/3 need Shift) and to bypass
                     // Mac's Option+digit dead-key composer (Option+1 = ¡, etc.).
                     if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey
                         && this.currentNote && !this.zenMode && !this.showGraph) {
-                        const isMobile = window.innerWidth <= 768;
                         let targetMode = null;
                         if (e.code === 'Digit1') {
                             targetMode = 'edit';
-                        } else if (e.code === 'Digit2') {
-                            targetMode = isMobile ? 'edit' : 'split';
                         } else if (e.code === 'Digit3') {
-                            targetMode = 'preview';
+                            targetMode = 'read';
                         } else if (e.key.toLowerCase() === 'v') {
-                            if (isMobile) {
-                                targetMode = this.viewMode === 'edit' ? 'preview' : 'edit';
-                            } else {
-                                const order = ['edit', 'split', 'preview'];
-                                const currentIdx = order.indexOf(this.viewMode);
-                                targetMode = order[(currentIdx + 1) % order.length];
-                            }
+                            targetMode = this.viewMode === 'edit' ? 'read' : 'edit';
                         }
                         if (targetMode !== null) {
                             e.preventDefault();
@@ -1009,8 +1028,6 @@ function noteApp() {
                     }
                 });
             }
-            
-            // Note: setupScrollSync() is called when a note is loaded (see loadNote())
             
             // Listen for system theme changes
             if (window.matchMedia) {
@@ -1288,31 +1305,8 @@ function noteApp() {
                     }
                 }
                 
-                // Re-render Mermaid diagrams with new theme if there's a current note
-                if (this.currentNote) {
-                    // Small delay to allow theme CSS to load
-                    setTimeout(() => {
-                        // Clear existing Mermaid renders
-                        const previewContent = document.querySelector(PREVIEW_SELECTOR);
-                        if (previewContent) {
-                            const mermaidContainers = previewContent.querySelectorAll('.mermaid-rendered');
-                            mermaidContainers.forEach(container => {
-                                // Replace with the original code block for re-rendering
-                                const parent = container.parentElement;
-                                if (parent && container.dataset.originalCode) {
-                                    const pre = document.createElement('pre');
-                                    const code = document.createElement('code');
-                                    code.className = 'language-mermaid';
-                                    code.textContent = container.dataset.originalCode;
-                                    pre.appendChild(code);
-                                    parent.replaceChild(pre, container);
-                                }
-                            });
-                        }
-                        // Re-render with new theme
-                        this.renderMermaid();
-                    }, 100);
-                }
+                // Small delay to allow theme CSS to load
+                if (this.currentNote) setTimeout(() => noteEditor?.refreshRendered(['mermaidBlock']), 100);
                 
                 // Refresh graph if visible (longer delay to ensure CSS is applied)
                 if (this.showGraph) {
@@ -1502,6 +1496,7 @@ function noteApp() {
             this._noteLookup.byEndPath.clear();
             this._mediaLookup.clear();
             this._noteNameCounts.clear();
+            this.$nextTick(() => noteEditor?.refreshRendered(['wikilink', 'embed', 'image']));
             
             const setFirst = (map, key, value) => {
                 if (!map.has(key)) map.set(key, value);
@@ -1758,7 +1753,7 @@ function noteApp() {
         },
 
         // Embed for local audio, video or PDF, or null if src is not local media.
-        // These are created after DOMPurify has run, so nothing sanitizes them
+        // Nothing sanitizes these
         // later: the values must go in through DOM properties, never through markup.
         buildMediaEmbed(mediaType, src, altText) {
             const safeSrc = this.safeMediaApiSrc(src);
@@ -2013,30 +2008,9 @@ function noteApp() {
             this.outline = headings;
         },
         
-        // Scroll to a heading in the editor or preview
+        // Scroll to a heading in the editor
         scrollToHeading(heading) {
-            if (this.viewMode === 'edit') {
-                noteEditor?.jumpToHeading(heading.text);
-            } else {
-                // In preview/split mode, scroll the preview pane
-                const preview = document.querySelector(PREVIEW_SELECTOR);
-                if (preview) {
-                    // Find the heading element by text content (more reliable than ID)
-                    const headingElements = preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
-                    for (const el of headingElements) {
-                        if (el.textContent.trim() === heading.text) {
-                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            // Add a brief highlight effect
-                            el.style.transition = 'background-color 0.3s';
-                            el.style.backgroundColor = 'var(--accent-light)';
-                            setTimeout(() => {
-                                el.style.backgroundColor = '';
-                            }, 1000);
-                            return;
-                        }
-                    }
-                }
-            }
+            noteEditor?.jumpToHeading(heading.text);
         },
 
         // Navigate to a backlink (note that links to current note)
@@ -2889,6 +2863,7 @@ function noteApp() {
         
         // Handle drop into editor to create internal link or upload media
         async onEditorDrop(event) {
+            if (this.viewMode !== 'edit') return;
             // Already handled by the editor itself
             if (event.defaultPrevented) return;
             event.preventDefault();
@@ -3189,7 +3164,6 @@ function noteApp() {
             this.currentMedia = mediaPath; // Reuse currentMedia for all media
             this.currentMediaType = mediaType || this.getMediaType(mediaPath) || 'image';
             this.shareInfo = null; // Reset share info
-            this.viewMode = 'preview'; // Use preview mode to show media
             
             // Update browser tab title
             const fileName = mediaPath.split('/').pop();
@@ -4188,130 +4162,6 @@ function noteApp() {
             }
         },
         
-        // Single click entry point for the preview pane.
-        handlePreviewClick(event) {
-            if (this.toggleTaskFromPreview(event)) return;
-            this.handleInternalLink(event);
-        },
-
-        /**
-         * The checkbox a click should toggle: the box itself, or the one belonging to
-         * the task item whose text was clicked. Returns null when the click was meant
-         * for something else — following a link, playing a video, selecting text.
-         */
-        _taskBoxForClick(event) {
-            const target = event.target;
-            if (!target || !target.closest) return null;
-
-            if (target.tagName === 'INPUT' && target.type === 'checkbox') return target;
-
-            // Anything with its own click behaviour, plus code blocks, which people
-            // click to read and copy rather than to tick something off.
-            if (target.closest('a, img, video, audio, iframe, pre, button, label, summary')) return null;
-
-            // detail > 1 is the second half of a double-click, which is someone
-            // selecting a word rather than aiming at the item.
-            if (event.detail !== 1) return null;
-            const selection = window.getSelection();
-            if (selection && !selection.isCollapsed) return null;
-
-            const item = target.closest('li');
-            if (!item) return null;
-
-            // First box in document order belongs to this item unless it sits in a
-            // nested one, which is the case when a plain bullet has task children.
-            const box = item.querySelector('input[type="checkbox"][data-task-index]');
-            return box && box.closest('li') === item ? box : null;
-        },
-
-        /**
-         * Every task in the note to the opposite of the clicked one, so ticking one box
-         * off a mixed list ticks the rest. A single assignment, so one Ctrl+Z undoes it.
-         */
-        _toggleAllTasksFromPreview(box) {
-            const index = parseInt(box.getAttribute('data-task-index'), 10);
-            if (!Number.isInteger(index)) return false;
-
-            const taskLines = this._scanTaskLines(this.noteContent);
-            const clickedLine = taskLines[index];
-            if (clickedLine === undefined) return false;
-
-            const lines = this.noteContent.split('\n');
-            const clicked = lines[clickedLine].match(TASK_ITEM_RE);
-            if (!clicked) return false;
-
-            // Intent comes from the source, not the DOM: clicking the box has already
-            // flipped the input, clicking the text next to it has not.
-            const nextState = clicked[2] === ' ' ? 'x' : ' ';
-            let changed = 0;
-
-            for (const lineIdx of taskLines) {
-                const updated = lines[lineIdx].replace(TASK_ITEM_RE, (m, prefix) => prefix + nextState);
-                if (updated !== lines[lineIdx]) {
-                    lines[lineIdx] = updated;
-                    changed++;
-                }
-            }
-            if (!changed) return true;
-
-            this.noteContent = lines.join('\n');
-            this.autoSave();
-            this.toast(
-                this.t(nextState === 'x' ? 'editor.tasks_all_checked' : 'editor.tasks_all_unchecked',
-                    { changed, total: taskLines.length })
-            );
-            return true;
-        },
-
-        /** Tick/untick the clicked task item in the source. True when it was a task. */
-        toggleTaskFromPreview(event) {
-            const box = this._taskBoxForClick(event);
-            if (!box) return false;
-            noteEditor?.flush();
-
-            // Ctrl (Cmd on a Mac) applies the change to every task in the note. Ctrl
-            // leaves the text selection alone, unlike Shift, so the guards in
-            // _taskBoxForClick hold for the box and the item text alike.
-            if (event.ctrlKey || event.metaKey) return this._toggleAllTasksFromPreview(box);
-
-            const index = parseInt(box.getAttribute('data-task-index'), 10);
-            if (!Number.isInteger(index)) return false;
-
-            // Rescanned per click: the note can change between render and click.
-            const lineIdx = this._scanTaskLines(this.noteContent)[index];
-            if (lineIdx === undefined) return false;
-
-            const lines = this.noteContent.split('\n');
-            const toggled = lines[lineIdx].replace(
-                TASK_ITEM_RE,
-                (match, prefix, state) => prefix + (state === ' ' ? 'x' : ' ')
-            );
-            if (toggled === lines[lineIdx]) return false;
-
-            lines[lineIdx] = toggled;
-            this.noteContent = lines.join('\n');
-            this.autoSave();
-            return true;
-        },
-
-        // Handle clicks on internal links in preview
-        handleInternalLink(event) {
-            // Check if clicked element is a link
-            const link = event.target.closest('a');
-            if (!link) return;
-            
-            const href = link.getAttribute('href');
-            if (!href) return;
-            
-            if (this._isExternalHref(href)) {
-                return; // Let external links and API paths work normally
-            }
-            
-            // Prevent default navigation for internal links
-            event.preventDefault();
-            this._openInternalHref(href);
-        },
-        
         // Check if it's an external link or API path (media files, etc.)
         // Safe external protocols: http, https, mailto, tel, ssh, ftp, sftp, and app deep links
         _isExternalHref(href) {
@@ -4589,10 +4439,7 @@ function noteApp() {
                 const data = await response.json();
 
                 this.currentNote = notePath;
-                this._lastRenderedContent = ''; // Clear render cache for new note
-                this._lastRenderedNote = '';
-                this._cachedRenderedHTML = '';
-                this._initializedVideoSources = new Set(); // Clear video cache for new note
+                this._scrollRestorePending = true;
                 this.noteContent = data.content;
                 this._showInEditor(data.content, { resetHistory: true });
                 this.noteBaseHash = data.hash || null;
@@ -4661,17 +4508,11 @@ function noteApp() {
                 this.$nextTick(() => {
                     this.$nextTick(() => {
                         this.refreshDOMCache();
-                        this.setupScrollSync();
-                        // First pass: editor is ready (textarea reflows synchronously). Preview
-                        // may still have scrollHeight=0 because the markdown render pipeline
-                        // (marked + MathJax + Mermaid + syntax highlighting) is async.
-                        this._restoreNoteScroll();
-                        // Second pass on a later frame: by now the preview pane has typically
-                        // rendered and laid out, so its scrollTop write actually sticks. The
-                        // helper is idempotent — re-running for the editor is a no-op.
+                        // On a later frame, once the note has laid out
                         requestAnimationFrame(() => {
                             requestAnimationFrame(() => {
                                 this._restoreNoteScroll();
+                                this._scrollRestorePending = false;
                             });
                         });
 
@@ -4748,14 +4589,10 @@ function noteApp() {
             
             const searchTerm = query.trim();
             
-            // Highlight in preview (rendered HTML)
-            this.highlightInPreview(searchTerm);
-            
-            // After the preview: it starts by clearing every highlight
-            noteEditor?.highlight(
-                (text) => this.findFoldedMatches(text, searchTerm),
-                { scroll: this.viewMode === 'edit' }
-            );
+            this.totalMatches = noteEditor?.highlight(
+                (text) => this.findFoldedMatches(text, searchTerm)
+            ) ?? 0;
+            this.currentMatchIndex = this.totalMatches > 0 ? 0 : -1;
         },
         
         // Fold text the way the backend search does (case and accents ignored),
@@ -4818,97 +4655,12 @@ function noteApp() {
             return spans;
         },
         
-        // Highlight search term in the preview pane
-        highlightInPreview(searchTerm) {
-            const preview = document.querySelector(PREVIEW_SELECTOR);
-            if (!preview) return;
-            
-            // Remove existing highlights
-            this.clearSearchHighlights();
-            
-            // Create a tree walker to find all text nodes
-            const walker = document.createTreeWalker(
-                preview,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
-            
-            const textNodes = [];
-            let node;
-            while (node = walker.nextNode()) {
-                // Skip code blocks and pre tags
-                if (node.parentElement.tagName === 'CODE' || 
-                    node.parentElement.tagName === 'PRE') {
-                    continue;
-                }
-                textNodes.push(node);
-            }
-            
-            let matchIndex = 0;
-            
-            // Highlight matches in text nodes
-            textNodes.forEach(textNode => {
-                const text = textNode.textContent;
-                const spans = this.findFoldedMatches(text, searchTerm);
-                
-                if (spans.length > 0) {
-                    const fragment = document.createDocumentFragment();
-                    let lastIndex = 0;
-                    
-                    for (const [index, matchEnd] of spans) {
-                        // Add text before match
-                        if (index > lastIndex) {
-                            fragment.appendChild(
-                                document.createTextNode(text.substring(lastIndex, index))
-                            );
-                        }
-                        
-                        // Add highlighted match
-                        const mark = document.createElement('mark');
-                        mark.className = 'search-highlight';
-                        mark.setAttribute('data-match-index', matchIndex);
-                        mark.textContent = text.substring(index, matchEnd);
-                        
-                        // First match is active (styled via CSS)
-                        if (matchIndex === 0) {
-                            mark.classList.add('active-match');
-                        }
-                        
-                        fragment.appendChild(mark);
-                        matchIndex++;
-                        
-                        lastIndex = matchEnd;
-                    }
-                    
-                    // Add remaining text
-                    if (lastIndex < text.length) {
-                        fragment.appendChild(
-                            document.createTextNode(text.substring(lastIndex))
-                        );
-                    }
-                    
-                    // Replace text node with highlighted fragment
-                    textNode.parentNode.replaceChild(fragment, textNode);
-                }
-            });
-            
-            // Update total matches and reset current index
-            this.totalMatches = matchIndex;
-            this.currentMatchIndex = matchIndex > 0 ? 0 : -1;
-            
-            // Scroll to first match
-            if (this.totalMatches > 0) {
-                this.scrollToMatch(0);
-            }
-        },
-        
         // Navigate to next search match
         nextMatch() {
             if (this.totalMatches === 0) return;
             
             this.currentMatchIndex = (this.currentMatchIndex + 1) % this.totalMatches;
-            this.scrollToMatch(this.currentMatchIndex);
+            noteEditor?.gotoMatch(this.currentMatchIndex);
         },
         
         // Navigate to previous search match
@@ -4916,48 +4668,12 @@ function noteApp() {
             if (this.totalMatches === 0) return;
             
             this.currentMatchIndex = (this.currentMatchIndex - 1 + this.totalMatches) % this.totalMatches;
-            this.scrollToMatch(this.currentMatchIndex);
-        },
-        
-        // Scroll to a specific match index
-        scrollToMatch(index) {
-            const preview = document.querySelector(PREVIEW_SELECTOR);
-            if (!preview) return;
-            
-            const allMatches = preview.querySelectorAll('mark.search-highlight');
-            if (index < 0 || index >= allMatches.length) return;
-            
-            // Update styling - make current match prominent (via CSS class)
-            allMatches.forEach((mark, i) => {
-                mark.classList.toggle('active-match', i === index);
-            });
-            
-            // Scroll to the match
-            const targetMatch = allMatches[index];
-            const previewContainer = this._domCache.previewContainer;
-            if (previewContainer && targetMatch) {
-                const elementTop = targetMatch.offsetTop;
-                previewContainer.scrollTop = elementTop - 100; // Scroll with some offset
-            }
+            noteEditor?.gotoMatch(this.currentMatchIndex);
         },
         
         // Clear search highlights
         clearSearchHighlights() {
             noteEditor?.highlight(null);
-            
-            const preview = document.querySelector(PREVIEW_SELECTOR);
-            if (!preview) return;
-            
-            const highlights = preview.querySelectorAll('mark.search-highlight');
-            highlights.forEach(mark => {
-                const text = document.createTextNode(mark.textContent);
-                mark.parentNode.replaceChild(text, mark);
-            });
-            
-            // Normalize text nodes to merge adjacent text nodes
-            preview.normalize();
-            
-            // Reset match counters
             this.totalMatches = 0;
             this.currentMatchIndex = -1;
         },
@@ -5048,14 +4764,9 @@ function noteApp() {
         // UNIFIED CREATION FUNCTIONS (reusable from anywhere)
         // =====================================================
         
-        // Switch to split view (if in preview-only mode) and focus editor for new notes
+        // A new note is there to be written in, so leave read mode for it
         focusEditorForNewNote() {
-            // Only switch if in preview-only mode - don't disturb edit or split mode
-            if (this.viewMode === 'preview') {
-                this.viewMode = 'split';
-                this.saveViewMode();
-            }
-            // Focus the editor after a short delay to ensure DOM is updated
+            this.viewMode = 'edit';
             this.$nextTick(() => noteEditor?.focus());
         },
         
@@ -5442,13 +5153,21 @@ function noteApp() {
                 placeholder: () => this.t('editor.placeholder'),
                 resolveImageSrc: (src) => this._editorImageSrc(src),
                 onChange: (value) => this._onEditorChange(value),
-                onStateChange: ({ canUndo, canRedo, inTable, link }) => {
+                drawNode: (name, target, attrs) => this._drawNode(name, target, attrs),
+                decorateCode: (pre) => this.addCopyButtonToCodeBlock(pre),
+                onStateChange: ({ canUndo, canRedo, inTable, item }) => {
                     this.canUndo = canUndo;
                     this.canRedo = canRedo;
                     this.inTable = inTable;
-                    this._updateLinkPopup(link);
+                    this._updateItemPopup(item);
                 },
                 onOpenLink: (event) => this.openEditorLink(event),
+                onOpenWikilink: ({ target }) => this._openInternalHref(this._wikilinkHref(target)),
+                onInsertSource: () => this.openSourcePrompt(noteEditor?.itemAtSelection(), { isNew: true }),
+                onTasksSet: ({ checked, changed, total }) => {
+                    if (!changed) return;
+                    this.toast(this.t(checked ? 'editor.tasks_all_checked' : 'editor.tasks_all_unchecked', { changed, total }));
+                },
                 onSuggest: (suggestion) => this.wlUpdate(suggestion),
                 onSuggestKey: (event) => this.wlOnKeydown(event),
                 onPasteImage: (file) => this.pasteImage(file),
@@ -5458,9 +5177,11 @@ function noteApp() {
                     return true;
                 },
             });
+            noteEditor.setEditable(this.viewMode === 'edit');
             element.addEventListener('scroll', () => {
                 if (this.wikilinkAutocomplete.open) this.wlUpdatePosition();
-                if (this.linkPopup.open || this._linkOutOfView) this._updateLinkPopup(noteEditor?.linkAtSelection());
+                if (this.itemPopup.open || this._itemOutOfView) this._updateItemPopup(noteEditor?.itemAtSelection());
+                this._rememberNoteScroll(element);
             });
         },
         
@@ -5500,11 +5221,11 @@ function noteApp() {
         },
         
         undo() {
-            if (this.currentNote) noteEditor?.undo();
+            if (this.currentNote && this.viewMode === 'edit') noteEditor?.undo();
         },
         
         redo() {
-            if (this.currentNote) noteEditor?.redo();
+            if (this.currentNote && this.viewMode === 'edit') noteEditor?.redo();
         },
         
         // Toolbar buttons and shortcuts
@@ -5516,30 +5237,319 @@ function noteApp() {
             noteEditor?.format(type);
         },
         
-        // Just below the caret, or just above it when there's no room. Above, the popup
-        // hangs from its bottom edge, so its real height doesn't matter.
-        _linkPopupPosition(rect) {
-            const POPUP_W = 340;
-            const POPUP_H = 46;
+        // Just below `rect`, or just above it when there's no room. Above, the popup hangs
+        // from its bottom edge, so its real height only matters for fitting it at all.
+        _popupPosition(rect, height = 46) {
+            const WIDTH = 340;
             const GAP = 6;
-            const above = rect.bottom + GAP + POPUP_H > window.innerHeight;
+            const left = Math.max(4, Math.min(rect.left, window.innerWidth - WIDTH - 4));
+            if (rect.bottom + GAP + height <= window.innerHeight) return { top: rect.bottom + GAP, left, above: false };
+            if (rect.top - GAP - height >= 0) return { top: rect.top - GAP, left, above: true };
+            return { top: Math.max(4, window.innerHeight - height - 4), left, above: false };
+        },
+        
+        _updateItemPopup(item) {
+            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
+            // The item can scroll out of the editor while the popup is open
+            const visible = item && surface && item.rect.bottom > surface.top && item.rect.top < surface.bottom;
+            const content = visible ? this._itemPopupContent(item) : null;
+            this._itemOutOfView = !!item && !visible;
+            if (!content) {
+                this.itemPopup.open = false;
+                return;
+            }
+            this.itemPopup = { open: true, ...content, position: this._popupPosition(this._visibleRect(item.rect, surface)) };
+        },
+        
+        // A tall item can be bigger than the editor, so only its visible part counts
+        _visibleRect(rect, surface) {
             return {
-                top: above ? rect.top - GAP : rect.bottom + GAP,
-                left: Math.max(4, Math.min(rect.left, window.innerWidth - POPUP_W - 4)),
-                above,
+                top: Math.max(rect.top, surface.top),
+                bottom: Math.min(rect.bottom, surface.bottom),
+                left: rect.left,
             };
         },
         
-        _updateLinkPopup(link) {
-            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
-            // The caret can scroll out of the editor while the popup is open
-            const visible = link && surface && link.rect.top >= surface.top && link.rect.bottom <= surface.bottom;
-            this._linkOutOfView = !!link && !visible;
-            if (!visible) {
-                this.linkPopup.open = false;
+        // What the popup says about `item`, or null if there's nothing to offer
+        _itemPopupContent(item) {
+            const editable = this.viewMode === 'edit';
+            const edit = (run) => (editable ? [{ label: this.t('editor.mode_edit'), run }] : []);
+            const open = (run) => ({ label: this.t('format.open_link'), run });
+            const { kind, attrs } = item;
+            if (kind === 'link') {
+                return {
+                    label: attrs.href,
+                    actions: [...edit(() => this.openLinkPrompt('link')), open(() => this.openLinkAddress(attrs.href))],
+                };
+            }
+            if (kind === 'wikilink') {
+                return {
+                    label: attrs.target,
+                    actions: [
+                        ...edit(() => this.openWikilinkPrompt(item)),
+                        open(() => this._openInternalHref(this._wikilinkHref(attrs.target))),
+                    ],
+                };
+            }
+            if (kind === 'embed' || kind === 'image') {
+                const media = this._mediaInfo(kind, attrs);
+                const actions = media ? this._mediaActions(media) : [];
+                return actions.length ? { label: media.name, actions } : null;
+            }
+            const actions = edit(() => this.openSourcePrompt(noteEditor?.itemAtSelection()));
+            return actions.length ? { label: this._sourceLabel(kind), actions } : null;
+        },
+        
+        _sourceLabel(kind) {
+            return this.t(kind === 'mermaidBlock' ? 'embed.diagram' : 'embed.formula');
+        },
+        
+        _mediaActions(media) {
+            const actions = [];
+            if (media.local) {
+                actions.push({ label: this.t('embed.download'), run: () => this._downloadMedia(media) });
+            }
+            if (media.local || /^(https?:)?\/\//.test(media.url)) {
+                actions.push({ label: this.t('embed.open_new_tab'), run: () => window.open(media.url, '_blank', 'noopener') });
+            }
+            return actions;
+        },
+        
+        _downloadMedia({ url, name }) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        },
+        
+        // Where a media item lives and how to show it, or null for a file that isn't there
+        _mediaInfo(kind, attrs) {
+            let url;
+            let name;
+            let spec;
+            if (kind === 'embed') {
+                const mediaPath = this.resolveMediaWikilink(attrs.target.trim());
+                if (!mediaPath) return null;
+                url = `/api/media/${this.encodeVaultRelativePathForMediaApi(mediaPath)}`;
+                name = attrs.target.trim().split('/').pop();
+                spec = parseImageSizeSpec(attrs.alias || '', { allowSolo: true });
+            } else {
+                url = this._editorImageSrc(attrs.src);
+                if (!url) return null;
+                spec = parseImageSizeSpec(attrs.alt || '');
+                name = url.startsWith('data:') ? (spec.alt || 'image') : this._fileNameOfUrl(url);
+            }
+            return {
+                ...spec,
+                url,
+                name,
+                alt: spec.alt || name.replace(/\.[^/.]+$/, ''),
+                type: url.startsWith('data:') ? 'image' : (this.getMediaType(url.split(/[?#]/)[0]) || 'image'),
+                local: this.safeMediaApiSrc(url) !== null,
+            };
+        },
+        
+        _fileNameOfUrl(url) {
+            const last = url.split(/[?#]/)[0].split('/').pop();
+            try {
+                return decodeURIComponent(last);
+            } catch (e) {
+                return last;
+            }
+        },
+        
+        // Same href the wikilink would have as a link: absolute, because it names a note
+        // rather than a location. Left as written if missing: that's what gets offered for creation.
+        _wikilinkHref(target) {
+            const hashIndex = target.indexOf('#');
+            const base = hashIndex === -1 ? target : target.slice(0, hashIndex);
+            const anchor = hashIndex === -1 ? '' : target.slice(hashIndex);
+            const resolved = base ? this.resolveWikiLink(base.trim()) : null;
+            return encodeURI(resolved !== null ? `/${resolved}${anchor}` : target);
+        },
+        
+        // ---- Drawing the items the editor can't render itself ----
+        // Each may run again on the same element when the item changes.
+        
+        _drawNode(name, element, attrs) {
+            if (name === 'wikilink') this._drawWikilink(element, attrs);
+            else if (name === 'mathInline') this._drawMath(element, attrs.source, false);
+            else if (name === 'mathBlock') this._drawMath(element, attrs.source, true);
+            else if (name === 'mermaidBlock') this._drawMermaid(element, attrs.source);
+            else this._drawMedia(element, name, attrs);
+        },
+        
+        _drawWikilink(element, { target, alias }) {
+            const base = target.split('#')[0].trim();
+            element.textContent = alias || target;
+            element.classList.toggle('wikilink-broken', !!base && this.resolveWikiLink(base) === null);
+        },
+        
+        _drawMath(element, source, display) {
+            if (!source) {
+                element.textContent = this.t('embed.formula');
                 return;
             }
-            this.linkPopup = { open: true, href: link.href, position: this._linkPopupPosition(link.rect) };
+            // Only ever this element: a page-wide pass would rewrite $ in the note's text.
+            element.textContent = display ? `\\[${source}\\]` : `\\(${source}\\)`;
+            mathQueue = mathQueue
+                .then(() => MathJax.typesetPromise([element]))
+                .then(() => {
+                    // Unbalanced braces hide the closing delimiter, so MathJax leaves the text alone
+                    if (!element.querySelector('mjx-container')) element.textContent = source;
+                    // \href makes a real link, and a javascript: one would run when clicked
+                    element.querySelectorAll('[href]').forEach((link) => link.removeAttribute('href'));
+                })
+                .catch((error) => console.error('MathJax typesetting failed:', error));
+        },
+        
+        async _drawMermaid(element, source) {
+            element.dataset.drawing = source;
+            if (!source) {
+                element.textContent = this.t('embed.diagram');
+                return;
+            }
+            const mermaid = await this._mermaidForTheme();
+            if (!mermaid) {
+                element.textContent = source;
+                return;
+            }
+            const id = `mermaid-diagram-${++this._mermaidCount}`;
+            try {
+                const { svg } = await mermaid.render(id, source);
+                if (element.dataset.drawing !== source) return; // Changed while rendering
+                const container = document.createElement('div');
+                container.className = 'mermaid-rendered';
+                container.innerHTML = svg; // Built by Mermaid under securityLevel: 'strict'
+                element.replaceChildren(container);
+            } catch (error) {
+                console.error('Mermaid rendering error:', error);
+                document.getElementById(`d${id}`)?.remove(); // Mermaid leaves this behind on failure
+                if (element.dataset.drawing !== source) return;
+                const code = document.createElement('pre');
+                code.textContent = source;
+                const message = document.createElement('div');
+                message.className = 'note-render-error';
+                message.textContent = `⚠️ Mermaid diagram error: ${error.message}`;
+                element.replaceChildren(code, message);
+            }
+        },
+        
+        // Mermaid, set up for the current theme, or null if it failed to load
+        async _mermaidForTheme() {
+            if (!(await this.loadMermaid())) return null;
+            const theme = this.getThemeType() === 'light' ? 'default' : 'dark';
+            // Only reinitialize if theme changed (performance optimization)
+            if (this.lastMermaidTheme !== theme) {
+                window.mermaid.initialize({
+                    startOnLoad: false,
+                    theme,
+                    securityLevel: 'strict', // Use strict for better security
+                    fontFamily: 'inherit',
+                    // v11 changed useMaxWidth defaults - restore responsive behavior
+                    flowchart: { useMaxWidth: true },
+                    sequence: { useMaxWidth: true },
+                    gantt: { useMaxWidth: true },
+                    journey: { useMaxWidth: true },
+                    timeline: { useMaxWidth: true },
+                    class: { useMaxWidth: true },
+                    state: { useMaxWidth: true },
+                    er: { useMaxWidth: true },
+                    pie: { useMaxWidth: true },
+                    quadrantChart: { useMaxWidth: true },
+                    requirement: { useMaxWidth: true },
+                    mindmap: { useMaxWidth: true },
+                    gitGraph: { useMaxWidth: true }
+                });
+                this.lastMermaidTheme = theme;
+            }
+            return window.mermaid;
+        },
+        
+        _drawMedia(element, kind, attrs) {
+            const media = this._mediaInfo(kind, attrs);
+            // Redrawn whenever the file list reloads, which must not restart a playing video
+            const key = media ? `${media.url}|${media.alt}|${media.width}|${media.height}` : `missing|${attrs.target}`;
+            if (element.dataset.drawn === key) return;
+            element.dataset.drawn = key;
+            element.replaceChildren();
+            
+            if (!media) {
+                const name = attrs.target || attrs.src || '';
+                const type = this.getMediaType(name);
+                const icon = { audio: '🎵', video: '🎬', document: '📄' }[type] || '🖼️';
+                element.className = 'note-chip wikilink-broken';
+                element.textContent = `${icon} ${name}`;
+                return;
+            }
+            if (media.type === 'image' || media.type === 'drawing') {
+                element.className = 'note-media';
+                const image = document.createElement('img');
+                image.setAttribute('src', media.url);
+                image.setAttribute('alt', media.alt);
+                image.setAttribute('title', media.alt);
+                if (media.width) image.style.width = `${media.width}px`;
+                if (media.height) image.style.height = `${media.height}px`;
+                element.appendChild(image);
+                return;
+            }
+            const embed = this.buildMediaEmbed(media.type, media.url, media.alt);
+            if (!embed) {
+                // External audio, video and PDFs are never embedded
+                element.className = 'note-chip';
+                element.textContent = `${media.type === 'document' ? '📄' : '🔗'} ${media.name}`;
+                return;
+            }
+            element.className = 'note-media note-media-block';
+            if (media.type === 'video') embed.querySelector('video').preload = 'metadata';
+            if (media.type === 'document') {
+                // Clicks inside the PDF never reach the page, so it needs something to click
+                const bar = document.createElement('span');
+                bar.className = 'note-media-bar';
+                bar.textContent = `📄 ${media.name}`;
+                element.appendChild(bar);
+            }
+            element.appendChild(embed);
+        },
+        
+        // Ask for the source of a formula or diagram
+        openSourcePrompt(item, { isNew = false } = {}) {
+            if (!item) return;
+            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
+            this.sourcePrompt = {
+                open: true,
+                label: this._sourceLabel(item.kind),
+                value: item.attrs.source || '',
+                isNew,
+                position: this._popupPosition(surface ? this._visibleRect(item.rect, surface) : item.rect, 190),
+            };
+            this.$nextTick(() => document.getElementById('source-prompt-input')?.focus());
+        },
+        
+        applySourcePrompt() {
+            const source = this.sourcePrompt.value.trim();
+            this.sourcePrompt.open = false;
+            if (source) noteEditor?.updateSelectedNode({ source });
+            else noteEditor?.deleteSelectedNode();
+        },
+        
+        closeSourcePrompt() {
+            this.sourcePrompt.open = false;
+            if (this.sourcePrompt.isNew) noteEditor?.deleteSelectedNode();
+            else noteEditor?.focus();
+        },
+        
+        openWikilinkPrompt(item) {
+            this.linkPrompt = {
+                open: true,
+                type: 'wikilink',
+                href: item.attrs.target,
+                canRemove: true,
+                position: this._popupPosition(item.rect),
+            };
+            this._focusLinkPrompt();
         },
         
         // Ask for an address at the cursor, starting from the link already there
@@ -5552,8 +5562,12 @@ function noteApp() {
                 type,
                 href: existing,
                 canRemove: !!existing,
-                position: this._linkPopupPosition(rect),
+                position: this._popupPosition(rect),
             };
+            this._focusLinkPrompt();
+        },
+        
+        _focusLinkPrompt() {
             this.$nextTick(() => {
                 const input = document.getElementById('link-prompt-input');
                 input?.focus();
@@ -5567,9 +5581,13 @@ function noteApp() {
                 this.closeLinkPrompt();
                 return;
             }
-            const applied = this.linkPrompt.type === 'link'
-                ? noteEditor?.setLink(address)
-                : noteEditor?.insertImage(address);
+            const apply = {
+                link: () => noteEditor?.setLink(address),
+                image: () => noteEditor?.insertImage(address),
+                // Anything else would change what the [[...]] means when it's read back
+                wikilink: () => !/[[\]|\n]/.test(address) && noteEditor?.updateSelectedNode({ target: address }),
+            };
+            const applied = apply[this.linkPrompt.type]();
             if (!applied) {
                 this.toast(this.t('format.invalid_link'), { type: 'warning' });
                 return;
@@ -5578,7 +5596,8 @@ function noteApp() {
         },
         
         removeLinkFromPrompt() {
-            noteEditor?.removeLink();
+            if (this.linkPrompt.type === 'wikilink') noteEditor?.deleteSelectedNode();
+            else noteEditor?.removeLink();
             this.linkPrompt.open = false;
         },
         
@@ -5587,7 +5606,7 @@ function noteApp() {
             noteEditor?.focus();
         },
         
-        // Ctrl/Cmd+click on a link in the editor: a plain click only places the cursor
+        // Ctrl/Cmd+click on a link, or any click in read mode: otherwise it only places the cursor
         openEditorLink(event) {
             this.openLinkAddress(event.target.closest('a')?.getAttribute('href'));
         },
@@ -5843,9 +5862,6 @@ function noteApp() {
                 this.currentNote = '';
                 this.noteContent = '';
                 this.currentNoteName = '';
-                this._lastRenderedContent = '';
-                this._lastRenderedNote = '';
-                this._cachedRenderedHTML = '';
                 document.title = this.appName;
                 window.history.replaceState({}, '', '/');
             }
@@ -5893,21 +5909,6 @@ function noteApp() {
             await this.applyFilters();
         },
         
-        // Trigger MathJax typesetting after DOM update
-        typesetMath() {
-            if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
-                // Use a small delay to ensure DOM is updated
-                setTimeout(() => {
-                    const previewContent = document.querySelector(PREVIEW_SELECTOR);
-                    if (previewContent) {
-                        MathJax.typesetPromise([previewContent]).catch((err) => {
-                            console.error('MathJax typesetting failed:', err);
-                        });
-                    }
-                }, 10);
-            }
-        },
-        
         /**
          * Mermaid's core is ~650 KB across two dozen chunks, so it is fetched on first
          * use rather than at page load: most notes contain no diagrams. Diagram types
@@ -5924,92 +5925,6 @@ function noteApp() {
                     });
             }
             return window.mermaidReady;
-        },
-        
-        // Render Mermaid diagrams
-        async renderMermaid() {
-            // Use requestAnimationFrame for better performance than setTimeout
-            requestAnimationFrame(async () => {
-                const previewContent = document.querySelector(PREVIEW_SELECTOR);
-                if (!previewContent) return;
-                
-                // Find all code blocks with language 'mermaid'
-                const mermaidBlocks = previewContent.querySelectorAll('pre code.language-mermaid');
-                
-                // Early return if no diagrams to render, before paying for the library
-                if (mermaidBlocks.length === 0) return;
-                
-                if (!(await this.loadMermaid())) return;
-                
-                // Get the appropriate theme based on current app theme
-                const themeType = this.getThemeType();
-                const mermaidTheme = themeType === 'light' ? 'default' : 'dark';
-                
-                // Only reinitialize if theme changed (performance optimization)
-                if (this.lastMermaidTheme !== mermaidTheme) {
-                    window.mermaid.initialize({ 
-                        startOnLoad: false,
-                        theme: mermaidTheme,
-                        securityLevel: 'strict', // Use strict for better security
-                        fontFamily: 'inherit',
-                        // v11 changed useMaxWidth defaults - restore responsive behavior
-                        flowchart: { useMaxWidth: true },
-                        sequence: { useMaxWidth: true },
-                        gantt: { useMaxWidth: true },
-                        journey: { useMaxWidth: true },
-                        timeline: { useMaxWidth: true },
-                        class: { useMaxWidth: true },
-                        state: { useMaxWidth: true },
-                        er: { useMaxWidth: true },
-                        pie: { useMaxWidth: true },
-                        quadrantChart: { useMaxWidth: true },
-                        requirement: { useMaxWidth: true },
-                        mindmap: { useMaxWidth: true },
-                        gitGraph: { useMaxWidth: true }
-                    });
-                    this.lastMermaidTheme = mermaidTheme;
-                }
-                
-                for (let i = 0; i < mermaidBlocks.length; i++) {
-                    const block = mermaidBlocks[i];
-                    const pre = block.parentElement;
-                    
-                    // Skip if already rendered (performance optimization)
-                    if (pre.querySelector('.mermaid-rendered')) continue;
-                    
-                    try {
-                        const code = block.textContent;
-                        const id = `mermaid-diagram-${Date.now()}-${i}`;
-                        
-                        // Render the diagram
-                        const { svg } = await window.mermaid.render(id, code);
-                        
-                        // Create a container for the rendered diagram
-                        const container = document.createElement('div');
-                        container.className = 'mermaid-rendered';
-                        container.style.cssText = 'background-color: transparent; padding: 20px; text-align: center; overflow-x: auto;';
-                        container.innerHTML = svg;
-                        // Store original code for theme re-rendering
-                        container.dataset.originalCode = code;
-                        // Preserve scroll-sync anchor if the code block was tagged
-                        // by _annotateSourceAnchors. Without this the rendered
-                        // diagram becomes invisible to _getScrollAnchors and any
-                        // fence landmarks that got replaced disappear.
-                        const anchorLine = pre.getAttribute('data-source-line');
-                        if (anchorLine) container.setAttribute('data-source-line', anchorLine);
-                        
-                        // Replace the code block with the rendered diagram
-                        pre.parentElement.replaceChild(container, pre);
-                    } catch (error) {
-                        console.error('Mermaid rendering error:', error);
-                        // Add error indicator to the code block
-                        const errorMsg = document.createElement('div');
-                        errorMsg.style.cssText = 'color: var(--error); padding: 10px; border-left: 3px solid var(--error); margin-top: 10px;';
-                        errorMsg.textContent = `⚠️ Mermaid diagram error: ${error.message}`;
-                        pre.parentElement.insertBefore(errorMsg, pre.nextSibling);
-                    }
-                }
-            });
         },
         
         // Get current theme type (light or dark)
@@ -6039,530 +5954,9 @@ function noteApp() {
         },
         
         
-        // Computed property for rendered markdown
-        get renderedMarkdown() {
-            if (!this.noteContent) return '<p style="color: var(--text-tertiary);">Nothing to preview yet...</p>';
-            
-            // Performance: Return cached HTML if content hasn't changed
-            if (this.noteContent === this._lastRenderedContent &&
-                this.currentNote === this._lastRenderedNote &&
-                this._cachedRenderedHTML) {
-                return this._cachedRenderedHTML;
-            }
-            
-            // Strip YAML frontmatter from content before rendering
-            let contentToRender = this.noteContent;
-            if (contentToRender.trim().startsWith('---')) {
-                const lines = contentToRender.split('\n');
-                if (lines[0].trim() === '---') {
-                    // Find closing ---
-                    let endIdx = -1;
-                    for (let i = 1; i < lines.length; i++) {
-                        if (lines[i].trim() === '---') {
-                            endIdx = i;
-                            break;
-                        }
-                    }
-                    if (endIdx !== -1) {
-                        // Remove frontmatter (including the closing ---) and any empty lines after it
-                        contentToRender = lines.slice(endIdx + 1).join('\n').trim();
-                    }
-                }
-            }
-            
-            // Convert Obsidian-style wikilinks: [[note]] or [[note|display text]]
-            // Must be done before marked.parse() to avoid conflicts with markdown syntax
-            // BUT we need to protect code blocks first to avoid converting [[text]] inside code
-            const self = this; // Reference for closure
-
-            // Parses an Obsidian-style inline image size spec from an alt-like string.
-            // Returns { alt, width, height } — width/height are null when not specified.
-            //
-            //   parseImageSizeSpec("caption")            -> {alt:"caption",  w:null, h:null}
-            //   parseImageSizeSpec("caption|100")        -> {alt:"caption",  w:100,  h:null}
-            //   parseImageSizeSpec("caption|100x200")    -> {alt:"caption",  w:100,  h:200}
-            //   parseImageSizeSpec("100", {allowSolo})   -> {alt:"",         w:100,  h:null}   (wikilink only)
-            //   parseImageSizeSpec("100x200",{allowSolo})-> {alt:"",         w:100,  h:200}    (wikilink only)
-            //
-            // A dimension of 0 is treated as "unset" (Obsidian convention: |0x200 = height only).
-            // allowSolo=true accepts a bare `<digits>` string as a size; used for wikilinks
-            // where `![[img|100]]` unambiguously means "size 100" (no alt to confuse). For
-            // standard markdown `![100](x)` we default allowSolo=false so "100" stays as alt.
-            const parseImageSizeSpec = (text, opts = {}) => {
-                const allowSolo = opts.allowSolo === true;
-                if (!text) return { alt: '', width: null, height: null };
-                const trimmed = text.trim();
-                if (allowSolo) {
-                    const solo = trimmed.match(/^(\d+)(?:[xX](\d+))?$/);
-                    if (solo) {
-                        const w = parseInt(solo[1], 10);
-                        const h = solo[2] !== undefined ? parseInt(solo[2], 10) : null;
-                        return {
-                            alt: '',
-                            width: w > 0 ? w : null,
-                            height: (h !== null && h > 0) ? h : null,
-                        };
-                    }
-                }
-                const idx = trimmed.lastIndexOf('|');
-                if (idx === -1) return { alt: trimmed, width: null, height: null };
-                const size = trimmed.slice(idx + 1).trim();
-                const m = size.match(/^(\d+)(?:[xX](\d+))?$/);
-                if (!m) return { alt: trimmed, width: null, height: null };
-                const w = parseInt(m[1], 10);
-                const h = m[2] !== undefined ? parseInt(m[2], 10) : null;
-                return {
-                    alt: trimmed.slice(0, idx).trim(),
-                    width: w > 0 ? w : null,
-                    height: (h !== null && h > 0) ? h : null,
-                };
-            };
-
-            // Step 0: GFM/GLFM callouts. Runs BEFORE code-block extraction so
-            // fences nested in a callout blockquote lose their `> ` prefix on
-            // the closer — otherwise CommonMark won't see a valid fence closer
-            // once restored inside <div class="callout-body"> and the block
-            // runs unclosed. Fence-aware so `> [!TIP]` literal inside a
-            // top-level code block is not misread as a callout.
-            {
-                const CALLOUT_RE = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i;
-                const CALLOUT_ICONS = { note: 'ℹ️', tip: '💡', important: '❗', warning: '⚠️', caution: '🛑' };
-                const CALLOUT_TITLES = { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' };
-                // Fence opener at 0-3 spaces indent (CommonMark). Captured
-                // group holds the fence chars so the closer must match char + length.
-                const FENCE_OPEN_RE = /^\s{0,3}(`{3,}|~{3,})/;
-                const escapeAttr = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-                const srcLines = contentToRender.split('\n');
-                const outLines = [];
-                let li = 0;
-                let fenceChar = null; // '`' or '~' when inside a top-level fence
-                let fenceLen = 0;
-                while (li < srcLines.length) {
-                    const line = srcLines[li];
-
-                    // Inside a top-level fence: pass through opaquely.
-                    if (fenceChar) {
-                        outLines.push(line);
-                        const closeRe = new RegExp('^\\s{0,3}' + (fenceChar === '`' ? '`' : '~') + '{' + fenceLen + ',}\\s*$');
-                        if (closeRe.test(line)) { fenceChar = null; fenceLen = 0; }
-                        li++;
-                        continue;
-                    }
-
-                    const fenceOpen = line.match(FENCE_OPEN_RE);
-                    if (fenceOpen) {
-                        fenceChar = fenceOpen[1][0];
-                        fenceLen = fenceOpen[1].length;
-                        outLines.push(line);
-                        li++;
-                        continue;
-                    }
-
-                    const m = line.match(CALLOUT_RE);
-                    if (!m) {
-                        outLines.push(line);
-                        li++;
-                        continue;
-                    }
-                    const type = m[1].toLowerCase();
-                    const title = escapeAttr((m[2] || '').trim() || CALLOUT_TITLES[type]);
-                    const icon = CALLOUT_ICONS[type];
-                    const bodyLines = [];
-                    li++;
-                    // Fence lines inside the callout also start with `>`, so
-                    // they get absorbed and stripped, leaving a clean fence.
-                    while (li < srcLines.length && srcLines[li].startsWith('>')) {
-                        bodyLines.push(srcLines[li].replace(/^>\s?/, ''));
-                        li++;
-                    }
-                    outLines.push(
-                        '',
-                        `<div class="callout callout-${type}">`,
-                        `<div class="callout-title"><span class="callout-icon" aria-hidden="true">${icon}</span><span class="callout-title-text">${title}</span></div>`,
-                        `<div class="callout-body">`,
-                        '',
-                        bodyLines.join('\n'),
-                        '',
-                        `</div>`,
-                        `</div>`,
-                        ''
-                    );
-                }
-                contentToRender = outLines.join('\n');
-            }
-
-            // Step 1: Temporarily replace code blocks and inline code with placeholders
-            const codeBlocks = [];
-            // Protect fenced code blocks (```...```)
-            contentToRender = contentToRender.replace(/```[\s\S]*?```/g, (match) => {
-                codeBlocks.push(match);
-                return `\x00CODEBLOCK${codeBlocks.length - 1}\x00`;
-            });
-            // Protect inline code (`...`)
-            contentToRender = contentToRender.replace(/`[^`]+`/g, (match) => {
-                codeBlocks.push(match);
-                return `\x00CODEBLOCK${codeBlocks.length - 1}\x00`;
-            });
-            
-            // Step 2: Convert media wikilinks FIRST: ![[file.png]] or ![[file.png|alt text]]
-            // Must be before note wikilinks to prevent [[file.png]] from being matched first
-            //
-            // Also supports Obsidian-style inline sizing:
-            //   ![[img.jpg|100]]            -> width 100
-            //   ![[img.jpg|100x200]]        -> width 100, height 200
-            //   ![[img.jpg|caption|100]]    -> alt "caption", width 100
-            // The `allowSolo:true` mode treats a bare `|<digits>` group as a size
-            // (Obsidian's wikilink convention). Standard markdown images require a
-            // pipe inside the alt text and are handled by the DOM walker below.
-            contentToRender = contentToRender.replace(
-                /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-                (match, mediaName, altText) => {
-                    const filename = mediaName.trim();
-                    const rawAlt = altText ? altText.trim() : '';
-                    const spec = parseImageSizeSpec(rawAlt, { allowSolo: true });
-                    // If no explicit alt, fall back to the filename stem.
-                    const alt = spec.alt || filename.replace(/\.[^/.]+$/, '');
-                    // Emit width/height as BOTH HTML attributes (semantics, a11y)
-                    // AND inline style. Tailwind's Preflight `img { height: auto }`
-                    // wins over stylesheet rules that use attribute selectors, so
-                    // inline style is the reliable way to pin the size.
-                    const stylePieces = [];
-                    if (spec.width) stylePieces.push(`width:${spec.width}px`);
-                    if (spec.height) stylePieces.push(`height:${spec.height}px`);
-                    const sizeAttrs = (spec.width ? ` width="${spec.width}"` : '') +
-                                      (spec.height ? ` height="${spec.height}"` : '') +
-                                      (stylePieces.length ? ` style="${stylePieces.join(';')}"` : '');
-                    
-                    // Resolve media path using O(1) lookup
-                    const mediaPath = self.resolveMediaWikilink(filename);
-                    
-                    if (mediaPath) {
-                        // URL-encode path segments for the API
-                        const encodedPath = mediaPath.split('/').map(segment => {
-                            try {
-                                return encodeURIComponent(decodeURIComponent(segment));
-                            } catch (e) {
-                                return encodeURIComponent(segment);
-                            }
-                        }).join('/');
-                        
-                        const safeAlt = alt.replace(/"/g, '&quot;');
-                        const mediaSrc = `/api/media/${encodedPath}`;
-                        const mediaType = self.getMediaType(filename);
-                        
-                        // Return appropriate HTML based on media type.
-                        // Size attributes only apply to images; non-image media
-                        // ignores the size (still strips it from the caption).
-                        switch (mediaType) {
-                            case 'audio':
-                                return `<div class="media-embed media-audio"><audio controls preload="none" src="${mediaSrc}" title="${safeAlt}"></audio><span class="media-caption">${safeAlt}</span></div>`;
-                            case 'video':
-                                return `<div class="media-embed media-video"><video controls preload="none" poster="" src="${mediaSrc}" title="${safeAlt}"></video></div>`;
-                            case 'document':
-                                // DOMPurify strips <iframe>, so emit a sentinel <span>
-                                // that survives sanitization; the DOM walker below
-                                // upgrades it to a media-pdf wrapper + iframe. Issue #239.
-                                return `<span class="md-pdf-embed" data-src="${mediaSrc}" data-alt="${safeAlt}"></span>`;
-                            default: // image
-                                return `<img src="${mediaSrc}" alt="${safeAlt}" title="${safeAlt}"${sizeAttrs}>`;
-                        }
-                    }
-                    
-                    // Media not found - return broken indicator
-                    const safeFilename = filename.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const mediaType = self.getMediaType(filename);
-                    const icon = mediaType === 'audio' ? '🎵' : mediaType === 'video' ? '🎬' : mediaType === 'document' ? '📄' : '🖼️';
-                    return `<span class="wikilink-broken" title="Media not found">${icon} ${safeFilename}</span>`;
-                }
-            );
-            
-            // Step 2b: Convert note wikilinks: [[note]] or [[note|display text]]
-            contentToRender = contentToRender.replace(
-                /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-                (match, target, displayText) => {
-                    const linkTarget = target.trim();
-                    const linkText = displayText ? displayText.trim() : linkTarget;
-                    
-                    // Fast O(1) lookup using pre-built lookup maps
-                    // Handle section anchors: extract base note path
-                    const hashIndex = linkTarget.indexOf('#');
-                    const basePath = hashIndex !== -1 ? linkTarget.substring(0, hashIndex) : linkTarget;
-                    const anchor = hashIndex !== -1 ? linkTarget.substring(hashIndex) : '';
-                    const resolvedPath = basePath === '' ? null : self.resolveWikiLink(basePath);
-                    const noteExists = basePath === '' || resolvedPath !== null;
-                    
-                    // A wikilink names a note, not a location relative to the note it is
-                    // written in, so the href has to be absolute. Left as written when it
-                    // resolves to nothing: that raw target is what the create-from-link
-                    // prompt offers as the path of the new note.
-                    const hrefTarget = resolvedPath !== null ? '/' + resolvedPath + anchor : linkTarget;
-                    
-                    // Escape special chars: href needs quote escaping, text needs HTML escaping
-                    const safeHref = hrefTarget.replace(/"/g, '%22');
-                    const safeText = linkText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    
-                    // Return link with data attribute for styling broken links
-                    const brokenClass = noteExists ? '' : ' class="wikilink-broken"';
-                    return `<a href="${safeHref}"${brokenClass} data-wikilink="true">${safeText}</a>`;
-                }
-            );
-            
-            // (Callouts handled in Step 0, before code-block extraction.)
-
-            contentToRender = contentToRender.replace(
-                /^(\s*[-*+]\s+\[[xX ]\]\s+)(\d+)\.(\s)/gm,
-                '$1$2\\.$3'
-            );
-            contentToRender = contentToRender.replace(
-                /^(\s*[-*+]\s+\[[xX ]\]\s+)([#>*+\-])(\s)/gm,
-                '$1\\$2$3'
-            );
-
-            // Step 3: Restore code blocks
-            contentToRender = contentToRender.replace(/\x00CODEBLOCK(\d+)\x00/g, (match, index) => {
-                return codeBlocks[parseInt(index)];
-            });
-            
-            // Protect LaTeX \(...\) and \[...\] delimiters from marked.js escaping
-            marked.use({
-                extensions: [{
-                    name: 'protectLatexMath',
-                    level: 'inline',
-                    start(src) { return src.match(/\\[\(\[]/)?.index; },
-                    tokenizer(src) {
-                        // Match \(...\) or \[...\]
-                        const match = src.match(/^(\\[\(\[])([\s\S]*?)(\\[\)\]])/);
-                        if (match) {
-                            return {
-                                type: 'html',
-                                raw: match[0],
-                                text: match[0]
-                            };
-                        }
-                    }
-                }]
-            });
-
-            // Configure marked with syntax highlighting
-            marked.setOptions({
-                breaks: true,
-                gfm: true,
-                highlight: function(code, lang) {
-                    if (lang && hljs.getLanguage(lang)) {
-                        try {
-                            return hljs.highlight(code, { language: lang }).value;
-                        } catch (err) {
-                            console.error('Highlight error:', err);
-                        }
-                    }
-                    return hljs.highlightAuto(code).value;
-                }
-            });
-            
-            // Parse markdown
-            let html = marked.parse(contentToRender);
-            
-            // Sanitize HTML to prevent XSS attacks
-            // DOMPurify defaults allow most HTML/SVG tags but strip scripts, iframes, and event handlers
-            // MathJax and Mermaid run AFTER this, so their elements don't need whitelisting
-            html = DOMPurify.sanitize(html);
-            
-            // Post-process: Add target="_blank" to external links and title attributes to images
-            // Parse as DOM to safely manipulate
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            
-            // Find all links
-            const links = tempDiv.querySelectorAll('a');
-            links.forEach(link => {
-                const href = link.getAttribute('href');
-                if (href && typeof href === 'string') {
-                    // Check if it's an external link
-                    const isExternal = href.indexOf('http://') === 0 || 
-                                      href.indexOf('https://') === 0 || 
-                                      href.indexOf('//') === 0;
-                    
-                    if (isExternal) {
-                        link.setAttribute('target', '_blank');
-                        link.setAttribute('rel', 'noopener noreferrer');
-                    }
-                }
-            });
-            
-            // Find all images and transform paths for display
-            // Also convert non-image media (audio, video, PDF) to appropriate elements
-            const images = tempDiv.querySelectorAll('img');
-            images.forEach(img => {
-                // Extract Obsidian-style size spec from standard-markdown alt.
-                // Wikilink images already had their size applied above and their
-                // alt cleaned, so calling this again is a no-op for them.
-                // See wikilink handler comment above about why we set inline style
-                // in addition to the width/height attributes.
-                const rawAlt = img.getAttribute('alt') || '';
-                const spec = parseImageSizeSpec(rawAlt);
-                if (spec.width && !img.hasAttribute('width')) {
-                    img.setAttribute('width', String(spec.width));
-                    img.style.width = spec.width + 'px';
-                }
-                if (spec.height && !img.hasAttribute('height')) {
-                    img.setAttribute('height', String(spec.height));
-                    img.style.height = spec.height + 'px';
-                }
-                if (spec.alt !== rawAlt) {
-                    img.setAttribute('alt', spec.alt);
-                }
-
-                let src = img.getAttribute('src');
-                if (src) {
-                    const isExternal = src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//');
-                    const isLocal = !isExternal && !src.startsWith('data:');
-                    
-                    // Transform relative paths to /api/media/ for serving
-                    if (isLocal && !src.startsWith('/api/media/')) {
-                        const vaultRelative = self.currentNote
-                            ? self.resolveMarkdownMediaPathForNote(self.currentNote, src)
-                            : src.split('#')[0].split('?')[0];
-                        const encodedPath = self.encodeVaultRelativePathForMediaApi(vaultRelative);
-                        src = `/api/media/${encodedPath}`;
-                        img.setAttribute('src', src);
-                    }
-                    
-                    // Check if this is non-image media and convert to appropriate element
-                    const mediaType = self.getMediaType(src);
-                    const altText = img.getAttribute('alt') || src.split('/').pop().replace(/\.[^/.]+$/, '');
-                    
-                    // Only convert LOCAL media to embedded elements (security)
-                    // External non-image media gets styled links instead
-                    if (isLocal || src.startsWith('/api/media/')) {
-                        const embed = self.buildMediaEmbed(mediaType, src, altText);
-                        if (embed) {
-                            img.replaceWith(embed);
-                            return;
-                        }
-                    } else if (isExternal && mediaType === 'document') {
-                        // External PDFs: styled link (opens in new tab)
-                        const link = document.createElement('a');
-                        link.href = src;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        link.className = 'pdf-link';
-                        link.title = `Open ${altText}`;
-                        const linkContent = document.createElement('span');
-                        linkContent.className = 'pdf-link-content';
-                        linkContent.textContent = `📄 ${altText}`;
-                        const linkNote = document.createElement('span');
-                        linkNote.className = 'pdf-link-note';
-                        linkNote.textContent = 'Opens in new tab';
-                        link.append(linkContent, linkNote);
-                        img.replaceWith(link);
-                        return;
-                    }
-                    // External audio/video: leave as broken image for security
-                }
-                
-                // For regular images, set title attribute
-                const altText = img.getAttribute('alt');
-                if (altText) {
-                    img.setAttribute('title', altText);
-                }
-            });
-
-            // Upgrade PDF sentinels emitted by the wiki-embed pre-processor.
-            // Must run AFTER DOMPurify because iframes are stripped by the sanitizer.
-            tempDiv.querySelectorAll('span.md-pdf-embed').forEach(span => {
-                // A note can contain this span as raw HTML, so its data is untrusted
-                const embed = self.buildMediaEmbed('document', span.dataset.src || '', span.dataset.alt || '');
-                if (embed) {
-                    span.replaceWith(embed);
-                } else {
-                    span.remove();
-                }
-            });
-
-            // marked renders these disabled, and a disabled input fires no click event.
-            // The index is how a click finds its line, so only trust it when both sides
-            // counted the same items; otherwise leave the boxes read-only.
-            const taskBoxes = tempDiv.querySelectorAll('input[type="checkbox"]');
-            if (taskBoxes.length && taskBoxes.length === this._scanTaskLines(this.noteContent).length) {
-                taskBoxes.forEach((box, i) => {
-                    box.removeAttribute('disabled');
-                    box.setAttribute('data-task-index', String(i));
-                });
-            }
-
-            // Landmark scroll-sync anchors. Stamps `data-source-line` on the DOM
-            // elements corresponding to block-level constructs whose source line
-            // can be determined from the raw editor content (headings, images,
-            // tables, code fences, hr, block math). Used by setupScrollSync() to
-            // interpolate the editor<->preview mapping accurately across images
-            // and other tall blocks. Runs after all other DOM rewrites so the
-            // final element identity is what gets tagged.
-            try {
-                const landmarks = this._scanSourceLandmarks(this.noteContent);
-                this._annotateSourceAnchors(tempDiv, landmarks);
-            } catch (e) {
-                // Any anchor-building failure must not break rendering. Anchors
-                // are an enhancement, not required for content display.
-                console.warn('scroll-anchor annotation failed:', e);
-            }
-
-            html = tempDiv.innerHTML;
-            
-            // Debounced MathJax rendering (avoid re-running on every keystroke)
-            if (this._mathDebounceTimeout) clearTimeout(this._mathDebounceTimeout);
-            this._mathDebounceTimeout = setTimeout(() => this.typesetMath(), 300);
-            
-            // Debounced Mermaid rendering
-            if (this._mermaidDebounceTimeout) clearTimeout(this._mermaidDebounceTimeout);
-            this._mermaidDebounceTimeout = setTimeout(() => this.renderMermaid(), 300);
-            
-            // Apply syntax highlighting and add copy buttons to code blocks
-            setTimeout(() => {
-                // Use cached reference if available, otherwise query
-                const previewEl = this._domCache.previewContent || document.querySelector(PREVIEW_SELECTOR);
-                if (previewEl) {
-                    // Exclude code blocks that are rendered by other tools (e.g., Mermaid diagrams)
-                    // Note: MathJax uses $$...$$ delimiters (not code blocks) so no exclusion needed
-                    previewEl.querySelectorAll('pre code:not(.language-mermaid)').forEach((block) => {
-                        // Apply syntax highlighting
-                        if (!block.classList.contains('hljs')) {
-                            hljs.highlightElement(block);
-                        }
-                        
-                        // Add copy button if not already present
-                        const pre = block.parentElement;
-                        if (pre && !pre.querySelector('.copy-code-button')) {
-                            this.addCopyButtonToCodeBlock(pre);
-                        }
-                    });
-                    
-                    // Enable video metadata loading (for first frame preview)
-                    // Track by source URL to prevent duplicate requests on re-renders
-                    if (!this._initializedVideoSources) this._initializedVideoSources = new Set();
-                    previewEl.querySelectorAll('video[preload="none"]').forEach((video) => {
-                        const src = video.getAttribute('src');
-                        if (src && !this._initializedVideoSources.has(src)) {
-                            this._initializedVideoSources.add(src);
-                            video.preload = 'metadata';
-                        }
-                    });
-                }
-            }, 0);
-            
-            // Cache the result for performance
-            this._lastRenderedContent = this.noteContent;
-            this._lastRenderedNote = this.currentNote;
-            this._cachedRenderedHTML = html;
-            
-            return html;
-        },
-        
         // Refresh DOM element cache
         refreshDOMCache() {
             this._domCache.editor = document.getElementById('note-editor');
-            this._domCache.previewContent = document.querySelector(PREVIEW_SELECTOR);
-            this._domCache.previewContainer = this._domCache.previewContent ? this._domCache.previewContent.parentElement : null;
         },
         
         // Add copy button to code block
@@ -6728,501 +6122,6 @@ function noteApp() {
             return taskLines;
         },
 
-        /**
-         * Scan raw editor source for block-level landmarks whose source position can be
-         * determined without marked.js (which sees a pre-processed string with mangled
-         * line counts). Lines are 0-indexed to match the scroll handler. Landmarks: fence
-         * openers, headings, standalone images, table first row, hrules, block math.
-         * Frontmatter and fence contents are skipped.
-         */
-        _scanSourceLandmarks(source) {
-            if (typeof source !== 'string' || !source) return [];
-            const lines = source.split('\n');
-            const landmarks = [];
-            let startIdx = 0;
-
-            // Skip YAML frontmatter (mirrors the stripping logic in renderedMarkdown)
-            if (lines[0] && lines[0].trim() === '---') {
-                for (let i = 1; i < lines.length; i++) {
-                    if (lines[i].trim() === '---') {
-                        startIdx = i + 1;
-                        break;
-                    }
-                }
-            }
-
-            let inFence = false;
-            let fenceChar = null;
-            let fenceLen = 0;
-            let inTable = false;
-            let inBlockMath = false;
-
-            // All landmark regexes match ONLY at column 0. CommonMark technically
-            // allows 0-3 spaces of leading indent for these block starts, but the
-            // moment we accept any indent we start capturing list-nested landmarks
-            // (e.g. a fence inside a `- item` continuation), which do NOT render
-            // as top-level DOM children. That would produce wrong-anchor bugs
-            // that are worse than missed anchors. Requiring column 0 keeps the
-            // scanner's landmark stream in strict correspondence with top-level
-            // DOM children, at the cost of missing rare indented top-level
-            // blocks. The safety-net count check in _annotateSourceAnchors
-            // catches any residual mismatch.
-            const FENCE_OPEN = /^(`{3,}|~{3,})/;
-            const HEADING = /^(#{1,6})\s/;
-            // Horizontal rule: 3+ dashes/asterisks/underscores optionally separated by spaces.
-            // Note: setext heading underlines (`text\n---`) match this pattern too, so
-            // we only accept it as a true HR when the previous line is blank — which is
-            // CommonMark's disambiguator between a setext underline and a thematic break.
-            const HR = /^([-*_])(\s*\1){2,}\s*$/;
-            // Setext heading underline: a run of `=` (h1) or `-` (h2) and nothing else.
-            const SETEXT_UNDERLINE = /^(=+|-+)\s*$/;
-            const IMG_MD = /^!\[[^\]]*\]\([^)]*\)\s*$/;
-            const IMG_WIKI = /^!\[\[[^\]]+\]\]\s*$/;
-            const TABLE_ROW = /^\|.+\|\s*$/;
-            const BLOCK_MATH_OPEN = /^\\\[\s*$/;
-            const BLOCK_MATH_CLOSE = /^\\\]\s*$/;
-
-            for (let i = startIdx; i < lines.length; i++) {
-                const line = lines[i];
-                const lineNum = i; // 0-indexed to match editor.scrollTop / lineHeight
-
-                // Inside a fence: pass through until close.
-                if (inFence) {
-                    const closeRe = new RegExp(
-                        '^\\s{0,3}' + (fenceChar === '`' ? '`' : '~') + '{' + fenceLen + ',}\\s*$'
-                    );
-                    if (closeRe.test(line)) {
-                        inFence = false;
-                        fenceChar = null;
-                        fenceLen = 0;
-                    }
-                    inTable = false;
-                    continue;
-                }
-
-                // Inside a block-math region: pass through until close.
-                if (inBlockMath) {
-                    if (BLOCK_MATH_CLOSE.test(line)) inBlockMath = false;
-                    inTable = false;
-                    continue;
-                }
-
-                const fenceOpen = line.match(FENCE_OPEN);
-                if (fenceOpen) {
-                    inFence = true;
-                    fenceChar = fenceOpen[1][0];
-                    fenceLen = fenceOpen[1].length;
-                    landmarks.push({ line: lineNum, kind: 'pre' });
-                    inTable = false;
-                    continue;
-                }
-
-                if (BLOCK_MATH_OPEN.test(line)) {
-                    inBlockMath = true;
-                    landmarks.push({ line: lineNum, kind: 'math' });
-                    inTable = false;
-                    continue;
-                }
-
-                const headingMatch = line.match(HEADING);
-                if (headingMatch) {
-                    // Per-level kind ('h1'..'h6') so that a stray setext-produced
-                    // <h2> in the DOM can never pop an ATX '# heading' landmark
-                    // meant for an <h1>. Levels align 1:1 with tag names.
-                    landmarks.push({ line: lineNum, kind: 'h' + headingMatch[1].length });
-                    inTable = false;
-                    continue;
-                }
-
-                // Setext heading (`text` followed by `===` or `---`). The rendered
-                // heading corresponds to the TEXT line, so that is what the anchor
-                // must point at. Checked before HR because `---` is ambiguous and
-                // CommonMark resolves it as a setext underline whenever it follows a
-                // paragraph. Skipping it entirely leaves the DOM with a heading the
-                // scanner never counted, which fails the per-kind count check and
-                // discards every anchor of that heading level in the note.
-                if (!inTable && i > startIdx && SETEXT_UNDERLINE.test(line)) {
-                    const prev = lines[i - 1];
-                    const prevIsParagraph = prev.trim() !== ''
-                        && !HEADING.test(prev)
-                        && !FENCE_OPEN.test(prev)
-                        && !TABLE_ROW.test(prev)
-                        && !IMG_MD.test(prev)
-                        && !IMG_WIKI.test(prev)
-                        && !BLOCK_MATH_CLOSE.test(prev)
-                        && !SETEXT_UNDERLINE.test(prev);
-                    if (prevIsParagraph) {
-                        landmarks.push({ line: i - 1, kind: line[0] === '=' ? 'h1' : 'h2' });
-                        continue;
-                    }
-                }
-
-                if (HR.test(line)) {
-                    // Only a true horizontal rule if preceded by a blank line (or
-                    // start-of-scan). Otherwise it's a setext heading underline
-                    // and the DOM will produce an <h1>/<h2>, not an <hr>.
-                    const prevBlank = i === startIdx || lines[i - 1].trim() === '';
-                    if (prevBlank) {
-                        landmarks.push({ line: lineNum, kind: 'hr' });
-                    }
-                    inTable = false;
-                    continue;
-                }
-
-                if (IMG_MD.test(line) || IMG_WIKI.test(line)) {
-                    landmarks.push({ line: lineNum, kind: 'img' });
-                    inTable = false;
-                    continue;
-                }
-
-                if (TABLE_ROW.test(line)) {
-                    // Only anchor the first row of a table run
-                    if (!inTable) {
-                        landmarks.push({ line: lineNum, kind: 'table' });
-                        inTable = true;
-                    }
-                    continue;
-                }
-
-                // Anything else breaks a table run
-                if (line.trim() === '' || !TABLE_ROW.test(line)) {
-                    inTable = false;
-                }
-            }
-
-            return landmarks;
-        },
-
-        /**
-         * Attach `data-source-line` to top-level preview blocks whose tag matches the next
-         * landmark of the same kind. Per-kind FIFO queues keep a mismatch in one kind from
-         * derailing another kind's alignment.
-         */
-        _annotateSourceAnchors(root, landmarks) {
-            if (!root || !landmarks || landmarks.length === 0) return;
-
-            const queues = {
-                h1: [], h2: [], h3: [], h4: [], h5: [], h6: [],
-                pre: [], img: [], table: [], hr: [], math: [],
-            };
-            for (const lm of landmarks) {
-                if (queues[lm.kind]) queues[lm.kind].push(lm);
-            }
-
-            // Categorize every top-level DOM child once. Using childNodes.length
-            // (not children.length) for the <p><img></p> check so that a mixed
-            // paragraph like <p>text <img></p> — which has children.length===1
-            // but a text node before the img — does NOT get counted as an img
-            // landmark. That would inflate the img DOM count and either misalign
-            // real image anchors or trigger the safety-net drop below.
-            // A single-media <p> covers all the shapes marked/our pipeline can
-            // emit for `![](...)` and `![[...]]`:
-            //   - <p><img></p>                       plain image
-            //   - <p><video></p> / <p><audio></p>    local A/V (post-transform)
-            //   - <p><div.media-embed></p>           local PDF / external PDF link
-            //   - <p><a.pdf-link></p>                external PDF (as styled link)
-            // childNodes.length === 1 (NOT children.length) rejects mixed inline
-            // paragraphs like `<p>text <img></p>`, which have a text node before
-            // the media element and must not be counted as image landmarks.
-            const isMediaOnlyParagraph = (el) => {
-                if (el.childNodes.length !== 1) return false;
-                const child = el.firstElementChild;
-                if (!child) return false;
-                const t = child.tagName;
-                if (t === 'IMG' || t === 'VIDEO' || t === 'AUDIO') return true;
-                if (t === 'DIV' && child.classList && child.classList.contains('media-embed')) return true;
-                if (t === 'A' && child.classList && child.classList.contains('pdf-link')) return true;
-                return false;
-            };
-
-            const domKinds = [];
-            for (const el of Array.from(root.children)) {
-                let kind = null;
-                const tag = el.tagName;
-                if (/^H[1-6]$/.test(tag)) kind = 'h' + tag[1];
-                else if (tag === 'PRE') kind = 'pre';
-                else if (tag === 'HR') kind = 'hr';
-                else if (tag === 'TABLE') kind = 'table';
-                else if (tag === 'IMG') kind = 'img';
-                else if (tag === 'P' && isMediaOnlyParagraph(el)) kind = 'img';
-                else if (tag === 'DIV' && el.classList && el.classList.contains('media-embed')) kind = 'img';
-                domKinds.push({ el, kind });
-            }
-            const domCounts = {};
-            for (const dk of domKinds) {
-                if (dk.kind) domCounts[dk.kind] = (domCounts[dk.kind] || 0) + 1;
-            }
-
-            // Safety net. For each kind, proceed only if the scanner's landmark
-            // count exactly matches the DOM's top-level child count. Any drift
-            // — e.g. a "|pipe|" line that scanner tagged as a table but marked
-            // did not render as one, or an inline <img> paragraph that got
-            // mis-kinded above — disables the whole kind. Missing anchors are
-            // graceful (sync interpolates through the surviving anchors); wrong
-            // anchors would be worse than no anchors, so this is the right
-            // trade-off.
-            for (const kind of Object.keys(queues)) {
-                if ((domCounts[kind] || 0) !== queues[kind].length) {
-                    queues[kind] = [];
-                }
-            }
-
-            for (const dk of domKinds) {
-                if (dk.kind && queues[dk.kind] && queues[dk.kind].length) {
-                    const lm = queues[dk.kind].shift();
-                    dk.el.setAttribute('data-source-line', String(lm.line));
-                }
-            }
-        },
-
-        /**
-         * Return sorted anchors: [{ line, previewTop }, ...]. previewTop is measured
-         * live each call since top values shift on resize/MathJax/image-load.
-         */
-        _getScrollAnchors() {
-            const container = this._domCache.previewContainer;
-            const previewRoot = this._domCache.previewContent;
-            if (!container || !previewRoot) return null;
-
-            const els = previewRoot.querySelectorAll('[data-source-line]');
-            if (els.length === 0) return [];
-
-            const cRect = container.getBoundingClientRect();
-            const containerScroll = container.scrollTop;
-            const anchors = [];
-            for (const el of els) {
-                const line = parseInt(el.getAttribute('data-source-line'), 10);
-                if (!Number.isFinite(line)) continue;
-                const previewTop = el.getBoundingClientRect().top - cRect.top + containerScroll;
-                anchors.push({ line, previewTop });
-            }
-            anchors.sort((a, b) => a.line - b.line);
-            return anchors;
-        },
-
-        /**
-         * Build the anchor list bracketed by virtual doc-start/doc-end entries, each
-         * { editorPct, previewTop }. Landmarks sit at sourceLine/(totalLines-1) on the
-         * editor axis. With no landmarks it collapses to percentage sync.
-         */
-        _buildAnchorRange(anchors, editor, previewContainer, totalSourceLines) {
-            const maxPreviewTop = Math.max(0, previewContainer.scrollHeight - previewContainer.clientHeight);
-            const denom = Math.max(1, totalSourceLines - 1);
-
-            const list = [{ editorPct: 0, previewTop: 0 }];
-            if (anchors && anchors.length) {
-                for (const a of anchors) {
-                    if (!a || !Number.isFinite(a.previewTop) || a.previewTop < 0) continue;
-                    // A landmark inside the final viewport of either pane can never be
-                    // brought to that pane's top, so it has no usable anchor position.
-                    // These must be dropped rather than clamped: a clamped entry sits
-                    // at the end of the range, swallows every later anchor via the
-                    // monotonicity check, and blocks the doc-end anchor below - which
-                    // left the preview stopping short of the bottom.
-                    if (a.previewTop >= maxPreviewTop) continue;
-                    // Uniform-wrap approximation: rendered editor lines don't map to source lines.
-                    const editorPct = Math.max(0, Math.min(1, a.line / denom));
-                    if (editorPct >= 1) continue;
-                    const last = list[list.length - 1];
-                    // Enforce strict monotonicity on both axes so the bracket
-                    // search below is correct. Anchors that would violate
-                    // (usually two landmarks on the same wrapped line, or
-                    // very close together) are skipped.
-                    if (editorPct > last.editorPct && a.previewTop >= last.previewTop) {
-                        list.push({ editorPct, previewTop: a.previewTop });
-                    }
-                }
-            }
-            // Every surviving entry is strictly inside both scroll ranges, so the
-            // doc-end anchor always applies. It guarantees that scrolling either pane
-            // to its end scrolls the other to its end.
-            list.push({ editorPct: 1, previewTop: maxPreviewTop });
-            return { list, maxPreviewTop };
-        },
-
-        /**
-         * Map the editor's current scroll percentage to a preview scrollTop
-         * by interpolating between the bracketing landmark pair (with virtual
-         * doc-start and doc-end anchors provided by _buildAnchorRange).
-         */
-        _editorPctToPreviewScrollTop(editorPct, anchors, editor, previewContainer, totalSourceLines) {
-            const { list, maxPreviewTop } = this._buildAnchorRange(anchors, editor, previewContainer, totalSourceLines);
-
-            let before = list[0];
-            let after = list[list.length - 1];
-            for (let i = 1; i < list.length; i++) {
-                if (list[i].editorPct >= editorPct) {
-                    before = list[i - 1];
-                    after = list[i];
-                    break;
-                }
-            }
-            const pctSpan = after.editorPct - before.editorPct;
-            const pxSpan = after.previewTop - before.previewTop;
-            const localPct = pctSpan > 0 ? (editorPct - before.editorPct) / pctSpan : 0;
-            const clamped = Math.max(0, Math.min(1, localPct));
-            const target = before.previewTop + clamped * pxSpan;
-            return Math.max(0, Math.min(maxPreviewTop, target));
-        },
-
-        /**
-         * Reverse mapping: preview scrollTop → editor scroll percentage.
-         */
-        _previewScrollTopToEditorPct(previewScrollTop, anchors, editor, previewContainer, totalSourceLines) {
-            const { list } = this._buildAnchorRange(anchors, editor, previewContainer, totalSourceLines);
-
-            let before = list[0];
-            let after = list[list.length - 1];
-            for (let i = 1; i < list.length; i++) {
-                if (list[i].previewTop >= previewScrollTop) {
-                    before = list[i - 1];
-                    after = list[i];
-                    break;
-                }
-            }
-            const pxSpan = after.previewTop - before.previewTop;
-            const pctSpan = after.editorPct - before.editorPct;
-            const localPct = pxSpan > 0 ? (previewScrollTop - before.previewTop) / pxSpan : 0;
-            const clamped = Math.max(0, Math.min(1, localPct));
-            return before.editorPct + clamped * pctSpan;
-        },
-
-        // Setup scroll synchronization
-        setupScrollSync() {
-            // Use cached references (refresh if not available)
-            if (!this._domCache.editor || !this._domCache.previewContainer) {
-                this.refreshDOMCache();
-            }
-            
-            const editor = this._domCache.editor;
-            const preview = this._domCache.previewContainer;
-            
-            if (!editor || !preview) {
-                // If elements don't exist yet, retry with limit
-                if (!this._setupScrollSyncRetries) this._setupScrollSyncRetries = 0;
-                if (this._setupScrollSyncRetries < CONFIG.SCROLL_SYNC_MAX_RETRIES) {
-                    this._setupScrollSyncRetries++;
-                    setTimeout(() => this.setupScrollSync(), CONFIG.SCROLL_SYNC_RETRY_INTERVAL);
-                } else {
-                    console.warn(`setupScrollSync: Failed to find editor/preview elements after ${CONFIG.SCROLL_SYNC_MAX_RETRIES} retries`);
-                }
-                return;
-            }
-            
-            // Reset retry counter on success
-            this._setupScrollSyncRetries = 0;
-            
-            // Remove old listeners if they exist
-            if (this._editorScrollHandler) {
-                editor.removeEventListener('scroll', this._editorScrollHandler);
-            }
-            if (this._previewScrollHandler) {
-                preview.removeEventListener('scroll', this._previewScrollHandler);
-            }
-
-            // Drop any frame queued by the previous note, so its write can't land
-            // against the new note's content.
-            if (this._editorSyncFrame) {
-                cancelAnimationFrame(this._editorSyncFrame);
-                this._editorSyncFrame = null;
-            }
-            if (this._previewSyncFrame) {
-                cancelAnimationFrame(this._previewSyncFrame);
-                this._previewSyncFrame = null;
-            }
-            
-            // Create new scroll handlers
-            this._editorScrollHandler = () => {
-                if (this.isScrolling) {
-                    this.isScrolling = false;
-                    return;
-                }
-
-                // Coalesce bursts into one sync per frame: _getScrollAnchors()
-                // reads a rect per landmark, so running it per scroll event is
-                // O(landmarks) layout work at event rate. The frame callback
-                // re-reads scrollTop, so it always acts on the latest position.
-                if (this._editorSyncFrame) return;
-                this._editorSyncFrame = requestAnimationFrame(() => {
-                    this._editorSyncFrame = null;
-
-                    // Landmark-anchored sync using EDITOR PERCENTAGE (not line
-                    // index — see _buildAnchorRange for the wrap-safety reason).
-                    // Preview lands at the pixel position interpolated between
-                    // the bracketing landmark pair. Falls back to percentage
-                    // within a span when a note has no landmarks.
-                    const editorScrollable = editor.scrollHeight - editor.clientHeight;
-                    if (editorScrollable <= 0) return;
-
-                    const editorPct = editor.scrollTop / editorScrollable;
-                    const totalLines = (this.noteContent || '').split('\n').length;
-                    const anchors = this._getScrollAnchors();
-
-                    // Store as percentage so cross-view-mode restore works even
-                    // when the editor is hidden (display:none, scrollHeight=0).
-                    if (this.currentNote) {
-                        this.noteScrollPositions[this.currentNote] = { editorPct };
-                    }
-
-                    if (preview.scrollHeight - preview.clientHeight > 0) {
-                        const target = this._editorPctToPreviewScrollTop(
-                            editorPct, anchors, editor, preview, totalLines
-                        );
-                        // Only arm the reentrancy guard when the write will actually
-                        // move the pane. Assigning an unchanged scrollTop fires no
-                        // scroll event, which would leave the guard set and make it
-                        // swallow the user's next real scroll.
-                        if (Math.abs(preview.scrollTop - target) >= 1) {
-                            this.isScrolling = true;
-                            preview.scrollTop = target;
-                        }
-                    }
-                });
-            };
-            
-            this._previewScrollHandler = () => {
-                if (this.isScrolling) {
-                    this.isScrolling = false;
-                    return;
-                }
-
-                // Frame-coalesced for the same reason as the editor handler above.
-                if (this._previewSyncFrame) return;
-                this._previewSyncFrame = requestAnimationFrame(() => {
-                    this._previewSyncFrame = null;
-
-                    const previewScrollable = preview.scrollHeight - preview.clientHeight;
-                    if (previewScrollable <= 0) return;
-
-                    const anchors = this._getScrollAnchors();
-                    const totalLines = (this.noteContent || '').split('\n').length;
-                    const editorPct = this._previewScrollTopToEditorPct(
-                        preview.scrollTop, anchors, editor, preview, totalLines
-                    );
-
-                    // Capture preview-driven scrolls too — this is the only path
-                    // that fires in preview-only mode, where the textarea is
-                    // display:none and never scrolls.
-                    if (this.currentNote) {
-                        this.noteScrollPositions[this.currentNote] = { editorPct };
-                    }
-
-                    const editorScrollable = editor.scrollHeight - editor.clientHeight;
-                    if (editorScrollable > 0) {
-                        const target = editorPct * editorScrollable;
-                        if (Math.abs(editor.scrollTop - target) >= 1) {
-                            this.isScrolling = true;
-                            editor.scrollTop = target;
-                        }
-                    }
-                });
-            };
-            
-            // Attach new listeners
-            editor.addEventListener('scroll', this._editorScrollHandler);
-            preview.addEventListener('scroll', this._previewScrollHandler);
-        },
-        
         // Check if stats plugin is enabled
         async checkStatsPlugin() {
             try {
@@ -7650,145 +6549,26 @@ function noteApp() {
             document.addEventListener('mouseup', stopResize);
         },
         
-        // Start resizing split panes (editor/preview)
-        startSplitResize(event) {
-            this.isResizingSplit = true;
-            event.preventDefault();
-            
-            const container = event.target.parentElement;
-            
-            const resize = (e) => {
-                if (!this.isResizingSplit) return;
-                
-                const containerRect = container.getBoundingClientRect();
-                const mouseX = e.clientX - containerRect.left;
-                const percentage = (mouseX / containerRect.width) * 100;
-                
-                // Clamp between 20% and 80%
-                if (percentage >= 20 && percentage <= 80) {
-                    this.editorWidth = percentage;
-                }
-            };
-            
-            const stopResize = () => {
-                if (this.isResizingSplit) {
-                    this.isResizingSplit = false;
-                    this.saveEditorWidth();
-                    document.removeEventListener('mousemove', resize);
-                    document.removeEventListener('mouseup', stopResize);
-                }
-            };
-            
-            document.addEventListener('mousemove', resize);
-            document.addEventListener('mouseup', stopResize);
-        },
-        
-        // Setup mobile view mode handler (auto-switch from split to edit on mobile)
-        setupMobileViewMode() {
-            const MOBILE_BREAKPOINT = 768; // Match CSS breakpoint
-            let previousWidth = window.innerWidth;
-            
-            const handleResize = () => {
-                const currentWidth = window.innerWidth;
-                const wasMobile = previousWidth <= MOBILE_BREAKPOINT;
-                const isMobile = currentWidth <= MOBILE_BREAKPOINT;
-                
-                // If switching from desktop to mobile and in split mode
-                if (!wasMobile && isMobile && this.viewMode === 'split') {
-                    this.viewMode = 'edit';
-                }
-                
-                previousWidth = currentWidth;
-            };
-            
-            // Listen for window resize
-            window.addEventListener('resize', handleResize);
-            
-            // Check initial state
-            if (window.innerWidth <= MOBILE_BREAKPOINT && this.viewMode === 'split') {
-                this.viewMode = 'edit';
-            }
-        },
-        
-        // Save editor width to localStorage
-        saveEditorWidth() {
-            localStorage.setItem('editorWidth', this.editorWidth.toString());
-        },
-        
-        /**
-         * Restore the saved scroll position for the current note in both panes. Also
-         * called from the viewMode watcher because browsers reset scrollTop when an
-         * overflow:auto element goes from display:none back to visible. Accepts either
-         * a bare percentage or { editorPct }. Idempotent; isScrolling keeps the sync
-         * handlers from echoing these programmatic writes.
-         */
+        // Back to where this note was left. Stored as a fraction, since the height changes.
         _restoreNoteScroll() {
-            if (!this.currentNote || this.currentMedia) return;
-            const stored = this.noteScrollPositions[this.currentNote];
-            if (stored === undefined || stored === null) return;
-
-            if (!this._domCache.editor || !this._domCache.previewContainer) {
-                this.refreshDOMCache();
-            }
             const editor = this._domCache.editor;
-            const preview = this._domCache.previewContainer;
-
-            // Normalize both storage shapes into a single editorPct value.
-            let pct = null;
-            if (typeof stored === 'number') pct = stored;
-            else if (typeof stored === 'object' && Number.isFinite(stored.editorPct)) pct = stored.editorPct;
-            if (pct === null) return;
-
-            if (editor) {
-                const scrollable = editor.scrollHeight - editor.clientHeight;
-                if (scrollable > 0) {
-                    this.isScrolling = true;
-                    editor.scrollTop = pct * scrollable;
-                }
-            }
-            if (preview) {
-                const scrollable = preview.scrollHeight - preview.clientHeight;
-                if (scrollable > 0) {
-                    const anchors = this._getScrollAnchors();
-                    const totalLines = (this.noteContent || '').split('\n').length;
-                    this.isScrolling = true;
-                    preview.scrollTop = this._editorPctToPreviewScrollTop(
-                        pct, anchors, editor, preview, totalLines
-                    );
-                }
-            }
+            if (!this.currentNote || !editor) return;
+            const scrollable = editor.scrollHeight - editor.clientHeight;
+            editor.scrollTop = (this.noteScrollPositions[this.currentNote] ?? 0) * scrollable;
         },
 
-        // Scroll to top of editor and preview
+        _rememberNoteScroll(editor) {
+            if (this._scrollRestorePending || !this.currentNote) return;
+            const scrollable = editor.scrollHeight - editor.clientHeight;
+            if (scrollable > 0) this.noteScrollPositions[this.currentNote] = editor.scrollTop / scrollable;
+        },
+
+        // Scroll to top of the note
         scrollToTop() {
-            // Disable scroll sync temporarily to prevent interference
-            this.isScrolling = true;
-            
-            // Use cached references (refresh if not available)
-            if (!this._domCache.editor || !this._domCache.previewContainer) {
-                this.refreshDOMCache();
-            }
-            
-            // Only scroll the visible panes based on viewMode
-            if (this.viewMode === 'edit' || this.viewMode === 'split') {
-                if (this._domCache.editor) {
-                    this._domCache.editor.scrollTop = 0;
-                }
-            }
-            
-            if (this.viewMode === 'preview' || this.viewMode === 'split') {
-                // Scroll the preview container (parent of .markdown-preview)
-                if (this._domCache.previewContainer) {
-                    this._domCache.previewContainer.scrollTop = 0;
-                }
-            }
-            
-            // Re-enable scroll sync after a short delay
-            setTimeout(() => {
-                this.isScrolling = false;
-            }, CONFIG.SCROLL_SYNC_DELAY);
+            if (!this._domCache.editor) this.refreshDOMCache();
+            if (this._domCache.editor) this._domCache.editor.scrollTop = 0;
         },
-        
+
         // Export current note as HTML via backend API
         async exportToHTML() {
             if (!this.currentNote || !this.noteContent) {

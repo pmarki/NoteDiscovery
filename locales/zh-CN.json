@@ -75,15 +75,14 @@
     "placeholder": "开始用 Markdown 写作...",
     "drop_hint": "💡 拖放到此处以插入到光标位置...",
     "mode_edit": "编辑",
-    "mode_split": "分屏",
-    "mode_preview": "预览",
     "edited": "已编辑 {{time}}",
     "just_now": "刚刚",
     "minutes_ago": "{{count}}分钟前",
     "hours_ago": "{{count}}小时前",
     "days_ago": "{{count}}天前",
     "tasks_all_checked": "已勾选 {{total}} 项任务中的 {{changed}} 项",
-    "tasks_all_unchecked": "已取消勾选 {{total}} 项任务中的 {{changed}} 项"
+    "tasks_all_unchecked": "已取消勾选 {{total}} 项任务中的 {{changed}} 项",
+    "mode_read": "阅读"
   },
   "notes": {
     "confirm_delete": "删除 \"{{name}}\"？",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "演示模式",
     "warning": "内容每日重置。您的更改可能被其他用户覆盖。"
+  },
+  "embed": {
+    "download": "下载",
+    "open_new_tab": "在新标签页中打开",
+    "formula": "公式",
+    "diagram": "图表"
   }
 }

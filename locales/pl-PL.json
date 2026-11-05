@@ -75,15 +75,14 @@
     "placeholder": "Zacznij pisać w Markdownie...",
     "drop_hint": "💡 Upuść tutaj, aby wstawić w miejscu kursora...",
     "mode_edit": "Edycja",
-    "mode_split": "Podział",
-    "mode_preview": "Podgląd",
     "edited": "Edytowano {{time}}",
     "just_now": "przed chwilą",
     "minutes_ago": "{{count}} min temu",
     "hours_ago": "{{count}} godz. temu",
     "days_ago": "{{count}} dni temu",
     "tasks_all_checked": "Zaznaczono {{changed}} z {{total}} zadań",
-    "tasks_all_unchecked": "Odznaczono {{changed}} z {{total}} zadań"
+    "tasks_all_unchecked": "Odznaczono {{changed}} z {{total}} zadań",
+    "mode_read": "Czytanie"
   },
   "notes": {
     "confirm_delete": "Usunąć „{{name}}”?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "TRYB DEMO",
     "warning": "Zawartość jest resetowana codziennie. Zmiany mogą zostać nadpisane przez innych użytkowników."
+  },
+  "embed": {
+    "download": "Pobierz",
+    "open_new_tab": "Otwórz w nowej karcie",
+    "formula": "Wzór",
+    "diagram": "Diagram"
   }
 }

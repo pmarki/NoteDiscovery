@@ -75,15 +75,14 @@
     "placeholder": "Начните писать в markdown...",
     "drop_hint": "💡 Отпустите здесь для вставки в позицию курсора...",
     "mode_edit": "Редактор",
-    "mode_split": "Разделить",
-    "mode_preview": "Просмотр",
     "edited": "Изменено {{time}}",
     "just_now": "только что",
     "minutes_ago": "{{count}} мин. назад",
     "hours_ago": "{{count}} ч. назад",
     "days_ago": "{{count}} дн. назад",
     "tasks_all_checked": "Отмечено {{changed}} из {{total}} задач",
-    "tasks_all_unchecked": "Снята отметка с {{changed}} из {{total}} задач"
+    "tasks_all_unchecked": "Снята отметка с {{changed}} из {{total}} задач",
+    "mode_read": "Чтение"
   },
   "notes": {
     "confirm_delete": "Удалить «{{name}}»?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "ДЕМО-РЕЖИМ",
     "warning": "Содержимое сбрасывается ежедневно. Изменения могут быть перезаписаны другими пользователями."
+  },
+  "embed": {
+    "download": "Скачать",
+    "open_new_tab": "Открыть в новой вкладке",
+    "formula": "Формула",
+    "diagram": "Диаграмма"
   }
 }

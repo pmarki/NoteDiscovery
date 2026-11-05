@@ -75,15 +75,14 @@
     "placeholder": "Commencez à écrire en markdown...",
     "drop_hint": "💡 Déposez ici pour insérer à la position du curseur...",
     "mode_edit": "Éditer",
-    "mode_split": "Diviser",
-    "mode_preview": "Aperçu",
     "edited": "Modifié {{time}}",
     "just_now": "à l'instant",
     "minutes_ago": "il y a {{count}}m",
     "hours_ago": "il y a {{count}}h",
     "days_ago": "il y a {{count}}j",
     "tasks_all_checked": "{{changed}} tâches sur {{total}} cochées",
-    "tasks_all_unchecked": "{{changed}} tâches sur {{total}} décochées"
+    "tasks_all_unchecked": "{{changed}} tâches sur {{total}} décochées",
+    "mode_read": "Lecture"
   },
   "notes": {
     "confirm_delete": "Supprimer \"{{name}}\" ?",
@@ -348,5 +347,11 @@
   "demo": {
     "title": "MODE DÉMO",
     "warning": "Le contenu est réinitialisé quotidiennement. Les modifications peuvent être écrasées par d'autres utilisateurs."
+  },
+  "embed": {
+    "download": "Télécharger",
+    "open_new_tab": "Ouvrir dans un nouvel onglet",
+    "formula": "Formule",
+    "diagram": "Diagramme"
   }
 }
