@@ -1,9 +1,9 @@
 // NoteDiscovery Service Worker
 // Minimal service worker for PWA install support
 
-// Cache version - automatically uses app version from VERSION file
-// Cache is invalidated when app version changes (e.g., 0.10.4 -> 0.10.5)
-// This forces users to download fresh files when you release a new version.
+// Cache version - the server fills in the app version plus a hash of our own scripts
+// Cache is invalidated whenever either changes, which forces users to download
+// fresh files without needing a release.
 const CACHE_NAME = 'notediscovery-__APP_VERSION__';
 
 // Assets to cache for faster repeat visits. app.js carries the same ?v= as the

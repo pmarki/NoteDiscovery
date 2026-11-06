@@ -426,8 +426,8 @@ class VersionedStaticFiles(StaticFiles):
     """StaticFiles that lets browsers keep version-addressed assets indefinitely.
 
     Two kinds of URL can never change content for a given address: anything asked
-    for with a ?v=<release> query (our own scripts, see _render_app_name_html) and
-    the vendored bundler chunks, whose filenames embed a content hash. Caching
+    for with a ?v=<content hash> query (our own scripts, see asset_token) and the
+    vendored bundler chunks, whose filenames embed a content hash. Caching
     those forever removes a revalidation round trip per file on every page load,
     which for a Mermaid diagram alone is two dozen of them. The HTML that names
     them always revalidates, so an upgraded client still picks up new URLs at once.
@@ -485,10 +485,35 @@ def _check_vendored_assets() -> None:
 _check_vendored_assets()
 
 
-# __APP_VERSION__ lands in a query string in index.html and in the service worker's
-# copy of that same URL. Both must resolve to identical text or the worker precaches
-# an address the page never asks for, so they share this one encoded value.
-version_token = quote_plus(version)
+# Files whose URLs carry the token. Browsers keep those URLs forever, so the token has
+# to change with their content: a release number alone leaves any change made without
+# a bump stuck in every browser that has already loaded the file.
+VERSIONED_ASSETS = ("app.js", "note-editor.bundle.js", "markdown-preview.css")
+_asset_token_cache = (None, quote_plus(version))
+
+
+def asset_token() -> str:
+    """The value of __APP_VERSION__: the release plus a hash of VERSIONED_ASSETS.
+
+    It lands in a query string in index.html and in the service worker's copy of that
+    same URL. Both must resolve to identical text or the worker precaches an address
+    the page never asks for, so they share this one encoded value.
+
+    Checked per request so an edit on a running server counts. Files are only read
+    again when their size or modification time moves.
+    """
+    global _asset_token_cache
+    files = [static_path / name for name in VERSIONED_ASSETS]
+    try:
+        stamp = [(stat.st_mtime_ns, stat.st_size) for stat in map(Path.stat, files)]
+        if stamp != _asset_token_cache[0]:
+            digest = hashlib.sha256()
+            for file in files:
+                digest.update(file.read_bytes())
+            _asset_token_cache = (stamp, f"{quote_plus(version)}-{digest.hexdigest()[:12]}")
+    except OSError as error:
+        logger.warning("Could not hash frontend assets: %s", error)
+    return _asset_token_cache[1]
 
 
 # The app name is admin-controlled configuration rather than user input, but it
@@ -498,12 +523,12 @@ version_token = quote_plus(version)
 def _render_app_name_html(content: str) -> str:
     """Substitute __APP_NAME__ and __APP_VERSION__ placeholders in an HTML document.
 
-    The version turns our own scripts into per-release URLs. Without it an upgraded
-    client can pair new HTML with the previous app.js still held by the service
-    worker, which breaks the page until a manual reload.
+    The token gives our own scripts a new URL whenever they change. Without it an
+    upgraded client can pair new HTML with the previous app.js still held by the
+    service worker, which breaks the page until a manual reload.
     """
     content = content.replace('__APP_NAME__', html_escape(config['app']['name'], quote=True))
-    return content.replace('__APP_VERSION__', version_token)
+    return content.replace('__APP_VERSION__', asset_token())
 
 
 def _render_app_name_json(content: str) -> str:
@@ -547,13 +572,13 @@ async def pwa_manifest(request: Request):
 @limiter.limit("120/minute")
 async def service_worker(request: Request):
     """Serve the PWA service worker from root path for proper scope.
-    Injects the app version from VERSION file for cache invalidation."""
+    Injects the asset token for cache invalidation."""
     sw_path = static_path / "sw.js"
     if sw_path.exists():
         async with aiofiles.open(sw_path, 'r', encoding='utf-8') as f:
             content = await f.read()
         # Same token as index.html: it names the cache and the precached app.js URL
-        content = content.replace('__APP_VERSION__', version_token)
+        content = content.replace('__APP_VERSION__', asset_token())
         return Response(content=content, media_type="application/javascript")
     raise HTTPException(status_code=404, detail="Service worker not found")
 
