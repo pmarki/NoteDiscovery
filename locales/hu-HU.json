@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\": a legutóbbi módosításaid nem lettek mentve, a jegyzet máshol módosult."
   },
   "folders": {
-    "confirm_delete": "⚠️ FIGYELMEZTETÉS ⚠️\n\nBiztosan törölni szeretnéd a(z) \"{{name}}\" mappát?\n\nEz VÉGLEGESEN törli a következőket:\n• A mappában található összes jegyzet\n• Az összes almappa és azok tartalma \n\nEz a művelet NEM vonható vissza!",
+    "confirm_delete": "Áthelyezed a(z) \"{{name}}\" mappát és teljes tartalmát a lomtárba?",
     "already_exists": "A(z) \"{{name}}\" nevű mappa már létezik.\nKérlek válassz egy másik nevet.",
     "prompt_name": "Add meg a mappa nevét:",
     "folder_name": "Mappa neve",
@@ -250,6 +250,17 @@
     "confirm_delete": "Biztos törlöd a következőt:  \"{{name}}\"?",
     "upload_failed": "Hiba a fájl feltöltése során",
     "no_valid_files": "Nem található érvényes fájl. Támogatott formátumok: {{formats}}"
+  },
+  "trash": {
+    "title": "Lomtár",
+    "empty_state": "A lomtár üres",
+    "restore": "Visszaállítás",
+    "delete_forever": "Végleges törlés",
+    "empty_all": "Lomtár ürítése",
+    "confirm_delete": "Véglegesen törlöd: \"{{name}}\"? Ez nem vonható vissza.",
+    "confirm_empty": "Véglegesen törlöd a lomtár teljes tartalmát? Ez nem vonható vissza.",
+    "restored": "Visszaállítva: \"{{name}}\"",
+    "restored_as": "Visszaállítva ezen a néven: \"{{name}}\""
   },
   "move": {
     "failed_note": "Hiba a jegyzet mozgatásánál.",

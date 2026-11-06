@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "「{{name}}」：最後の変更は保存されませんでした。ノートが別の場所で変更されています。"
   },
   "folders": {
-    "confirm_delete": "⚠️ 警告 ⚠️\n\n本当にフォルダ「{{name}}」を削除しますか？\n\n以下が完全に削除されます:\n• このフォルダ内のすべてのノート\n• すべてのサブフォルダとその内容\n\nこの操作は元に戻せません！",
+    "confirm_delete": "フォルダ「{{name}}」とその中身をすべてゴミ箱に移動しますか?",
     "already_exists": "「{{name}}」という名前のフォルダは既に存在します。\n別の名前を選択してください。",
     "prompt_name": "フォルダ名を入力:",
     "folder_name": "フォルダ名",
@@ -250,6 +250,17 @@
     "confirm_delete": "「{{name}}」を削除しますか？",
     "upload_failed": "ファイルのアップロードに失敗しました",
     "no_valid_files": "有効なファイルが見つかりません。対応: {{formats}}"
+  },
+  "trash": {
+    "title": "ゴミ箱",
+    "empty_state": "ゴミ箱は空です",
+    "restore": "復元",
+    "delete_forever": "完全に削除",
+    "empty_all": "ゴミ箱を空にする",
+    "confirm_delete": "「{{name}}」を完全に削除しますか?この操作は取り消せません。",
+    "confirm_empty": "ゴミ箱の中身をすべて完全に削除しますか?この操作は取り消せません。",
+    "restored": "「{{name}}」を復元しました",
+    "restored_as": "「{{name}}」として復元しました"
   },
   "move": {
     "failed_note": "ノートの移動に失敗しました。",

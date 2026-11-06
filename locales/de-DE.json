@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\": Deine letzten Änderungen wurden nicht gespeichert, die Notiz wurde anderswo geändert."
   },
   "folders": {
-    "confirm_delete": "⚠️ WARNUNG ⚠️\n\nBist du sicher, dass du den Ordner \"{{name}}\" löschen möchtest?\n\nDies LÖSCHT DAUERHAFT:\n• Alle Notizen in diesem Ordner\n• Alle Unterordner und deren Inhalte\n\nDiese Aktion kann NICHT rückgängig gemacht werden!",
+    "confirm_delete": "Den Ordner \"{{name}}\" mit seinem gesamten Inhalt in den Papierkorb verschieben?",
     "already_exists": "Ein Ordner mit dem Namen \"{{name}}\" existiert bereits an diesem Ort.\nBitte wähle einen anderen Namen.",
     "prompt_name": "Ordnername eingeben:",
     "folder_name": "Ordnername",
@@ -250,6 +250,17 @@
     "confirm_delete": "\"{{name}}\" löschen?",
     "upload_failed": "Datei-Upload fehlgeschlagen",
     "no_valid_files": "Keine gültigen Dateien gefunden. Unterstützt: {{formats}}"
+  },
+  "trash": {
+    "title": "Papierkorb",
+    "empty_state": "Der Papierkorb ist leer",
+    "restore": "Wiederherstellen",
+    "delete_forever": "Endgültig löschen",
+    "empty_all": "Papierkorb leeren",
+    "confirm_delete": "\"{{name}}\" endgültig löschen? Das kann nicht rückgängig gemacht werden.",
+    "confirm_empty": "Alles im Papierkorb endgültig löschen? Das kann nicht rückgängig gemacht werden.",
+    "restored": "\"{{name}}\" wiederhergestellt",
+    "restored_as": "Wiederhergestellt als \"{{name}}\""
   },
   "move": {
     "failed_note": "Verschieben der Notiz fehlgeschlagen.",

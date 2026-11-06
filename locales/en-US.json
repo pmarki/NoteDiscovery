@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\": your last changes were not saved, the note changed elsewhere."
   },
   "folders": {
-    "confirm_delete": "⚠️ WARNING ⚠️\n\nAre you sure you want to delete the folder \"{{name}}\"?\n\nThis will PERMANENTLY delete:\n• All notes inside this folder\n• All subfolders and their contents\n\nThis action CANNOT be undone!",
+    "confirm_delete": "Move the folder \"{{name}}\" and everything in it to the trash?",
     "already_exists": "A folder named \"{{name}}\" already exists in this location.\nPlease choose a different name.",
     "prompt_name": "Enter folder name:",
     "folder_name": "Folder Name",
@@ -250,6 +250,17 @@
     "confirm_delete": "Delete \"{{name}}\"?",
     "upload_failed": "Failed to upload file",
     "no_valid_files": "No valid files found. Supported: {{formats}}"
+  },
+  "trash": {
+    "title": "Trash",
+    "empty_state": "Trash is empty",
+    "restore": "Restore",
+    "delete_forever": "Delete permanently",
+    "empty_all": "Empty trash",
+    "confirm_delete": "Permanently delete \"{{name}}\"? This can't be undone.",
+    "confirm_empty": "Permanently delete everything in the trash? This can't be undone.",
+    "restored": "Restored \"{{name}}\"",
+    "restored_as": "Restored as \"{{name}}\""
   },
   "move": {
     "failed_note": "Failed to move note.",

@@ -17,7 +17,7 @@ from urllib.parse import quote
 import mimetypes
 
 # Import shared media type definitions and scanner from utils to avoid duplication
-from backend.utils import MEDIA_EXTENSIONS, get_media_type
+from backend.utils import MEDIA_EXTENSIONS, get_media_type, validate_path_security
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -171,9 +171,7 @@ def resolve_media_path(target: str, note_folder: Path, notes_dir: Path) -> Optio
     Returns None if it's missing or outside the vault.
     """
     resolved = (note_folder / target).resolve()
-    try:
-        resolved.relative_to(notes_dir.resolve())
-    except ValueError:
+    if not validate_path_security(str(notes_dir), resolved):
         return None
     return resolved if resolved.is_file() else None
 
@@ -319,11 +317,8 @@ def process_media_for_export(markdown_content: str, note_folder: Path, notes_dir
         if not resolved_path.exists():
             return match.group(0)  # Keep original if not found
         
-        # Security: ensure path is within notes_dir
-        try:
-            resolved_path.relative_to(notes_dir.resolve())
-        except ValueError:
-            # Path is outside notes_dir, skip
+        # Security: ensure path is within notes_dir and not in the trash
+        if not validate_path_security(str(notes_dir), resolved_path):
             return match.group(0)
         
         # Get base64 data for image

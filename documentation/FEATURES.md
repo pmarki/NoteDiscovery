@@ -40,6 +40,7 @@
 - **Flexible sorting** - Sort notes by name (A-Z, Z-A), date (newest, oldest), or size (largest, smallest)
 - **Rename anything** - Files and folders, instantly
 - **Visual tree view** - Expandable/collapsible navigation
+- **Trash** - Deleted notes, folders and media move to `.trash/` in the vault, and a note's attachments go with it. Restore them from the Trash panel, or delete them permanently one by one or all at once. The trash is only emptied by hand, and restoring doesn't bring back share links
 - **Hide system folders** - Toggle to hide `_templates` and other underscore-prefixed folders from the sidebar and the graph
 - **Tab inserts tab** - Toggle so Tab inserts a literal tab in the editor instead of changing focus; when this is on, Shift+Tab outdents (one leading tab or up to four leading spaces per line in the selection), and if nothing is removed, Shift+Tab still moves focus backward
 - **List & quote continuation (Enter)** - At the end of a line, Enter continues blockquotes (`>`), bullets (`-` / `*` / `+`), ordered lists (`1.` / `1)`), and task lists (`- [ ]` / `- [x]`); pressing Enter again on an empty continued line exits the list or quote. Disabled inside fenced code blocks and when using Shift+Enter (plain newline)

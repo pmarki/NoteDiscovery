@@ -70,6 +70,7 @@ from .utils import (
 from . import note_index
 from .plugins import PluginManager
 from .themes import get_available_themes, get_theme_css
+from .trash import delete_entry, empty_trash, list_trash, restore_entry
 from .share import (
     create_share_token,
     get_share_token,
@@ -209,6 +210,7 @@ tags_metadata = [
     {"name": "Notes", "description": "Create, read, update, delete notes"},
     {"name": "Folders", "description": "Folder management"},
     {"name": "Media", "description": "Media files (images, audio, video, PDF)"},
+    {"name": "Trash", "description": "Deleted notes, folders and media"},
     {"name": "Search", "description": "Full-text search"},
     {"name": "Sharing", "description": "Public note sharing via tokens"},
     {"name": "Tags", "description": "Tag-based organization"},
@@ -1347,10 +1349,16 @@ async def delete_folder_endpoint(request: Request, folder_path: str):
         if not folder_path:
             raise HTTPException(status_code=400, detail="Folder path required")
         
-        success = delete_folder(config['storage']['notes_dir'], folder_path)
+        notes_dir = config['storage']['notes_dir']
+        success = delete_folder(notes_dir, folder_path)
         
         if not success:
             raise HTTPException(status_code=500, detail="Failed to delete folder")
+        
+        # A restored folder must not make its old share links work again
+        for shared_path in get_all_shared_paths(notes_dir):
+            if shared_path.startswith(folder_path.rstrip('/') + '/'):
+                delete_token_for_note(notes_dir, shared_path)
         
         return {
             "success": True,
@@ -1361,6 +1369,42 @@ async def delete_folder_endpoint(request: Request, folder_path: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=safe_error_message(e, "Failed to delete folder"))
+
+
+# --- Trash Endpoints ---
+
+@api_router.get("/trash", tags=["Trash"])
+def get_trash():
+    """List everything in the trash, most recently deleted first"""
+    return {"items": list_trash(config['storage']['notes_dir'])}
+
+
+@api_router.post("/trash/{entry_id}/restore", tags=["Trash"])
+@limiter.limit("60/minute")
+def restore_from_trash(request: Request, entry_id: str):
+    """Put a trashed item back. A counter is added to its name if the path is taken."""
+    path = restore_entry(config['storage']['notes_dir'], entry_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Could not restore this item")
+    if path.endswith('.md'):
+        plugin_manager.dispatch('on_note_save', note_path=path, content='')
+    return {"success": True, "path": path}
+
+
+@api_router.delete("/trash/{entry_id}", tags=["Trash"])
+@limiter.limit("60/minute")
+def delete_from_trash(request: Request, entry_id: str):
+    """Permanently delete one item from the trash"""
+    if not delete_entry(config['storage']['notes_dir'], entry_id):
+        raise HTTPException(status_code=404, detail="Item not found in the trash")
+    return {"success": True}
+
+
+@api_router.delete("/trash", tags=["Trash"])
+@limiter.limit("10/minute")
+def empty_the_trash(request: Request):
+    """Permanently delete everything in the trash"""
+    return {"success": True, "deleted": empty_trash(config['storage']['notes_dir'])}
 
 
 # --- Tags Endpoints ---

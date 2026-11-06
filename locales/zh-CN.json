@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\"：你最后的更改未保存，笔记已在别处修改。"
   },
   "folders": {
-    "confirm_delete": "⚠️ 警告 ⚠️\n\n您确定要删除文件夹 \"{{name}}\" 吗？\n\n这将永久删除：\n• 此文件夹内的所有笔记\n• 所有子文件夹及其内容\n\n此操作无法撤销！",
+    "confirm_delete": "要将文件夹“{{name}}”及其所有内容移到回收站吗?",
     "already_exists": "此位置已存在名为 \"{{name}}\" 的文件夹。\n请选择一个不同的名称。",
     "prompt_name": "输入文件夹名称：",
     "folder_name": "文件夹名称",
@@ -250,6 +250,17 @@
     "confirm_delete": "删除 \"{{name}}\"？",
     "upload_failed": "上传文件失败",
     "no_valid_files": "未找到有效文件。支持：{{formats}}"
+  },
+  "trash": {
+    "title": "回收站",
+    "empty_state": "回收站是空的",
+    "restore": "恢复",
+    "delete_forever": "永久删除",
+    "empty_all": "清空回收站",
+    "confirm_delete": "要永久删除“{{name}}”吗?此操作无法撤销。",
+    "confirm_empty": "要永久删除回收站中的所有内容吗?此操作无法撤销。",
+    "restored": "已恢复“{{name}}”",
+    "restored_as": "已恢复为“{{name}}”"
   },
   "move": {
     "failed_note": "移动笔记失败。",

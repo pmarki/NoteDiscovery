@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\" : vos dernières modifications n'ont pas été enregistrées, la note a changé ailleurs."
   },
   "folders": {
-    "confirm_delete": "⚠️ ATTENTION ⚠️\n\nÊtes-vous sûr de vouloir supprimer le dossier \"{{name}}\" ?\n\nCeci supprimera DÉFINITIVEMENT :\n• Toutes les notes dans ce dossier\n• Tous les sous-dossiers et leur contenu\n\nCette action est IRRÉVERSIBLE !",
+    "confirm_delete": "Déplacer le dossier « {{name}} » et tout son contenu vers la corbeille ?",
     "already_exists": "Un dossier nommé \"{{name}}\" existe déjà à cet emplacement.\nVeuillez choisir un autre nom.",
     "prompt_name": "Entrez le nom du dossier :",
     "folder_name": "Nom du dossier",
@@ -250,6 +250,17 @@
     "confirm_delete": "Supprimer \"{{name}}\" ?",
     "upload_failed": "Échec du téléchargement du fichier",
     "no_valid_files": "Aucun fichier valide trouvé. Supporté : {{formats}}"
+  },
+  "trash": {
+    "title": "Corbeille",
+    "empty_state": "La corbeille est vide",
+    "restore": "Restaurer",
+    "delete_forever": "Supprimer définitivement",
+    "empty_all": "Vider la corbeille",
+    "confirm_delete": "Supprimer définitivement « {{name}} » ? Cette action est irréversible.",
+    "confirm_empty": "Supprimer définitivement tout le contenu de la corbeille ? Cette action est irréversible.",
+    "restored": "« {{name}} » restauré",
+    "restored_as": "Restauré sous le nom « {{name}} »"
   },
   "move": {
     "failed_note": "Échec du déplacement de la note.",

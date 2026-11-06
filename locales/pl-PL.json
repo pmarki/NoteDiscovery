@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "„{{name}}”: ostatnie zmiany nie zostały zapisane, notatka zmieniła się gdzie indziej."
   },
   "folders": {
-    "confirm_delete": "⚠️ OSTRZEŻENIE ⚠️\n\nCzy na pewno chcesz usunąć folder „{{name}}”?\n\nTo TRWALE usunie:\n• Wszystkie notatki w tym folderze\n• Wszystkie podfoldery i ich zawartość\n\nTej operacji NIE MOŻNA cofnąć!",
+    "confirm_delete": "Przenieść folder „{{name}}” i całą jego zawartość do kosza?",
     "already_exists": "Folder o nazwie „{{name}}” już istnieje w tej lokalizacji.\nWybierz inną nazwę.",
     "prompt_name": "Wprowadź nazwę folderu:",
     "folder_name": "Nazwa folderu",
@@ -250,6 +250,17 @@
     "confirm_delete": "Usunąć „{{name}}”?",
     "upload_failed": "Błąd przy wysyłaniu pliku",
     "no_valid_files": "Nie znaleziono obsługiwanych plików. Wspierane formaty: {{formats}}"
+  },
+  "trash": {
+    "title": "Kosz",
+    "empty_state": "Kosz jest pusty",
+    "restore": "Przywróć",
+    "delete_forever": "Usuń trwale",
+    "empty_all": "Opróżnij kosz",
+    "confirm_delete": "Usunąć trwale „{{name}}”? Tej operacji nie można cofnąć.",
+    "confirm_empty": "Usunąć trwale całą zawartość kosza? Tej operacji nie można cofnąć.",
+    "restored": "Przywrócono „{{name}}”",
+    "restored_as": "Przywrócono jako „{{name}}”"
   },
   "move": {
     "failed_note": "Nie udało się przenieść notatki.",

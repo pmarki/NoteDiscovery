@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\": vaše zadnje spremembe niso bile shranjene, zapis se je spremenil drugje."
   },
   "folders": {
-    "confirm_delete": "⚠️ OPOZORILO ⚠️\n\nAli ste prepričani, da želite izbrisati mapo \"{{name}}\"?\n\nTo bo TRAJNO izbrisalo:\n• Vse zapiske v tej mapi\n• Vse podmape in njihovo vsebino\n\nTe akcije NI mogoče preklicati!",
+    "confirm_delete": "Premaknem mapo \"{{name}}\" in vso njeno vsebino v koš?",
     "already_exists": "Mapa z imenom \"{{name}}\" na tej lokaciji že obstaja.\nProsimo, izberite drugo ime.",
     "prompt_name": "Vnesite ime mape:",
     "folder_name": "Ime mape",
@@ -250,6 +250,17 @@
     "confirm_delete": "Izbrišem \"{{name}}\"?",
     "upload_failed": "Nalaganje datoteke ni uspelo",
     "no_valid_files": "Ni najdenih veljavnih datotek. Podprto: {{formats}}"
+  },
+  "trash": {
+    "title": "Koš",
+    "empty_state": "Koš je prazen",
+    "restore": "Obnovi",
+    "delete_forever": "Trajno izbriši",
+    "empty_all": "Izprazni koš",
+    "confirm_delete": "Trajno izbrišem \"{{name}}\"? Tega ni mogoče razveljaviti.",
+    "confirm_empty": "Trajno izbrišem vso vsebino koša? Tega ni mogoče razveljaviti.",
+    "restored": "Obnovljeno: \"{{name}}\"",
+    "restored_as": "Obnovljeno kot \"{{name}}\""
   },
   "move": {
     "failed_note": "Napaka pri premikanju zapisa.",

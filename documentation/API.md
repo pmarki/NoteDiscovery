@@ -148,6 +148,8 @@ curl.exe -X POST http://localhost:8000/api/notes/test.md -H "Content-Type: appli
 DELETE /api/notes/{note_path}
 ```
 
+Moves the note and its attachment folder to the trash, or a media file if the path is one. See [Trash](#-trash).
+
 **Example:**
 ```bash
 curl -X DELETE http://localhost:8000/api/notes/test.md
@@ -255,6 +257,53 @@ Content-Type: application/json
 The note's attachment folder moves with it. The request fails if the destination already has an attachment folder with that name.
 
 If the note's name changes, its own embeds are updated to the new folder name, and the response includes the note's new `content` and `hash`. Embeds of its files from other notes aren't updated.
+
+## 🗑️ Trash
+
+Deleting a note, folder or media file moves it to `.trash/` in the vault. A note's attachment folder goes with it. Nothing is removed for good until it's deleted from the trash, and the trash is only emptied by hand. Files in the trash can't be read through any other route, and archive downloads leave them out.
+
+### List Trash
+```http
+GET /api/trash
+```
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "3f9a0c1e5b7d4a2e8c6f1d0b9e7a4c32",
+      "name": "meeting",
+      "path": "work/meeting.md",
+      "folder": "work",
+      "type": "note",
+      "deletedAt": "2026-11-06T14:30:00+00:00",
+      "size": 2048
+    }
+  ]
+}
+```
+
+`type` is `note`, `folder` or `media`. The most recently deleted items come first.
+
+### Restore
+```http
+POST /api/trash/{id}/restore
+```
+
+Puts the item back and returns its `path`. If the original path is taken, a counter is added to the name (`meeting-1.md`), and a restored note's links to its attachment folder are updated to match. Missing parent folders are recreated. Share links don't come back.
+
+### Delete Permanently
+```http
+DELETE /api/trash/{id}
+```
+
+### Empty Trash
+```http
+DELETE /api/trash
+```
+
+Permanently deletes every item and returns the number `deleted`.
 
 ## 🎬 Media
 
@@ -386,7 +435,7 @@ Content-Type: application/json
 ```http
 DELETE /api/folders/{folder_path}
 ```
-Deletes a folder and all its contents.
+Moves a folder and all its contents to the trash, and revokes share links for the notes inside.
 
 **Example:**
 ```bash

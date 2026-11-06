@@ -152,7 +152,7 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "delete_note",
-        "description": "Delete a note permanently. Use with caution - this cannot be undone.",
+        "description": "Move a note and its attachments to the trash. It can be restored in the app until the trash is emptied.",
         "inputSchema": {
             "type": "object",
             "properties": {

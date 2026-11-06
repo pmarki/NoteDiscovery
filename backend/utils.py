@@ -22,6 +22,7 @@ from typing import List, Dict, Optional, Tuple, Any, TypeVar, Callable
 from datetime import datetime, timezone
 
 from . import note_index
+from .trash import TRASH_DIR, move_to_trash
 from .note_index import NoteRecord, extract_links_from_content
 
 logger = logging.getLogger("uvicorn.error")
@@ -226,7 +227,8 @@ def get_tags_and_links_cached(
 def validate_path_security(notes_dir: str, path: Path) -> bool:
     """
     Validate that a path is within the notes directory (security check).
-    Prevents path traversal attacks.
+    Prevents path traversal attacks. The trash counts as outside: its files are
+    only reached through the trash functions.
     
     Args:
         notes_dir: Base notes directory
@@ -236,10 +238,10 @@ def validate_path_security(notes_dir: str, path: Path) -> bool:
         True if path is safe, False otherwise
     """
     try:
-        path.resolve().relative_to(Path(notes_dir).resolve())
-        return True
+        relative = path.resolve().relative_to(Path(notes_dir).resolve())
     except ValueError:
         return False
+    return TRASH_DIR not in relative.parts
 
 
 def is_vault_root(notes_dir: str, path: Path) -> bool:
@@ -573,7 +575,7 @@ def rename_folder(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, s
 
 
 def delete_folder(notes_dir: str, folder_path: str) -> bool:
-    """Delete a folder and all its contents."""
+    """Move a folder and all its contents to the trash."""
     try:
         full_path = Path(notes_dir) / folder_path
 
@@ -591,7 +593,8 @@ def delete_folder(notes_dir: str, folder_path: str) -> bool:
             return False
 
         _drop_prefix_caches(full_path)
-        shutil.rmtree(full_path)
+        if not move_to_trash(notes_dir, _normalized_rel_path(folder_path), "folder", [full_path]):
+            return False
         note_index.on_folder_deleted(notes_dir, full_path)
         _scan_cache_invalidate()
         return True
@@ -804,15 +807,23 @@ def save_note(notes_dir: str, note_path: str, content: str) -> bool:
 
 
 def delete_note(notes_dir: str, note_path: str) -> bool:
-    """Delete a note."""
+    """Move a note and its attachment folder, or a media file, to the trash."""
     full_path = Path(notes_dir) / note_path
     if not full_path.exists():
         return False
     if not validate_path_security(notes_dir, full_path):
         return False
 
+    items = [full_path]
+    is_note = full_path.suffix.lower() == '.md'
+    if is_note:
+        attachments = get_attachment_dir(notes_dir, note_path)
+        if attachments.is_dir():
+            items.append(attachments)
+
     _drop_path_caches(full_path)
-    full_path.unlink()
+    if not move_to_trash(notes_dir, _normalized_rel_path(note_path), "note" if is_note else "media", items):
+        return False
     note_index.on_note_deleted(notes_dir, full_path)
     _scan_cache_invalidate()
     return True

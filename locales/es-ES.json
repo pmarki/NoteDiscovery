@@ -105,7 +105,7 @@
     "save_conflict_unsaved": "\"{{name}}\": tus últimos cambios no se guardaron, la nota cambió en otro lugar."
   },
   "folders": {
-    "confirm_delete": "⚠️ ADVERTENCIA ⚠️\n\n¿Estás seguro de que quieres eliminar la carpeta \"{{name}}\"?\n\nEsto eliminará PERMANENTEMENTE:\n• Todas las notas dentro de esta carpeta\n• Todas las subcarpetas y su contenido\n\n¡Esta acción NO se puede deshacer!",
+    "confirm_delete": "¿Mover la carpeta \"{{name}}\" y todo su contenido a la papelera?",
     "already_exists": "Ya existe una carpeta llamada \"{{name}}\" en esta ubicación.\nPor favor, elige un nombre diferente.",
     "prompt_name": "Introduce el nombre de la carpeta:",
     "folder_name": "Nombre de la carpeta",
@@ -250,6 +250,17 @@
     "confirm_delete": "¿Eliminar \"{{name}}\"?",
     "upload_failed": "Error al subir archivo",
     "no_valid_files": "No se encontraron archivos válidos. Soporta: {{formats}}"
+  },
+  "trash": {
+    "title": "Papelera",
+    "empty_state": "La papelera está vacía",
+    "restore": "Restaurar",
+    "delete_forever": "Eliminar definitivamente",
+    "empty_all": "Vaciar papelera",
+    "confirm_delete": "¿Eliminar \"{{name}}\" definitivamente? No se puede deshacer.",
+    "confirm_empty": "¿Eliminar definitivamente todo lo que hay en la papelera? No se puede deshacer.",
+    "restored": "\"{{name}}\" restaurado",
+    "restored_as": "Restaurado como \"{{name}}\""
   },
   "move": {
     "failed_note": "Error al mover la nota.",

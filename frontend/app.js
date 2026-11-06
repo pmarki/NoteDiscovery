@@ -368,7 +368,7 @@ function noteApp() {
         sortMode: localStorage.getItem('sortMode') || 'a-z',
 
         // Icon rail / panel state
-        activePanel: 'files', // 'files', 'search', 'tags', 'outline', 'backlinks', 'shared', 'settings'
+        activePanel: 'files', // 'files', 'search', 'tags', 'outline', 'backlinks', 'shared', 'trash', 'settings'
         
         // Folder state
         folderTree: [],
@@ -525,6 +525,7 @@ function noteApp() {
         _shareResetTid: null,
         _sharedNotePaths: new Set(),  // O(1) lookup for shared note indicators
         _sharedNotePathsList: [], // sorted paths, mirrors Set for reactive sidebar panel
+        trashItems: [], // what GET /api/trash lists, most recently deleted first
         
         // Quick Switcher state (Ctrl+Alt+P)
         showQuickSwitcher: false,
@@ -801,6 +802,7 @@ function noteApp() {
             // loadLocale() is only called when user changes language from settings
             await this.loadNotes();
             await this.loadSharedNotePaths();
+            this.loadTrash();
             await this.loadTemplates();
             await this.checkStatsPlugin();
             this.loadLocalSettings();
@@ -3289,6 +3291,7 @@ function noteApp() {
                     method: 'DELETE'
                 });
                 if (!response.ok) throw new Error('Failed to delete media file');
+                this.loadTrash();
             } catch (error) {
                 ErrorHandler.handle('delete media', error);
                 await this.loadNotes({ silent: true });
@@ -5188,6 +5191,7 @@ function noteApp() {
                 });
                 if (!response.ok) throw new Error('Server returned error');
                 this.loadTagsDebounced();
+                this.loadTrash();
             } catch (error) {
                 ErrorHandler.handle('delete folder', error);
                 await this.loadNotes({ silent: true });
@@ -6014,10 +6018,64 @@ function noteApp() {
                 const response = await fetch(`/api/notes/${encodeVaultPath(notePath)}`, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Server returned error');
                 this.loadTagsDebounced();
+                this.loadTrash();
             } catch (error) {
                 ErrorHandler.handle('delete note', error);
                 await this.loadNotes({ silent: true });
             }
+        },
+        
+        async loadTrash() {
+            try {
+                const response = await fetch('/api/trash');
+                if (!response.ok) throw new Error('Server returned error');
+                this.trashItems = (await response.json()).items;
+            } catch (error) {
+                ErrorHandler.handle('load trash', error);
+            }
+        },
+        
+        async restoreTrashItem(item) {
+            try {
+                const response = await fetch(`/api/trash/${item.id}/restore`, { method: 'POST' });
+                if (!response.ok) throw new Error('Server returned error');
+                const { path } = await response.json();
+                await Promise.all([this.loadNotes({ silent: true }), this.loadTrash()]);
+                this.loadTagsDebounced();
+                const name = path.split('/').pop().replace(/\.md$/, '');
+                const message = path === item.path ? 'trash.restored' : 'trash.restored_as';
+                this.toast(this.t(message, { name }), { type: 'success' });
+            } catch (error) {
+                ErrorHandler.handle('restore from trash', error);
+            }
+        },
+        
+        async deleteTrashItem(item) {
+            const ok = await this.confirmModalAsk({
+                message: this.t('trash.confirm_delete', { name: item.name }),
+            });
+            if (!ok) return;
+            
+            try {
+                const response = await fetch(`/api/trash/${item.id}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Server returned error');
+            } catch (error) {
+                ErrorHandler.handle('delete from trash', error);
+            }
+            await this.loadTrash();
+        },
+        
+        async emptyTrash() {
+            const ok = await this.confirmModalAsk({ message: this.t('trash.confirm_empty') });
+            if (!ok) return;
+            
+            try {
+                const response = await fetch('/api/trash', { method: 'DELETE' });
+                if (!response.ok) throw new Error('Server returned error');
+            } catch (error) {
+                ErrorHandler.handle('empty trash', error);
+            }
+            await this.loadTrash();
         },
         
         // Search notes

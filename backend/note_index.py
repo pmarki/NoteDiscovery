@@ -972,6 +972,11 @@ def on_folder_deleted(notes_dir: str, full_path: Path) -> None:
         _index.invalidate()
 
 
+def on_restored() -> None:
+    """Something came back from the trash. Search terms go too: invalidate() keeps them."""
+    _index.reset()
+
+
 def populate_from_scan(
     notes_meta: List[NoteRecord],
     folders: Iterable[str],
