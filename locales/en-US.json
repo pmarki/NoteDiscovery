@@ -321,6 +321,7 @@
     "heading": "Heading",
     "link": "Link",
     "image": "Image",
+    "attach": "Attach file",
     "code": "Inline code",
     "codeblock": "Code block",
     "quote": "Quote",

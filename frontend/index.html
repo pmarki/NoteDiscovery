@@ -2975,6 +2975,10 @@
                                 <button @click="formatText('image')" class="format-btn" :title="t('format.image')">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </button>
+                                <button @click="formatText('attach')" class="format-btn" :title="t('format.attach')">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                </button>
+                                <input type="file" multiple class="hidden" x-ref="attachInput" :accept="mediaUploadTypes" @change="onAttachPicked($event)">
                                 <div class="w-px h-4 mx-1" style="background-color: var(--border-primary);"></div>
                                 <button @click="formatText('code')" class="format-btn" :title="t('format.code') + ' (Ctrl+E)'">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>

@@ -261,11 +261,23 @@ const SLASH_COMMANDS = [
     { type: 'formula', label: 'embed.formula', hint: '$$', keywords: 'formula math latex equation' },
     { type: 'diagram', label: 'embed.diagram', hint: 'mermaid', keywords: 'diagram mermaid chart flowchart' },
     { type: 'image', label: 'format.image', hint: '', keywords: 'image picture photo' },
+    { type: 'attach', label: 'format.attach', hint: '', keywords: 'attach file upload image audio video pdf' },
     { type: 'link', label: 'format.link', hint: '', keywords: 'link url address' },
     { type: 'noteLink', label: 'format.note_link', hint: '[[', keywords: 'wikilink note link' },
 ];
 
 const MEDIA_FORMATS_DISPLAY = 'JPG, PNG, GIF, WebP, MP3, MP4, PDF, MD';
+
+const MEDIA_UPLOAD_TYPES = [
+    // Images
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    // Audio
+    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/x-m4a',
+    // Video
+    'video/mp4', 'video/webm', 'video/quicktime',
+    // Documents
+    'application/pdf'
+];
 
 /** GFM task item as (everything up to `[`)(state). Literal spaces around the
  *  brackets, not \s, because that is what marked requires; the leading chain covers
@@ -278,6 +290,7 @@ function noteApp() {
         // App state
         appName: 'NoteDiscovery',
         appVersion: '0.0.0',
+        mediaUploadTypes: MEDIA_UPLOAD_TYPES.join(','),
         authEnabled: false,
         demoMode: false,
         alreadyDonated: false,
@@ -2990,20 +3003,26 @@ function noteApp() {
         
         // Handle media files dropped into editor
         async handleMediaDrop(event) {
-            const files = Array.from(event.dataTransfer.files);
-            
+            const position = this.currentNote ? this._editorDropPosition(event) : null;
+            await this.uploadFiles(Array.from(event.dataTransfer.files), position);
+        },
+        
+        // Open the file picker for the toolbar button and the / menu
+        openAttachPicker() {
+            if (this.currentNote) this.$refs.attachInput.click();
+        },
+        
+        // Files chosen in the picker go in at the cursor
+        async onAttachPicked(event) {
+            const files = Array.from(event.target.files);
+            event.target.value = '';  // or picking the same file again fires no change
+            await this.uploadFiles(files, null);
+        },
+        
+        // Upload media and import Markdown files, embedding each at `position`
+        async uploadFiles(files, position) {
             // Filter for allowed media types
-            const allowedTypes = [
-                // Images
-                'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-                // Audio
-                'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/x-m4a',
-                // Video
-                'video/mp4', 'video/webm', 'video/quicktime',
-                // Documents
-                'application/pdf'
-            ];
-            const mediaFiles = files.filter(file => allowedTypes.includes(file.type.toLowerCase()));
+            const mediaFiles = files.filter(file => MEDIA_UPLOAD_TYPES.includes(file.type.toLowerCase()));
             // By extension: MIME for .md varies across browsers (text/markdown,
             // text/plain, or empty), so the name is the only reliable signal.
             const markdownFiles = files.filter(file => /\.md$/i.test(file.name || ''));
@@ -3014,12 +3033,12 @@ function noteApp() {
             }
             
             const notePath = this.currentNote;
-            const position = this.currentNote ? this._editorDropPosition(event) : null;
             
             for (const file of mediaFiles) {
                 try {
                     const mediaPath = await this.uploadMedia(file, notePath);
-                    if (mediaPath && this.currentNote) {
+                    // The note may have been switched during the upload
+                    if (mediaPath && notePath && this.currentNote === notePath) {
                         await this.insertMediaMarkdown(mediaPath, file.name, position);
                     }
                 } catch (error) {
@@ -5323,6 +5342,10 @@ function noteApp() {
         formatText(type) {
             if (type === 'link' || type === 'image') {
                 this.openLinkPrompt(type);
+                return;
+            }
+            if (type === 'attach') {
+                this.openAttachPicker();
                 return;
             }
             noteEditor?.format(type);
