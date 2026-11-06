@@ -283,7 +283,7 @@
             margin-left: auto;
             margin-right: auto;
         }
-        .note-editor-content p.is-editor-empty:first-child::before {
+        .note-editor-content p.is-empty::before {
             content: attr(data-placeholder);
             float: left;
             height: 0;
@@ -481,6 +481,12 @@
         .wikilink-autocomplete-item.active {
             background-color: var(--bg-hover);
         }
+        .wikilink-autocomplete .wl-group {
+            padding: 6px 8px 2px;
+            color: var(--text-tertiary);
+            font-size: 11px;
+            font-weight: 600;
+        }
         .wikilink-autocomplete-item .wl-label {
             color: var(--text-primary);
             font-size: 13px;
@@ -538,6 +544,30 @@
             justify-content: flex-end;
             gap: 4px;
         }
+        .add-block-button {
+            position: fixed;
+            z-index: 1190;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: var(--text-tertiary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        .add-block-button:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        @media (pointer: coarse) {
+            .add-block-button {
+                width: 36px;
+                height: 36px;
+            }
+        }
         .selection-bubble {
             width: auto;
             align-items: center;
@@ -564,6 +594,10 @@
         }
         .link-prompt.selection-bubble button {
             padding: 0;
+        }
+        .link-prompt.selection-bubble .selection-turn-into {
+            padding: 4px 8px;
+            white-space: nowrap;
         }
         .link-prompt button:hover {
             background-color: var(--bg-hover);
@@ -2972,9 +3006,6 @@
                                 <button @click="formatText('link')" class="format-btn" :title="t('format.link') + ' (Ctrl+K)'">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                                 </button>
-                                <button @click="formatText('image')" class="format-btn" :title="t('format.image')">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                </button>
                                 <button @click="formatText('attach')" class="format-btn" :title="t('format.attach')">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                                 </button>
@@ -3002,26 +3033,6 @@
                                 <button @click="formatText('table')" class="format-btn" :title="t('format.table') + ' (Ctrl+Alt+T)'">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                 </button>
-                                <template x-if="inTable">
-                                    <div class="flex items-center gap-1">
-                                        <div class="w-px h-4 mx-1" style="background-color: var(--border-primary);"></div>
-                                        <button @click="formatText('addRow')" class="format-btn" :title="t('format.add_row')">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 5h16M4 10h16M12 14v7M8.5 17.5h7"></path></svg>
-                                        </button>
-                                        <button @click="formatText('addColumn')" class="format-btn" :title="t('format.add_column')">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 4v16M10 4v16M14 12h7M17.5 8.5v7"></path></svg>
-                                        </button>
-                                        <button @click="formatText('deleteRow')" class="format-btn" :title="t('format.delete_row')">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 5h16M4 10h16M8.5 17.5h7"></path></svg>
-                                        </button>
-                                        <button @click="formatText('deleteColumn')" class="format-btn" :title="t('format.delete_column')">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 4v16M10 4v16M14 12h7"></path></svg>
-                                        </button>
-                                        <button @click="formatText('deleteTable')" class="format-btn" :title="t('format.delete_table')" style="color: var(--error);">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path></svg>
-                                        </button>
-                                    </div>
-                                </template>
                             </div>
                             <!-- Note Properties/Metadata Panel -->
                             <div 
@@ -3479,12 +3490,15 @@
          :style="`position: fixed; top: ${wikilinkAutocomplete.position.top}px; left: ${wikilinkAutocomplete.position.left}px; max-height: ${wikilinkAutocomplete.position.maxHeight}px; z-index: 1200; ${wikilinkAutocomplete.position.above ? 'transform: translateY(-100%);' : ''}`"
          x-cloak>
         <template x-for="(item, idx) in wikilinkAutocomplete.items" :key="item.insert + idx">
-            <div class="wikilink-autocomplete-item"
-                 :class="{'active': idx === wikilinkAutocomplete.activeIndex}"
-                 @mouseenter="wikilinkAutocomplete.activeIndex = idx"
-                 @click="wlAccept(item)">
-                <span class="wl-label" x-text="item.label"></span>
-                <span class="wl-secondary" x-show="item.secondary" x-text="item.secondary"></span>
+            <div>
+                <div class="wl-group" x-show="item.heading" x-text="item.heading"></div>
+                <div class="wikilink-autocomplete-item"
+                     :class="{'active': idx === wikilinkAutocomplete.activeIndex}"
+                     @mouseenter="wikilinkAutocomplete.activeIndex = idx"
+                     @click="wlAccept(item)">
+                    <span class="wl-label" x-text="item.label"></span>
+                    <span class="wl-secondary" x-show="item.secondary" x-text="item.secondary"></span>
+                </div>
             </div>
         </template>
     </div>
@@ -3505,25 +3519,79 @@
     <!-- Formatting for selected text. mousedown.prevent keeps the selection. -->
     <div x-show="selectionBubble.open"
          @mousedown.prevent
+         x-ref="selectionBubble"
          class="link-prompt selection-bubble"
          :style="`position: fixed; top: ${selectionBubble.position.top}px; left: ${selectionBubble.position.left}px; z-index: 1190; ${selectionBubble.position.above ? 'transform: translateY(-100%);' : ''}`"
          x-cloak>
-        <button type="button" @click="formatText('bold')" class="format-btn" :class="{ active: selectionBubble.active.bold }" :title="t('format.bold') + ' (Ctrl+B)'">
+        <button type="button" x-show="!selectionBubble.codeOnly" @click="formatText('bold')" class="format-btn" :class="{ active: selectionBubble.active.bold }" :title="t('format.bold') + ' (Ctrl+B)'">
             <span class="font-bold">B</span>
         </button>
-        <button type="button" @click="formatText('italic')" class="format-btn" :class="{ active: selectionBubble.active.italic }" :title="t('format.italic') + ' (Ctrl+I)'">
+        <button type="button" x-show="!selectionBubble.codeOnly" @click="formatText('italic')" class="format-btn" :class="{ active: selectionBubble.active.italic }" :title="t('format.italic') + ' (Ctrl+I)'">
             <span class="italic">I</span>
         </button>
-        <button type="button" @click="formatText('strikethrough')" class="format-btn" :class="{ active: selectionBubble.active.strike }" :title="t('format.strikethrough') + ' (Ctrl+Shift+S)'">
+        <button type="button" x-show="!selectionBubble.codeOnly" @click="formatText('strikethrough')" class="format-btn" :class="{ active: selectionBubble.active.strike }" :title="t('format.strikethrough') + ' (Ctrl+Shift+S)'">
             <span class="line-through">S</span>
         </button>
-        <button type="button" @click="formatText('code')" class="format-btn" :class="{ active: selectionBubble.active.code }" :title="t('format.code') + ' (Ctrl+E)'">
+        <button type="button" x-show="!selectionBubble.codeOnly" @click="formatText('code')" class="format-btn" :class="{ active: selectionBubble.active.code }" :title="t('format.code') + ' (Ctrl+E)'">
             <span class="font-mono text-xs">&lt;/&gt;</span>
         </button>
-        <button type="button" @click="formatText('link')" class="format-btn" :class="{ active: selectionBubble.active.link }" :title="t('format.link') + ' (Ctrl+K)'">
+        <button type="button" x-show="!selectionBubble.codeOnly" @click="formatText('link')" class="format-btn" :class="{ active: selectionBubble.active.link }" :title="t('format.link') + ' (Ctrl+K)'">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
         </button>
+        <button type="button" x-show="!selectionBubble.codeOnly" @click="formatText('clear')" class="format-btn" :title="t('format.clear_formatting') + ' (Ctrl+\\)'">
+            <span class="text-xs">T<sub>x</sub></span>
+        </button>
+        <button type="button" x-show="!selectionBubble.inTable" @click="toggleTurnIntoMenu()" class="selection-turn-into" x-text="t('format.turn_into')"></button>
     </div>
+
+    <!-- What selected text can become. mousedown.prevent keeps the selection. -->
+    <div x-show="turnIntoMenu.open"
+         @mousedown.prevent
+         class="wikilink-autocomplete"
+         :style="`position: fixed; top: ${turnIntoMenu.position.top}px; left: ${turnIntoMenu.position.left}px; max-height: ${turnIntoMenu.maxHeight}px; z-index: 1195; ${turnIntoMenu.position.above ? 'transform: translateY(-100%);' : ''}`"
+         x-cloak>
+        <template x-for="block in turnIntoBlocks" :key="block.type">
+            <div class="wikilink-autocomplete-item" :class="{ active: block.type === selectionBubble.block }" @click="turnInto(block.type)">
+                <span class="wl-label" x-text="t(block.label)"></span>
+            </div>
+        </template>
+    </div>
+
+    <!-- Actions for the table holding the cursor. mousedown.prevent keeps the cursor in the editor. -->
+    <div x-show="tablePopup.open"
+         @mousedown.prevent
+         class="link-prompt selection-bubble"
+         :style="`position: fixed; top: ${tablePopup.top}px; left: ${tablePopup.left}px; z-index: 1190;`"
+         x-cloak>
+        <button type="button" @click="formatText('addRow')" class="format-btn" :title="t('format.add_row')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 5h16M4 10h16M12 14v7M8.5 17.5h7"></path></svg>
+        </button>
+        <button type="button" @click="formatText('addColumn')" class="format-btn" :title="t('format.add_column')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 4v16M10 4v16M14 12h7M17.5 8.5v7"></path></svg>
+        </button>
+        <button type="button" @click="formatText('deleteRow')" class="format-btn" :title="t('format.delete_row')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 5h16M4 10h16M8.5 17.5h7"></path></svg>
+        </button>
+        <button type="button" @click="formatText('deleteColumn')" class="format-btn" :title="t('format.delete_column')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 4v16M10 4v16M14 12h7"></path></svg>
+        </button>
+        <button type="button" @click="formatText('deleteTable')" class="format-btn" :title="t('format.delete_table')" style="color: var(--error);">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+    </div>
+
+    <!-- Opens the / menu on an empty line. mousedown.prevent keeps the keyboard up on phones. -->
+    <button type="button"
+            x-show="addButton.open"
+            @mousedown.prevent
+            @click="openAddMenu()"
+            class="add-block-button"
+            :style="`top: ${addButton.top}px; left: ${addButton.left}px;`"
+            :title="t('format.add_block')"
+            :aria-label="t('format.add_block')"
+            x-cloak>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 5v14M5 12h14"></path></svg>
+    </button>
 
     <!-- Source of a formula or diagram -->
     <div x-show="sourcePrompt.open" class="fixed inset-0" style="z-index: 1199;" @click="closeSourcePrompt()" x-cloak></div>

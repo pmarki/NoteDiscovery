@@ -64,25 +64,39 @@ export function wikilinkSuggestion({ onChange, onKeyDown }) {
 }
 
 // Tables hold one line per cell in Markdown, so block commands have no place there.
-function allowSlash({ state, range }) {
-    const $from = state.doc.resolve(range.from);
-    if ($from.parent.type.name !== 'paragraph' || range.from !== $from.start()) return false;
-    for (let depth = $from.depth; depth > 0; depth -= 1) {
-        if ($from.node(depth).type.spec.tableRole) return false;
+export function acceptsBlock($pos) {
+    if ($pos.parent.type.name !== 'paragraph' || $pos.pos !== $pos.start()) return false;
+    for (let depth = $pos.depth; depth > 0; depth -= 1) {
+        if ($pos.node(depth).type.spec.tableRole) return false;
     }
     return true;
 }
 
+function allowSlash({ state, range }) {
+    const $from = state.doc.resolve(range.from);
+    if ($from.parent.type.spec.code) return false;
+    // A / typed inside an unfinished [[ belongs to that link
+    const before = $from.parent.textBetween(0, $from.parentOffset, '', ' ');
+    if (before.lastIndexOf('[[') > before.lastIndexOf(']]')) return false;
+    return !state.doc.rangeHasMark(range.from, range.to, state.schema.marks.code);
+}
+
 /**
- * Report a / at the start of a paragraph to the app, which owns the commands and the popup.
- * `onChange` receives { query, isSlash, clientRect }, or null when the token ends.
+ * Report a / after a space or at the start of a line to the app, which owns the commands and the popup.
+ * `onChange` receives { query, isSlash, inline, clientRect }, or null when the token ends.
+ * `inline` means a block can't go there, so only inline commands apply.
  */
 export function slashSuggestion({ onChange, onKeyDown }) {
     let active = null;
 
     const report = (props) => {
         active = props;
-        onChange({ query: props.query, isSlash: true, clientRect: props.clientRect });
+        onChange({
+            query: props.query,
+            isSlash: true,
+            inline: !acceptsBlock(props.editor.state.doc.resolve(props.range.from)),
+            clientRect: props.clientRect,
+        });
     };
 
     const extension = Extension.create({
@@ -92,7 +106,6 @@ export function slashSuggestion({ onChange, onKeyDown }) {
                 editor: this.editor,
                 pluginKey: new PluginKey('slashSuggestion'),
                 char: '/',
-                startOfLine: true,
                 allow: allowSlash,
                 command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run(),
                 render: () => ({

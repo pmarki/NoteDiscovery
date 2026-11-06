@@ -247,23 +247,35 @@ const EDITOR_TAB_OUTDENT_MAX_SPACES = 4;
 
 // The / menu. `type` is what formatText() runs, `hint` shows the Markdown it stands for.
 const SLASH_COMMANDS = [
-    { type: 'heading1', label: 'format.heading_1', hint: '#', keywords: 'h1 heading title' },
-    { type: 'heading2', label: 'format.heading_2', hint: '##', keywords: 'h2 heading' },
-    { type: 'heading3', label: 'format.heading_3', hint: '###', keywords: 'h3 heading' },
-    { type: 'bullet', label: 'format.bullet_list', hint: '-', keywords: 'bullet list ul' },
-    { type: 'numbered', label: 'format.numbered_list', hint: '1.', keywords: 'numbered ordered list ol' },
-    { type: 'checkbox', label: 'format.checkbox', hint: '- [ ]', keywords: 'task todo checkbox list' },
-    { type: 'quote', label: 'format.quote', hint: '>', keywords: 'quote blockquote' },
-    { type: 'codeblock', label: 'format.codeblock', hint: '```', keywords: 'code block fence' },
-    { type: 'table', label: 'format.table', hint: '', keywords: 'table grid' },
-    { type: 'divider', label: 'format.divider', hint: '---', keywords: 'divider line rule hr separator' },
-    { type: 'callout', label: 'format.callout', hint: '> [!NOTE]', keywords: 'callout note tip warning admonition' },
-    { type: 'formula', label: 'embed.formula', hint: '$$', keywords: 'formula math latex equation' },
-    { type: 'diagram', label: 'embed.diagram', hint: 'mermaid', keywords: 'diagram mermaid chart flowchart' },
-    { type: 'image', label: 'format.image', hint: '', keywords: 'image picture photo' },
-    { type: 'attach', label: 'format.attach', hint: '', keywords: 'attach file upload image audio video pdf' },
-    { type: 'link', label: 'format.link', hint: '', keywords: 'link url address' },
-    { type: 'noteLink', label: 'format.note_link', hint: '[[', keywords: 'wikilink note link' },
+    { type: 'heading1', group: 'format.text', label: 'format.heading_1', hint: '#', keywords: 'h1 heading title' },
+    { type: 'heading2', group: 'format.text', label: 'format.heading_2', hint: '##', keywords: 'h2 heading' },
+    { type: 'heading3', group: 'format.text', label: 'format.heading_3', hint: '###', keywords: 'h3 heading' },
+    { type: 'quote', group: 'format.text', label: 'format.quote', hint: '>', keywords: 'quote blockquote' },
+    { type: 'callout', group: 'format.text', label: 'format.callout', hint: '> [!NOTE]', keywords: 'callout note tip warning admonition' },
+    { type: 'bullet', group: 'format.group_lists', label: 'format.bullet_list', hint: '-', keywords: 'bullet list ul' },
+    { type: 'numbered', group: 'format.group_lists', label: 'format.numbered_list', hint: '1.', keywords: 'numbered ordered list ol' },
+    { type: 'checkbox', group: 'format.group_lists', label: 'format.checkbox', hint: '- [ ]', keywords: 'task todo checkbox list' },
+    { type: 'codeblock', group: 'format.group_blocks', label: 'format.codeblock', hint: '```', keywords: 'code block fence' },
+    { type: 'table', group: 'format.group_blocks', label: 'format.table', hint: '', keywords: 'table grid' },
+    { type: 'divider', group: 'format.group_blocks', label: 'format.divider', hint: '---', keywords: 'divider line rule hr separator' },
+    { type: 'formula', group: 'format.group_blocks', label: 'embed.formula', hint: '$$', keywords: 'formula math latex equation' },
+    { type: 'diagram', group: 'format.group_blocks', label: 'embed.diagram', hint: 'mermaid', keywords: 'diagram mermaid chart flowchart' },
+    { type: 'attach', group: 'format.group_media', label: 'format.attach', hint: '', keywords: 'attach file upload image picture photo audio video pdf', inline: true },
+    { type: 'link', group: 'format.group_links', label: 'format.link', hint: '', keywords: 'link url address', inline: true },
+    { type: 'noteLink', group: 'format.group_links', label: 'format.note_link', hint: '[[', keywords: 'wikilink note link', inline: true },
+];
+
+// What selected text can become, in the Turn into menu. `type` is what turnInto() runs.
+const TURN_INTO_BLOCKS = [
+    { type: 'text', label: 'format.text' },
+    { type: 'heading1', label: 'format.heading_1' },
+    { type: 'heading2', label: 'format.heading_2' },
+    { type: 'heading3', label: 'format.heading_3' },
+    { type: 'quote', label: 'format.quote' },
+    { type: 'bullet', label: 'format.bullet_list' },
+    { type: 'numbered', label: 'format.numbered_list' },
+    { type: 'checkbox', label: 'format.checkbox' },
+    { type: 'codeblock', label: 'format.codeblock' },
 ];
 
 const MEDIA_FORMATS_DISPLAY = 'JPG, PNG, GIF, WebP, MP3, MP4, PDF, MD';
@@ -415,7 +427,6 @@ function noteApp() {
         // What the undo and redo buttons can do right now
         canUndo: false,
         canRedo: false,
-        inTable: false,
 
         // The noteContent the editor is showing. Anything else came from outside the editor.
         _editorMarkdown: '',
@@ -453,6 +464,7 @@ function noteApp() {
         wikilinkAutocomplete: {
             open: false,
             mode: 'note',        // 'note' | 'media' | 'slash'
+            inline: false,       // slash mode where a block can't go
             query: '',
             items: [],           // [{label, secondary, insert, kind, prefix, modified}]
             activeIndex: 0,
@@ -463,7 +475,7 @@ function noteApp() {
         // Address popover for the link and image buttons
         linkPrompt: {
             open: false,
-            type: 'link',        // 'link' | 'image' | 'wikilink'
+            type: 'link',        // 'link' | 'wikilink'
             href: '',
             canRemove: false,
             position: { top: 0, left: 0, above: false },
@@ -479,9 +491,16 @@ function noteApp() {
         _itemOutOfView: false, // Hidden only by scrolling, so scrolling back restores it
 
         // Formatting buttons shown over selected text
+        turnIntoBlocks: TURN_INTO_BLOCKS,
+        turnIntoMenu: { open: false, key: '', position: { top: 0, left: 0, above: false }, maxHeight: 300 },
+        tablePopup: { open: false, top: 0, left: 0 },
+        addButton: { open: false, top: 0, left: 0 },
         selectionBubble: {
             open: false,
             active: {},          // { bold, italic, strike, code, link }
+            block: 'text',       // a key of the editor's BLOCKS
+            codeOnly: false,     // inside a code block, where marks don't apply
+            inTable: false,
             position: { top: 0, left: 0, above: true },
         },
 
@@ -1647,6 +1666,7 @@ function noteApp() {
             if (!suggestion) { this.wlClose(); return; }
 
             this.wikilinkAutocomplete.mode = suggestion.isSlash ? 'slash' : (suggestion.isMedia ? 'media' : 'note');
+            this.wikilinkAutocomplete.inline = !!suggestion.inline;
             this.wikilinkAutocomplete.query = suggestion.query;
             this._wlClientRect = suggestion.clientRect;
             this.wlComputeItems();
@@ -1654,6 +1674,7 @@ function noteApp() {
             this.wikilinkAutocomplete.activeIndex = 0;
             this.wikilinkAutocomplete.open = true;
             this.wlUpdatePosition();
+            this._updateTablePopup(noteEditor?.tableAtCursor());
         },
 
         // Rebuild the suggestion list for the current query/mode.
@@ -1709,17 +1730,21 @@ function noteApp() {
 
         // Block commands matching `query`, by their translated name or English keywords
         _slashItems(query) {
-            const items = SLASH_COMMANDS.map(({ type, label, hint, keywords }) => {
+            const { inline } = this.wikilinkAutocomplete;
+            const commands = SLASH_COMMANDS.filter((command) => !inline || command.inline);
+            const items = commands.map(({ type, group, label, hint, keywords }) => {
                 const name = this.t(label);
                 return {
                     label: name,
                     secondary: hint,
                     insert: type,
+                    group: this.t(group),
                     search: `${name} ${keywords}`.toLowerCase(),
                     prefix: name.toLowerCase().startsWith(query),
                 };
             });
-            return items.filter((item) => item.search.includes(query)).sort((a, b) => b.prefix - a.prefix);
+            if (query) return items.filter((item) => item.search.includes(query)).sort((a, b) => b.prefix - a.prefix);
+            return items.map((item, index) => ({ ...item, heading: item.group === items[index - 1]?.group ? '' : item.group }));
         },
 
         // Keyboard handling while the popup is open. True means the key was used,
@@ -1768,6 +1793,18 @@ function noteApp() {
 
         wlClose() {
             if (this.wikilinkAutocomplete.open) this.wikilinkAutocomplete.open = false;
+            this._updateTablePopup(noteEditor?.tableAtCursor());
+            if (this._slashFromAddButton) {
+                this._slashFromAddButton = false;
+                // Not while the editor is still reporting the change that closed the menu
+                setTimeout(() => noteEditor?.removeAddedSlash());
+            }
+        },
+
+        // The + button types the / itself, so the same menu opens
+        openAddMenu() {
+            this._slashFromAddButton = true;
+            noteEditor?.typeSlash();
         },
 
         // Position the popup just below the caret, clamped to the viewport.
@@ -5254,12 +5291,13 @@ function noteApp() {
                 onChange: (value) => this._onEditorChange(value),
                 drawNode: (name, target, attrs) => this._drawNode(name, target, attrs),
                 decorateCode: (pre) => this.addCopyButtonToCodeBlock(pre),
-                onStateChange: ({ canUndo, canRedo, inTable, item, selection }) => {
+                onStateChange: ({ canUndo, canRedo, table, emptyLine, item, selection }) => {
                     this.canUndo = canUndo;
                     this.canRedo = canRedo;
-                    this.inTable = inTable;
                     this._updateItemPopup(item);
                     this._updateSelectionBubble(selection);
+                    this._updateTablePopup(table);
+                    this._updateAddButton(emptyLine);
                 },
                 onOpenLink: (event) => this.openEditorLink(event),
                 onOpenWikilink: ({ target }) => this._openInternalHref(this._wikilinkHref(target)),
@@ -5286,6 +5324,9 @@ function noteApp() {
                 if (this.wikilinkAutocomplete.open) this.wlUpdatePosition();
                 if (this.itemPopup.open || this._itemOutOfView) this._updateItemPopup(noteEditor?.itemAtSelection());
                 this._updateSelectionBubble(noteEditor?.textSelection());
+                this._updateTablePopup(noteEditor?.tableAtCursor());
+                this._updateAddButton(noteEditor?.emptyLineAtCursor());
+                if (this.turnIntoMenu.open) this._placeTurnIntoMenu();
             };
             element.addEventListener('scroll', () => {
                 placePopups();
@@ -5340,7 +5381,7 @@ function noteApp() {
         
         // Toolbar buttons and shortcuts
         formatText(type) {
-            if (type === 'link' || type === 'image') {
+            if (type === 'link') {
                 this.openLinkPrompt(type);
                 return;
             }
@@ -5388,23 +5429,96 @@ function noteApp() {
         _updateSelectionBubble(selection) {
             const surface = document.getElementById('note-editor')?.getBoundingClientRect();
             const visible = selection && surface && selection.rect.bottom > surface.top && selection.rect.top < surface.bottom;
+            if (this.turnIntoMenu.open && (!visible || selection.key !== this.turnIntoMenu.key)) this.turnIntoMenu.open = false;
             if (!visible) {
                 if (this.selectionBubble.open) this.selectionBubble.open = false;
                 return;
             }
+            const { active, block, codeOnly, inTable } = selection;
             const HEIGHT = 40;
             const GAP = 6;
             // Phones show their own menu by the selection, which can't be turned off or moved
             if (window.matchMedia('(pointer: coarse)').matches) {
                 const top = Math.min(this._visibleArea().bottom, surface.bottom) - GAP;
-                this.selectionBubble = { open: true, active: selection.active, position: { top, left: surface.left + GAP, above: true } };
+                this.selectionBubble = { open: true, active, block, codeOnly, inTable, position: { top, left: surface.left + GAP, above: true } };
                 return;
             }
             const rect = this._visibleRect(selection.rect, surface);
             const position = rect.top - GAP - HEIGHT >= this._visibleArea().top
                 ? { ...this._popupPosition(rect), top: rect.top - GAP, above: true }
                 : this._popupPosition(rect, HEIGHT);
-            this.selectionBubble = { open: true, active: selection.active, position };
+            this.selectionBubble = { open: true, active, block, codeOnly, inTable, position };
+        },
+        
+        toggleTurnIntoMenu() {
+            if (this.turnIntoMenu.open) {
+                this.turnIntoMenu.open = false;
+                return;
+            }
+            this.turnIntoMenu.key = noteEditor?.textSelection()?.key ?? '';
+            this.turnIntoMenu.open = true;
+            this._placeTurnIntoMenu();
+        },
+        
+        _placeTurnIntoMenu() {
+            const anchor = this.$refs.selectionBubble.getBoundingClientRect();
+            const area = this._visibleArea();
+            const maxHeight = Math.min(320, area.bottom - area.top - 8);
+            this.turnIntoMenu.maxHeight = maxHeight;
+            this.turnIntoMenu.position = this._popupPosition(anchor, maxHeight);
+        },
+        
+        turnInto(type) {
+            this.turnIntoMenu.open = false;
+            noteEditor?.turnInto(type);
+        },
+        
+        // Above the table when there's room there, otherwise next to the current cell.
+        // One popup at a time, and never off screen, even with an on-screen keyboard up.
+        _updateTablePopup(table) {
+            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
+            const taken = this.selectionBubble.open || this.itemPopup.open || this.wikilinkAutocomplete.open;
+            const visible = table && surface && table.rect.bottom > surface.top && table.rect.top < surface.bottom;
+            if (taken || !visible) {
+                if (this.tablePopup.open) this.tablePopup.open = false;
+                return;
+            }
+            const WIDTH = 190;
+            const HEIGHT = 40;
+            const GAP = 6;
+            const area = this._visibleArea();
+            const minTop = Math.max(area.top, 0) + 4;
+            const maxTop = area.bottom - HEIGHT - 4;
+            const hasRoom = table.rect.top - GAP - HEIGHT >= Math.max(surface.top, minTop) && table.rect.top <= maxTop;
+            let top = table.rect.top - GAP - HEIGHT;
+            if (!hasRoom) {
+                const position = this._popupPosition(table.cellRect, HEIGHT);
+                top = position.above ? position.top - HEIGHT : position.top;
+            }
+            const anchor = hasRoom ? table.rect : table.cellRect;
+            this.tablePopup = {
+                open: true,
+                top: Math.max(minTop, Math.min(top, maxTop)),
+                left: Math.max(4, Math.min(anchor.left, window.innerWidth - WIDTH - 4)),
+            };
+        },
+        
+        // Left of the empty line, or at its right end when there's no margin for it
+        _updateAddButton(rect) {
+            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
+            const visible = rect && surface && rect.bottom > surface.top && rect.top < surface.bottom;
+            if (!visible) {
+                if (this.addButton.open) this.addButton.open = false;
+                return;
+            }
+            const SIZE = window.matchMedia('(pointer: coarse)').matches ? 36 : 26;
+            const GAP = 6;
+            const hasMargin = rect.left - SIZE - GAP >= surface.left;
+            this.addButton = {
+                open: true,
+                top: (rect.top + rect.bottom - SIZE) / 2,
+                left: hasMargin ? rect.left - SIZE - GAP : surface.right - SIZE - GAP,
+            };
         },
         
         // A tall item can be bigger than the editor, so only its visible part counts
@@ -5727,7 +5841,6 @@ function noteApp() {
             }
             const apply = {
                 link: () => noteEditor?.setLink(address),
-                image: () => noteEditor?.insertImage(address),
                 // Anything else would change what the [[...]] means when it's read back
                 wikilink: () => !/[[\]|\n]/.test(address) && noteEditor?.updateSelectedNode({ target: address }),
             };

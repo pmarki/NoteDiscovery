@@ -13,7 +13,7 @@ import { common, createLowlight } from 'lowlight';
 import { joinFrontmatter, splitFrontmatter } from './markdown.js';
 import { Callout, drawnView, drawOptions, Embed, MathBlock, MathInline, MermaidBlock, Wikilink } from './nodes.js';
 import { highlightMatches, SearchHighlight } from './search.js';
-import { slashSuggestion, wikilinkSuggestion } from './suggest.js';
+import { acceptsBlock, slashSuggestion, wikilinkSuggestion } from './suggest.js';
 import { TabKey } from './tab.js';
 
 /** Keeps the Markdown `src` in the document and only rewrites it for display. */
@@ -141,6 +141,31 @@ function buildFrontmatterField(label, onInput) {
 const POPUP_NODES = new Set(['wikilink', 'embed', 'image', ...SOURCE_NODES]);
 const BUBBLE_MARKS = ['bold', 'italic', 'strike', 'code', 'link'];
 const SOURCE_FORMATS = { formula: 'mathBlock', diagram: 'mermaidBlock' };
+// What selected text can become. Each runs after clearNodes(), so nothing stays nested in the old block.
+const BLOCKS = {
+    text: () => {},
+    heading1: (chain) => chain.setHeading({ level: 1 }),
+    heading2: (chain) => chain.setHeading({ level: 2 }),
+    heading3: (chain) => chain.setHeading({ level: 3 }),
+    quote: (chain) => chain.setBlockquote(),
+    bullet: (chain) => chain.toggleBulletList(),
+    numbered: (chain) => chain.toggleOrderedList(),
+    checkbox: (chain) => chain.toggleTaskList(),
+    codeblock: (chain) => chain.setCodeBlock(),
+};
+
+// The kind of block the selection starts in, as a key of BLOCKS.
+function blockAtSelection(target) {
+    if (target.isActive('codeBlock')) return 'codeblock';
+    for (const level of [1, 2, 3]) {
+        if (target.isActive('heading', { level })) return `heading${level}`;
+    }
+    if (target.isActive('taskList')) return 'checkbox';
+    if (target.isActive('bulletList')) return 'bullet';
+    if (target.isActive('orderedList')) return 'numbered';
+    if (target.isActive('blockquote')) return 'quote';
+    return 'text';
+}
 
 /** The checkbox of the task a click toggles in read-only mode, where the item text counts too. */
 function taskBoxForClick(event, editable) {
@@ -192,6 +217,7 @@ export function create({
         cancel();
         onChange(getMarkdown());
     };
+    let addedSlashAt = null;
     const schedule = () => {
         cancel();
         timer = setTimeout(flush, debounceMs);
@@ -221,15 +247,47 @@ export function create({
         if (dragging || !target.isEditable || !target.isFocused) return null;
         if (!(selection instanceof TextSelection) || selection.empty) return null;
         const { from, to, $from } = selection;
-        if ($from.parent.type.spec.code || !doc.textBetween(from, to, ' ', ' ').trim()) return null;
+        if (!doc.textBetween(from, to, ' ', ' ').trim()) return null;
         const active = Object.fromEntries(BUBBLE_MARKS.map((mark) => [mark, target.isActive(mark)]));
-        return { rect: posToDOMRect(target.view, from, to), active };
+        return {
+            rect: posToDOMRect(target.view, from, to),
+            active,
+            key: `${from}:${to}`,
+            block: blockAtSelection(target),
+            codeOnly: !!$from.parent.type.spec.code,
+            inTable: target.isActive('table'),
+        };
+    };
+    /** Where the table popup goes: the table holding the cursor and its current cell, or null. */
+    const tableAtCursor = (target) => {
+        if (!target.isEditable || !target.isFocused || !target.isActive('table')) return null;
+        const { $from } = target.state.selection;
+        const rectAtRole = (matches) => {
+            for (let depth = $from.depth; depth > 0; depth -= 1) {
+                if (matches($from.node(depth).type.spec.tableRole)) {
+                    return target.view.nodeDOM($from.before(depth))?.getBoundingClientRect();
+                }
+            }
+            return null;
+        };
+        const rect = rectAtRole((role) => role === 'table');
+        const cellRect = rectAtRole((role) => role === 'cell' || role === 'header_cell');
+        return rect && cellRect ? { rect, cellRect } : null;
+    };
+    /** The empty line under the cursor where the + button can add a block, or null. */
+    const emptyLineAtCursor = (target) => {
+        const { selection } = target.state;
+        if (!target.isEditable || !target.isFocused || !selection.empty) return null;
+        const { $from } = selection;
+        if ($from.parent.content.size || !acceptsBlock($from)) return null;
+        return target.view.coordsAtPos($from.pos);
     };
     // `showItem: false` keeps the popup away while the text is being changed.
     const reportState = (target, { showItem = true } = {}) => onStateChange({
         canUndo: target.can().undo(),
         canRedo: target.can().redo(),
-        inTable: target.isActive('table'),
+        table: tableAtCursor(target),
+        emptyLine: emptyLineAtCursor(target),
         item: showItem && (target.isFocused || !target.isEditable) ? itemAtSelection(target) : null,
         selection: textSelection(target),
     });
@@ -374,6 +432,7 @@ export function create({
         }
         // A new state, not setContent: otherwise undo walks back into the previous note.
         readOnlyItem = null;
+        addedSlashAt = null;
         const { schema, state } = editor;
         const doc = json.content?.length ? schema.nodeFromJSON(json) : schema.topNodeType.createAndFill();
         editor.view.updateState(EditorState.create({ doc, plugins: state.plugins }));
@@ -398,6 +457,7 @@ export function create({
         divider: (chain) => chain.setHorizontalRule(),
         callout: (chain) => chain.wrapIn('callout'),
         noteLink: (chain) => chain.insertContent('[['),
+        clear: (chain) => chain.unsetAllMarks(),
         addRow: (chain) => chain.addRowAfter(),
         addColumn: (chain) => chain.addColumnAfter(),
         deleteRow: (chain) => chain.deleteRow(),
@@ -441,6 +501,28 @@ export function create({
             if (type in SOURCE_FORMATS) insertSourceBlock(SOURCE_FORMATS[type]);
             else FORMATS[type]?.(editor.chain().focus()).run();
         },
+        turnInto(type) {
+            const chain = editor.chain().focus().clearNodes();
+            BLOCKS[type]?.(chain);
+            chain.run();
+        },
+        // Typing the / opens the normal menu. The + button uses this, so it can undo it.
+        typeSlash() {
+            addedSlashAt = editor.state.selection.from;
+            editor.chain().focus().insertContent('/').run();
+        },
+        // By position, because a click elsewhere closes the menu by moving the cursor away.
+        removeAddedSlash() {
+            const { doc, tr } = editor.state;
+            const position = addedSlashAt;
+            addedSlashAt = null;
+            if (position === null || position > doc.content.size) return;
+            const $position = doc.resolve(position);
+            if ($position.parent.textContent !== '/') return;
+            editor.view.dispatch(tr.delete($position.start(), $position.end()));
+        },
+        tableAtCursor: () => tableAtCursor(editor),
+        emptyLineAtCursor: () => emptyLineAtCursor(editor),
         linkAtSelection: () => linkAtSelection(editor),
         itemAtSelection: () => itemAtSelection(editor),
         textSelection: () => textSelection(editor),
@@ -483,7 +565,6 @@ export function create({
             const { from, to } = editor.state.selection;
             return editor.chain().focus().extendMarkRange('link').unsetLink().setTextSelection({ from, to }).run();
         },
-        insertImage: (src, alt = '') => editor.chain().focus().setImage({ src, alt }).run(),
         insertMarkdown(value, position = null) {
             const options = { contentType: 'markdown' };
             if (position === null) return editor.chain().focus().insertContent(value, options).run();

@@ -242,18 +242,19 @@ const slash = (type) => {
     return opened;
 };
 
-test('/ only opens at the start of a plain paragraph', () => {
-    const opens = (markdown, typed = '/') => {
+test('/ opens at the start of a line or after a space, and says when only inline commands fit', () => {
+    const state = (markdown, typed = '/') => {
         editor.setMarkdown(markdown, { resetHistory: true });
         editor.insertMarkdown(typed);
-        const opened = suggestion?.isSlash === true;
+        const result = suggestion?.isSlash === true ? (suggestion.inline ? 'inline' : 'block') : 'closed';
         editor.setMarkdown('', { resetHistory: true });
-        return opened;
+        return result;
     };
-    assert.equal(opens(''), true);
-    assert.equal(opens('', 'a/'), false);
-    assert.equal(opens('', 'and /'), false);
-    assert.equal(opens('```\nx\n```\n'), false);
+    assert.equal(state(''), 'block');
+    assert.equal(state('', 'a/'), 'closed');
+    assert.equal(state('', 'and /'), 'inline');
+    assert.equal(state('```\nx\n```\n'), 'closed');
+    assert.equal(state('', '[[a /'), 'closed');
 });
 
 test('every / command leaves a valid document that survives a reload', () => {
