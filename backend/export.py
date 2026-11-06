@@ -856,11 +856,6 @@ def generate_export_html(
             if (img.getAttribute('title') === rawAlt) img.setAttribute('title', cleanAlt);
         }});
         
-        // Typeset math after content is inserted
-        if (typeof MathJax !== 'undefined' && MathJax.typeset) {{
-            MathJax.typeset();
-        }}
-        
         // Add copy buttons to code blocks
         document.querySelectorAll('.markdown-preview pre').forEach(pre => {{
             const btn = document.createElement('button');
