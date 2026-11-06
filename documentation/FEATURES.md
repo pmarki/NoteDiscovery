@@ -5,8 +5,9 @@
 ### Create & Edit
 - **WYSIWYG markdown editor** - Formulas, diagrams, images and other media render right in the note, which is still saved as plain Markdown
 - **Two view modes**: Edit and Read (read-only)
-- **Slash menu** - Type `/` at the start of a line to insert a heading, list, table, callout, formula, diagram and more. Filter by typing, then press `Enter`
-- **Bubble toolbar** - Select text for quick bold, italic, strikethrough, code and link buttons
+- **Slash menu** - Type `/` at the start of a line, or click the `+` beside an empty line, to insert a heading, list, table, callout, formula, diagram and more. Filter by typing, then press `Enter`. After a space, in a table cell or in a heading, `/` offers Attach file, Link and Note link
+- **Selection popup** - Select text for bold, italic, strikethrough, code, link and clear formatting buttons, and Turn into to change it to a heading, list, quote or code block
+- **Table popup** - Add and delete rows and columns from the popup above the table the cursor is in
 - **One popup for embedded items** - Click a link, wikilink, formula, diagram or media file to edit, open or download it
 - **Auto-save** - Never lose your work
 - **Save conflict check** - If the file changed on disk since you opened it (another tab, a sync tool, an AI agent), saving asks whether to reload it or overwrite it instead of silently replacing the other change
@@ -24,7 +25,7 @@
 ### Media Support
 - **Drawing editor** — In-app **`drawing-*.png`** sketches next to your notes ([overview](#drawing-editor)); full guide: **[DRAWING.md](DRAWING.md)**
 - **Drag & drop upload** - Drop files from your file system into the editor: images/audio/video/PDF go to the note's own attachment folder (`meeting.md` keeps its files in `meeting.attachments/`, hidden from the sidebar) and keep their name, with a counter if it's taken; `.md` files land next to the current note and get an inline link at the drop point
-- **Attach button** - Pick files with the paperclip in the formatting toolbar, or "Attach file" in the `/` menu; they upload like dropped files and embed at the cursor
+- **Attach file** - Pick files with "Attach file" in the `/` menu; they upload like dropped files and embed at the cursor
 - **Clipboard paste** - Paste images from clipboard with Ctrl+V
 - **Images** - JPG, PNG, GIF, WebP (default max 10MB, configurable)
 - **Audio** - MP3, WAV, OGG, M4A (default max 50MB, configurable)
@@ -399,7 +400,7 @@ date: {{date}}
 | `Ctrl+Shift+B` | `Cmd+Shift+B` | Quote | `> text` |
 | `Ctrl+Alt+C` | `Cmd+Option+C` | Code block | Fenced code |
 | `Ctrl+Alt+T` | `Cmd+Option+T` | Insert table | 3x3 table placeholder |
-| `/` | `/` | Slash menu, at the start of a line | Any block |
+| `/` | `/` | Slash menu, at the start of a line or after a space | Any block, or inline items mid-line |
 
 ### Embedded Items
 

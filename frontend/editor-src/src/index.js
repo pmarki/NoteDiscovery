@@ -444,7 +444,6 @@ export function create({
         italic: (chain) => chain.toggleItalic(),
         strikethrough: (chain) => chain.toggleStrike(),
         code: (chain) => chain.toggleCode(),
-        heading: (chain) => chain.toggleHeading({ level: 2 }),
         heading1: (chain) => chain.toggleHeading({ level: 1 }),
         heading2: (chain) => chain.toggleHeading({ level: 2 }),
         heading3: (chain) => chain.toggleHeading({ level: 3 }),
