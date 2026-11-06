@@ -72,7 +72,7 @@
     "filtered_notes": "Szűrt jegyzetek"
   },
   "editor": {
-    "placeholder": "Kezdj el írni markdown-ban...",
+    "placeholder": "Kezdj el írni markdown-ban, vagy írj / jelet a parancsokhoz...",
     "drop_hint": "💡 Beszúrás ide...",
     "mode_edit": "Szerkesztés",
     "edited": "Szerkesztve {{time}}",
@@ -272,12 +272,6 @@
   "language": {
     "title": "Nyelv"
   },
-  "syntax_highlight": {
-    "title": "Szintaxisok kiemelése",
-    "description": "Markdown szintaxisok színezése",
-    "enable": "Szintaxiskiemelések engedélyezése",
-    "disable": "Szintaxiskiemelések letiltása"
-  },
   "settings": {
     "account": "Fiók",
     "logout": "Kijelentkezés",
@@ -285,8 +279,6 @@
     "readable_line_length_desc": "Korlátozd az előnézeti szélességet a könnyebb olvasás érdekében",
     "hide_underscore_folders": "Rendszermappák elrejtése",
     "hide_underscore_folders_desc": "_attachments, _templates és más aláhúzásos mappák elrejtése az oldalsávról és a gráfról",
-    "tab_inserts_tab": "Tab billentyű több helyet hagy a szövegben",
-    "tab_inserts_tab_desc": "Nyomd meg a Tab-ot, hogy több helyet hagyj a szövegben a fókuszváltás helyett",
     "new_button_action": "A + gombra kattintva",
     "new_button_action_desc": "Shift+kattintás mindig az opciókat mutatjat.",
     "new_button_option_chooser": "Opciók megjelenítése (alapértelmezett)",
@@ -331,7 +323,13 @@
     "delete_column": "Oszlop törlése",
     "delete_table": "Táblázat törlése",
     "invalid_link": "Ez a cím nem engedélyezett",
-    "open_link": "Megnyitás"
+    "open_link": "Megnyitás",
+    "heading_1": "Fejléc 1",
+    "heading_2": "Fejléc 2",
+    "heading_3": "Fejléc 3",
+    "divider": "Elválasztó",
+    "callout": "Kiemelt blokk",
+    "note_link": "Jegyzethivatkozás"
   },
   "validation": {
     "forbidden_chars": "A név tiltott karaktereket tartalmaz: {{chars}}",

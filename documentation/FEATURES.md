@@ -3,15 +3,18 @@
 ## 📝 Note Management
 
 ### Create & Edit
-- **Rich markdown editor** with live preview
-- **Three view modes**: Edit, Split, Preview
+- **WYSIWYG markdown editor** - Formulas, diagrams, images and other media render right in the note, which is still saved as plain Markdown
+- **Two view modes**: Edit and Read (read-only)
+- **Slash menu** - Type `/` at the start of a line to insert a heading, list, table, callout, formula, diagram and more. Filter by typing, then press `Enter`
+- **Bubble toolbar** - Select text for quick bold, italic, strikethrough, code and link buttons
+- **One popup for embedded items** - Click a link, wikilink, formula, diagram or media file to edit, open or download it
 - **Auto-save** - Never lose your work
 - **Save conflict check** - If the file changed on disk since you opened it (another tab, a sync tool, an AI agent), saving asks whether to reload it or overwrite it instead of silently replacing the other change
 - **Resume where you left off** - Editor scroll position is remembered per note within the session, so switching back to a long note returns you to the same spot
 - **Undo/Redo** - Ctrl+Z / Ctrl+Y support
 - **Note templates** - Create notes from templates with dynamic placeholders
 - **Quick-create** - Set the **+ / New** button to skip the type chooser and create your most common item (note, folder, template, or drawing) in one click; **Shift+click** always shows the full chooser. Optionally pre-fill new note titles with a `yyyymmddHHMMSS` timestamp.
-- **Interactive task lists** - Click a `- [ ]` checkbox or its text in the preview to tick it; the change is written back to the note source and saved. **Ctrl+click** (Cmd on macOS) sets every task in the note to match, so one click clears or completes a whole checklist, and one Ctrl+Z undoes it. Needs text after the brackets (`- [ ] task`, not `- [ ]`)
+- **Interactive task lists** - Click a `- [ ]` checkbox to tick it, or its text too in Read mode; the change is written back to the note source and saved. **Ctrl+click** (Cmd on macOS) sets every task in the note to match, so one click clears or completes a whole checklist, and one Ctrl+Z undoes it. Needs text after the brackets (`- [ ] task`, not `- [ ]`)
 - **Syntax highlighting** for code blocks (50+ languages)
 - **Copy code blocks** - One-click copy button on hover
 - **LaTeX/Math rendering** - Beautiful mathematical equations with MathJax (see [MATHJAX.md](MATHJAX.md))
@@ -27,7 +30,7 @@
 - **Video** - MP4, WebM, MOV, AVI (default max 100MB, configurable)
 - **Documents** - PDF (default max 20MB, configurable)
 - **In-app viewing** - View all media types directly in the sidebar
-- **Inline preview** - Audio/video players and PDF viewer embedded in notes
+- **Embedded media** - Audio/video players and PDF viewer shown inside notes
 - **Relative media paths** - For `![alt](path)`, paths resolve from the note’s folder
 - **Inline image sizing** - Obsidian-compatible syntax to size images: `![alt|300](path)` or `![[image.png|300x200]]` (width, or `WIDTHxHEIGHT`; `0` means "auto" for that dimension). Works in preview, print, export, and shared views.
 
@@ -82,7 +85,7 @@ For file naming, API notes, and more: **[DRAWING.md](DRAWING.md)**
 
 ### Outline Panel
 - **Table of Contents** - View all headings (H1-H6) in sidebar
-- **Click to navigate** - Jump to any heading in edit or preview mode
+- **Click to navigate** - Jump to any heading in Edit or Read mode
 - **Real-time updates** - Outline updates as you type
 - **Hierarchical view** - Indentation shows heading structure
 - **Heading count badge** - Quick indicator of document structure
@@ -125,8 +128,7 @@ To link to a heading, convert the heading text to a slug: **lowercase, spaces �
 ### Layout
 - **Resizable sidebar** - Drag to adjust width
 - **Collapsible sidebar panel** - Show/hide the sidebar contents while keeping the icon rail in place
-- **View mode memory** - Remembers Edit/Split/Preview preference
-- **Smart scroll sync** - Aligns headings, images, tables and code blocks between the editor and preview panes
+- **View mode memory** - Remembers Edit/Read preference
 - **Responsive design** - Works on all screen sizes
 
 ## 📊 Note Statistics
@@ -172,10 +174,10 @@ tags: [python, tutorial, backend]
 
 ## ⚙️ Note Properties Panel
 
-View and interact with YAML frontmatter metadata directly in the preview.
+View and interact with YAML frontmatter metadata above the note.
 
 ### Features
-- **Collapsible panel** - Compact bar at the top of preview, expands on click
+- **Collapsible panel** - Compact bar at the top of the note, expands on click
 - **Auto-hides** - Only appears when note has frontmatter
 - **Clickable tags** - Filter notes by clicking any tag
 - **Smart formatting** - Dates formatted nicely, booleans shown as ✓/✗
@@ -279,7 +281,7 @@ graph TD
 
 ## 💬 Callouts / Admonitions
 
-GitHub-style callouts highlight important information in your notes. They render as colored, bordered blocks in the preview pane and are fully compatible with notes imported from GitHub or Obsidian.
+GitHub-style callouts highlight important information in your notes. They render as colored, bordered blocks in the note and are fully compatible with notes imported from GitHub or Obsidian.
 
 ### Syntax
 
@@ -371,9 +373,8 @@ date: {{date}}
 | `F3` | `F3` | Next search match |
 | `Shift+F3` | `Shift+F3` | Previous search match |
 | `Ctrl+Alt+1` | `Cmd+Option+1` | View mode: **Edit** |
-| `Ctrl+Alt+2` | `Cmd+Option+2` | View mode: **Split** (falls back to Edit on mobile) |
-| `Ctrl+Alt+3` | `Cmd+Option+3` | View mode: **Preview** |
-| `Ctrl+Alt+V` | `Cmd+Option+V` | Cycle view mode (Edit → Split → Preview) |
+| `Ctrl+Alt+3` | `Cmd+Option+3` | View mode: **Read** |
+| `Ctrl+Alt+V` | `Cmd+Option+V` | Switch between Edit and Read |
 
 > **View mode shortcuts** work anywhere in the app — you don't need to click into the editor first. They're disabled while Zen Mode is active (Zen is edit-only) and while the graph overlay is open.
 
@@ -385,8 +386,26 @@ date: {{date}}
 |---------------|-----|--------|--------|
 | `Ctrl+B` | `Cmd+B` | Bold | `**text**` |
 | `Ctrl+I` | `Cmd+I` | Italic | `*text*` |
+| `Ctrl+Shift+S` | `Cmd+Shift+S` | Strikethrough | `~~text~~` |
+| `Ctrl+E` | `Cmd+E` | Inline code | `` `text` `` |
+| `Ctrl+\` | `Cmd+\` | Clear formatting | Plain text |
 | `Ctrl+K` | `Cmd+K` | Insert link (in editor) | `[text](url)` |
+| `Ctrl+Shift+1` to `6` | `Cmd+Shift+1` to `6` | Heading level 1 to 6 | `# text` |
+| `Ctrl+Shift+7` | `Cmd+Shift+7` | Numbered list | `1. text` |
+| `Ctrl+Shift+8` | `Cmd+Shift+8` | Bullet list | `- text` |
+| `Ctrl+Shift+9` | `Cmd+Shift+9` | Task list | `- [ ] text` |
+| `Ctrl+Shift+B` | `Cmd+Shift+B` | Quote | `> text` |
+| `Ctrl+Alt+C` | `Cmd+Option+C` | Code block | Fenced code |
 | `Ctrl+Alt+T` | `Cmd+Option+T` | Insert table | 3x3 table placeholder |
+| `/` | `/` | Slash menu, at the start of a line | Any block |
+
+### Embedded Items
+
+| Windows/Linux | Mac | Action |
+|---------------|-----|--------|
+| `Enter` | `Enter` | Edit the selected formula, diagram or wikilink |
+| `Ctrl+Enter` | `Cmd+Enter` | Open the link or wikilink at the cursor |
+| `Ctrl+Enter` | `Cmd+Enter` | In the formula and diagram source box: apply |
 
 > **Tip:** Use `Ctrl+Alt+P` to quickly jump to any note from anywhere in the app.
 

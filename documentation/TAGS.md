@@ -78,7 +78,7 @@ tags: python
 - Must start with `---` on the first line
 - Must end with `---` on its own line
 - Content between markers is YAML format
-- Frontmatter is hidden from preview
+- Frontmatter is kept out of the note body and shown in the properties panel
 
 ## Examples
 

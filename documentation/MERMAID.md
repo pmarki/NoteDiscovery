@@ -16,6 +16,8 @@ graph TD
 ```
 ````
 
+The diagram renders right in the note. You can also choose **Diagram** from the `/` menu. Click a diagram and press **Edit** to change its source.
+
 ## Basic Examples
 
 ### Flowchart

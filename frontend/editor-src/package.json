@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Builds frontend/note-editor.bundle.js. Development only: the app itself needs no Node.",
   "scripts": {
-    "build": "esbuild src/index.js --bundle --minify --format=iife --global-name=NoteEditor --outfile=../note-editor.bundle.js",
+    "build": "esbuild src/index.js --bundle --minify --format=iife --global-name=NoteEditor --outfile=../note-editor.bundle.js --metafile=node_modules/.bundle-meta.json \"--banner:js=/* Third-party licences: note-editor.licenses.txt */\" && node scripts/licenses.mjs",
     "test": "systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 node test/markdown.test.mjs"
   },
   "dependencies": {

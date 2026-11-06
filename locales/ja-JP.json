@@ -72,7 +72,7 @@
     "filtered_notes": "フィルター済みノート"
   },
   "editor": {
-    "placeholder": "マークダウンで書き始める...",
+    "placeholder": "マークダウンで書き始めるか、/ でコマンドを表示...",
     "drop_hint": "💡 ここにドロップしてカーソル位置に挿入...",
     "mode_edit": "編集",
     "edited": "{{time}}に編集",
@@ -272,12 +272,6 @@
   "language": {
     "title": "言語"
   },
-  "syntax_highlight": {
-    "title": "エディタのシンタックスハイライト",
-    "description": "エディタでマークダウン構文を色分け表示",
-    "enable": "シンタックスハイライトを有効化",
-    "disable": "シンタックスハイライトを無効化"
-  },
   "settings": {
     "account": "アカウント",
     "logout": "ログアウト",
@@ -285,8 +279,6 @@
     "readable_line_length_desc": "プレビューの幅を制限して読みやすくする",
     "hide_underscore_folders": "システムフォルダを非表示",
     "hide_underscore_folders_desc": "_attachments、_templatesなどのフォルダをサイドバーとグラフから非表示",
-    "tab_inserts_tab": "Tabキーでタブを挿入",
-    "tab_inserts_tab_desc": "Tabキーでフォーカス移動ではなくタブ文字を挿入",
     "new_button_action": "+ をクリックしたとき",
     "new_button_action_desc": "Shift+クリックで常にセレクタが開きます。",
     "new_button_option_chooser": "セレクタを表示（デフォルト）",
@@ -331,7 +323,13 @@
     "delete_column": "列を削除",
     "delete_table": "表を削除",
     "invalid_link": "このアドレスは使用できません",
-    "open_link": "開く"
+    "open_link": "開く",
+    "heading_1": "見出し 1",
+    "heading_2": "見出し 2",
+    "heading_3": "見出し 3",
+    "divider": "区切り線",
+    "callout": "コールアウト",
+    "note_link": "ノートリンク"
   },
   "validation": {
     "forbidden_chars": "名前に使用できない文字が含まれています: {{chars}}",

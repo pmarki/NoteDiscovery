@@ -72,7 +72,7 @@
     "filtered_notes": "Notas Filtradas"
   },
   "editor": {
-    "placeholder": "Empieza a escribir en markdown...",
+    "placeholder": "Empieza a escribir en markdown o escribe / para ver los comandos...",
     "drop_hint": "💡 Suelta aquí para insertar en la posición del cursor...",
     "mode_edit": "Editar",
     "edited": "Editado {{time}}",
@@ -272,12 +272,6 @@
   "language": {
     "title": "Idioma"
   },
-  "syntax_highlight": {
-    "title": "Resaltado de Sintaxis del Editor",
-    "description": "Colorear sintaxis markdown en el editor",
-    "enable": "Activar resaltado de sintaxis",
-    "disable": "Desactivar resaltado de sintaxis"
-  },
   "settings": {
     "account": "Cuenta",
     "logout": "Cerrar sesión",
@@ -285,8 +279,6 @@
     "readable_line_length_desc": "Limitar el ancho de vista previa para facilitar la lectura",
     "hide_underscore_folders": "Ocultar carpetas de sistema",
     "hide_underscore_folders_desc": "Ocultar _attachments, _templates y otras carpetas con guion bajo en la barra lateral y en el grafo",
-    "tab_inserts_tab": "Tabulador inserta tabulación",
-    "tab_inserts_tab_desc": "Pulsa Tab para insertar un tabulador en lugar de cambiar el foco",
     "new_button_action": "Cuando haces clic en +",
     "new_button_action_desc": "Mayús+clic siempre muestra el selector.",
     "new_button_option_chooser": "Mostrar selector (por defecto)",
@@ -331,7 +323,13 @@
     "delete_column": "Eliminar columna",
     "delete_table": "Eliminar tabla",
     "invalid_link": "Esa dirección no está permitida",
-    "open_link": "Abrir"
+    "open_link": "Abrir",
+    "heading_1": "Encabezado 1",
+    "heading_2": "Encabezado 2",
+    "heading_3": "Encabezado 3",
+    "divider": "Separador",
+    "callout": "Destacado",
+    "note_link": "Enlace a nota"
   },
   "validation": {
     "forbidden_chars": "El nombre contiene caracteres no permitidos: {{chars}}",

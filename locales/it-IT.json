@@ -72,7 +72,7 @@
     "filtered_notes": "Note Filtrate"
   },
   "editor": {
-    "placeholder": "Inizia a scrivere in markdown...",
+    "placeholder": "Inizia a scrivere in markdown o digita / per i comandi...",
     "drop_hint": "💡 Rilascia qui per inserire alla posizione del cursore...",
     "mode_edit": "Modifica",
     "edited": "Modificato {{time}}",
@@ -272,12 +272,6 @@
   "language": {
     "title": "Lingua"
   },
-  "syntax_highlight": {
-    "title": "Evidenziazione Sintassi Editor",
-    "description": "Colora la sintassi markdown nell'editor",
-    "enable": "Attiva evidenziazione sintassi",
-    "disable": "Disattiva evidenziazione sintassi"
-  },
   "settings": {
     "account": "Account",
     "logout": "Esci",
@@ -285,8 +279,6 @@
     "readable_line_length_desc": "Limita la larghezza dell'anteprima per una lettura più facile",
     "hide_underscore_folders": "Nascondi cartelle di sistema",
     "hide_underscore_folders_desc": "Nascondi _attachments, _templates e altre cartelle con underscore dalla barra laterale e dal grafo",
-    "tab_inserts_tab": "Tab inserisce tabulazione",
-    "tab_inserts_tab_desc": "Premi Tab per inserire una tabulazione invece di cambiare focus",
     "new_button_action": "Quando clicchi su +",
     "new_button_action_desc": "Shift+clic mostra sempre il selettore.",
     "new_button_option_chooser": "Mostra selettore (predefinito)",
@@ -331,7 +323,13 @@
     "delete_column": "Elimina colonna",
     "delete_table": "Elimina tabella",
     "invalid_link": "Questo indirizzo non è consentito",
-    "open_link": "Apri"
+    "open_link": "Apri",
+    "heading_1": "Titolo 1",
+    "heading_2": "Titolo 2",
+    "heading_3": "Titolo 3",
+    "divider": "Separatore",
+    "callout": "Riquadro",
+    "note_link": "Link a nota"
   },
   "validation": {
     "forbidden_chars": "Il nome contiene caratteri non consentiti: {{chars}}",

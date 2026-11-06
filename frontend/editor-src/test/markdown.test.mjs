@@ -232,5 +232,70 @@ test('search highlights never reach the Markdown', () => {
     assert.equal(document.querySelectorAll('#root .search-highlight').length, 0);
 });
 
+// Types /x in the empty paragraph at the cursor and picks a command, as the popup does.
+const slash = (type) => {
+    editor.insertMarkdown('/x');
+    const opened = suggestion?.isSlash === true;
+    editor.acceptSlash();
+    editor.format(type);
+    return opened;
+};
+
+test('/ only opens at the start of a plain paragraph', () => {
+    const opens = (markdown, typed = '/') => {
+        editor.setMarkdown(markdown, { resetHistory: true });
+        editor.insertMarkdown(typed);
+        const opened = suggestion?.isSlash === true;
+        editor.setMarkdown('', { resetHistory: true });
+        return opened;
+    };
+    assert.equal(opens(''), true);
+    assert.equal(opens('', 'a/'), false);
+    assert.equal(opens('', 'and /'), false);
+    assert.equal(opens('```\nx\n```\n'), false);
+});
+
+test('every / command leaves a valid document that survives a reload', () => {
+    const types = ['heading1', 'bullet', 'numbered', 'checkbox', 'quote', 'codeblock', 'table',
+        'divider', 'callout', 'formula', 'diagram'];
+    const failures = [];
+    for (const place of [null, 'bullet', 'checkbox', 'quote', 'callout']) {
+        for (const type of types) {
+            editor.setMarkdown('', { resetHistory: true });
+            if (place) slash(place);
+            if (!slash(type)) failures.push(`${place}/${type}: no menu`);
+            if (!editor.isValid()) failures.push(`${place}/${type}: invalid`);
+            // An empty block can take two reloads to vanish, so stability starts after them.
+            const saved = roundTrip(roundTrip(editor.getMarkdown()));
+            if (roundTrip(saved) !== saved) failures.push(`${place}/${type}: ${JSON.stringify(saved)}`);
+        }
+    }
+    assert.equal(failures.join('; '), '');
+});
+
+test('/ can start a wikilink', () => {
+    editor.setMarkdown('', { resetHistory: true });
+    slash('noteLink');
+    assert.equal(suggestion?.isSlash, undefined);
+    assert.equal(suggestion?.query, '');
+});
+
+test('a new formula or diagram is selected, ready for its source', () => {
+    editor.setMarkdown('', { resetHistory: true });
+    slash('formula');
+    assert.equal(editor.itemAtSelection()?.kind, 'mathBlock');
+    editor.updateSelectedNode({ source: 'x^2' });
+    assert.equal(editor.getMarkdown(), '$$\nx^2\n$$\n');
+    editor.setMarkdown('', { resetHistory: true });
+    slash('diagram');
+    assert.equal(editor.itemAtSelection()?.kind, 'mermaidBlock');
+});
+
+test('the selection report covers text only', () => {
+    editor.setMarkdown('some **bold** text\n\n```\ncode\n```\n', { resetHistory: true });
+    editor.focus();
+    assert.equal(editor.textSelection(), null);
+});
+
 console.log(results.join('\n'));
 process.exit(process.exitCode || 0);

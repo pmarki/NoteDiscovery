@@ -1,4 +1,4 @@
-import { Editor } from '@tiptap/core';
+import { Editor, Extension, posToDOMRect } from '@tiptap/core';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import Image from '@tiptap/extension-image';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
@@ -6,14 +6,14 @@ import { TableKit } from '@tiptap/extension-table';
 import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import Paragraph from '@tiptap/extension-paragraph';
-import { EditorState, NodeSelection } from '@tiptap/pm/state';
+import { EditorState, NodeSelection, TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { common, createLowlight } from 'lowlight';
 
 import { joinFrontmatter, splitFrontmatter } from './markdown.js';
 import { Callout, drawnView, drawOptions, Embed, MathBlock, MathInline, MermaidBlock, Wikilink } from './nodes.js';
 import { highlightMatches, SearchHighlight } from './search.js';
-import { wikilinkSuggestion } from './suggest.js';
+import { slashSuggestion, wikilinkSuggestion } from './suggest.js';
 import { TabKey } from './tab.js';
 
 /** Keeps the Markdown `src` in the document and only rewrites it for display. */
@@ -73,7 +73,28 @@ const NoteCodeBlock = CodeBlockLowlight.extend({
     },
 });
 
-function buildExtensions({ placeholder, resolveImageSrc, suggestion, drawing, decorateCode }) {
+const SOURCE_NODES = ['mathInline', 'mathBlock', 'mermaidBlock'];
+
+/** Shortcuts Tiptap doesn't have. Ctrl+Alt+1-3 are taken, so headings use Ctrl+Shift like the lists. */
+const NoteShortcuts = Extension.create({
+    name: 'noteShortcuts',
+    priority: 1000, // Ahead of the hard break on Ctrl+Enter
+    addOptions: () => ({ activateItem: () => false }),
+    addKeyboardShortcuts() {
+        const { activateItem } = this.options;
+        const shortcuts = {
+            'Mod-\\': () => this.editor.chain().focus().unsetAllMarks().run(),
+            Enter: () => activateItem(['wikilink', ...SOURCE_NODES], 'edit'),
+            'Mod-Enter': () => activateItem(['link', 'wikilink'], 'open'),
+        };
+        for (let level = 1; level <= 6; level += 1) {
+            shortcuts[`Mod-Shift-${level}`] = () => this.editor.commands.toggleHeading({ level });
+        }
+        return shortcuts;
+    },
+});
+
+function buildExtensions({ placeholder, resolveImageSrc, suggestion, slash, drawing, decorateCode, activateItem }) {
     return [
         StarterKit.configure({
             codeBlock: false,
@@ -97,7 +118,9 @@ function buildExtensions({ placeholder, resolveImageSrc, suggestion, drawing, de
         Callout,
         SearchHighlight,
         TabKey,
+        NoteShortcuts.configure({ activateItem }),
         suggestion.extension,
+        slash.extension,
     ];
 }
 
@@ -115,7 +138,9 @@ function buildFrontmatterField(label, onInput) {
 }
 
 // Atoms that show the app's popup when selected.
-const POPUP_NODES = new Set(['wikilink', 'embed', 'image', 'mathInline', 'mathBlock', 'mermaidBlock']);
+const POPUP_NODES = new Set(['wikilink', 'embed', 'image', ...SOURCE_NODES]);
+const BUBBLE_MARKS = ['bold', 'italic', 'strike', 'code', 'link'];
+const SOURCE_FORMATS = { formula: 'mathBlock', diagram: 'mermaidBlock' };
 
 /** The checkbox of the task a click toggles in read-only mode, where the item text counts too. */
 function taskBoxForClick(event, editable) {
@@ -145,6 +170,7 @@ export function create({
     onSuggestKey = () => false,
     onOpenLink = () => {},
     onOpenWikilink = () => {},
+    onItemKey = () => {},
     onInsertSource = () => {},
     onTasksSet = () => {},
     onPasteImage = () => {},
@@ -152,6 +178,7 @@ export function create({
 }) {
     let timer = null;
     let readOnlyItem = null; // Position of the item clicked in read-only mode, which has no selection
+    let dragging = false; // Mouse held down in the text, so the selection isn't final yet
     let matches = [];
     let findMatches = null;
 
@@ -188,12 +215,23 @@ export function create({
         const { href, rect } = linkAtSelection(target);
         return { kind: 'link', attrs: { href }, rect };
     };
+    /** What the app's bubble toolbar is about: selected text the marks can apply to, or null. */
+    const textSelection = (target) => {
+        const { selection, doc } = target.state;
+        if (dragging || !target.isEditable || !target.isFocused) return null;
+        if (!(selection instanceof TextSelection) || selection.empty) return null;
+        const { from, to, $from } = selection;
+        if ($from.parent.type.spec.code || !doc.textBetween(from, to, ' ', ' ').trim()) return null;
+        const active = Object.fromEntries(BUBBLE_MARKS.map((mark) => [mark, target.isActive(mark)]));
+        return { rect: posToDOMRect(target.view, from, to), active };
+    };
     // `showItem: false` keeps the popup away while the text is being changed.
     const reportState = (target, { showItem = true } = {}) => onStateChange({
         canUndo: target.can().undo(),
         canRedo: target.can().redo(),
         inTable: target.isActive('table'),
         item: showItem && (target.isFocused || !target.isEditable) ? itemAtSelection(target) : null,
+        selection: textSelection(target),
     });
     const setReadOnlyItem = (target, pos) => {
         readOnlyItem = pos;
@@ -235,13 +273,20 @@ export function create({
 
     const drawing = { ...drawOptions(), draw: drawNode, views: new Set(), onInsert: () => setTimeout(onInsertSource) };
     const suggestion = wikilinkSuggestion({ onChange: onSuggest, onKeyDown: onSuggestKey });
+    const slash = slashSuggestion({ onChange: onSuggest, onKeyDown: onSuggestKey });
+    const activateItem = (kinds, action) => {
+        const item = itemAtSelection(editor);
+        if (!kinds.includes(item?.kind)) return false;
+        onItemKey(item, action);
+        return true;
+    };
     const frontmatter = buildFrontmatterField(frontmatterLabel, schedule);
     const content = document.createElement('div');
     element.replaceChildren(frontmatter.details, content);
 
     const editor = new Editor({
         element: content,
-        extensions: buildExtensions({ placeholder, resolveImageSrc, suggestion, drawing, decorateCode }),
+        extensions: buildExtensions({ placeholder, resolveImageSrc, suggestion, slash, drawing, decorateCode, activateItem }),
         onUpdate: schedule,
         onBlur: ({ editor: target }) => {
             onSuggest(null);
@@ -275,6 +320,14 @@ export function create({
                 return true;
             },
             handleDOMEvents: {
+                mousedown() {
+                    dragging = true;
+                    document.addEventListener('mouseup', () => {
+                        dragging = false;
+                        reportState(editor);
+                    }, { once: true });
+                    return false;
+                },
                 click(view, event) {
                     if (!(event.target instanceof Element)) return false;
                     const every = event.ctrlKey || event.metaKey;
@@ -333,17 +386,36 @@ export function create({
         strikethrough: (chain) => chain.toggleStrike(),
         code: (chain) => chain.toggleCode(),
         heading: (chain) => chain.toggleHeading({ level: 2 }),
+        heading1: (chain) => chain.toggleHeading({ level: 1 }),
+        heading2: (chain) => chain.toggleHeading({ level: 2 }),
+        heading3: (chain) => chain.toggleHeading({ level: 3 }),
         quote: (chain) => chain.toggleBlockquote(),
         bullet: (chain) => chain.toggleBulletList(),
         numbered: (chain) => chain.toggleOrderedList(),
         checkbox: (chain) => chain.toggleTaskList(),
         codeblock: (chain) => chain.toggleCodeBlock(),
         table: (chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
+        divider: (chain) => chain.setHorizontalRule(),
+        callout: (chain) => chain.wrapIn('callout'),
+        noteLink: (chain) => chain.insertContent('[['),
         addRow: (chain) => chain.addRowAfter(),
         addColumn: (chain) => chain.addColumnAfter(),
         deleteRow: (chain) => chain.deleteRow(),
         deleteColumn: (chain) => chain.deleteColumn(),
         deleteTable: (chain) => chain.deleteTable(),
+    };
+
+    // The block goes after any text on the line, and always after the paragraph a list item must start with.
+    const insertSourceBlock = (name) => {
+        const { state, view } = editor;
+        const { $from } = state.selection;
+        const type = state.schema.nodes[name];
+        const replaces = !$from.parent.content.size
+            && $from.node(-1).canReplaceWith($from.index(-1), $from.indexAfter(-1), type);
+        const pos = replaces ? $from.before() : $from.after();
+        const tr = state.tr.replaceWith(pos, replaces ? $from.after() : pos, type.create());
+        view.dispatch(tr.setSelection(NodeSelection.create(tr.doc, pos)));
+        drawing.onInsert();
     };
 
     const scrollToPosition = (position, block) => {
@@ -365,9 +437,13 @@ export function create({
             }
         },
         flush,
-        format: (type) => FORMATS[type]?.(editor.chain().focus()).run(),
+        format(type) {
+            if (type in SOURCE_FORMATS) insertSourceBlock(SOURCE_FORMATS[type]);
+            else FORMATS[type]?.(editor.chain().focus()).run();
+        },
         linkAtSelection: () => linkAtSelection(editor),
         itemAtSelection: () => itemAtSelection(editor),
+        textSelection: () => textSelection(editor),
         // Replaces the selected atom in one step, so a single undo brings the old one back.
         updateSelectedNode(attrs) {
             const { selection, tr } = editor.state;
@@ -416,6 +492,7 @@ export function create({
             return editor.chain().focus().insertContentAt(target, value, options).run();
         },
         acceptSuggestion: suggestion.accept,
+        acceptSlash: slash.accept,
         highlight(findSpans) {
             findMatches = findSpans;
             matches = highlightMatches(editor.view, findSpans);

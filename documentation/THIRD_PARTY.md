@@ -21,13 +21,15 @@ path instead of a public CDN. This means:
 |---------|---------|---------|---------|
 | [Tailwind CSS](https://tailwindcss.com) | 3.4.17 | MIT | UI styling |
 | [Alpine.js](https://alpinejs.dev) | 3.14.1 | MIT | UI reactivity |
-| [marked](https://marked.js.org) | 12.0.2 | MIT | Markdown parsing |
+| [marked](https://marked.js.org) | 12.0.2 | MIT | Markdown parsing for exports and shared notes |
 | [DOMPurify](https://github.com/cure53/DOMPurify) | 3.0.8 | Apache-2.0 | HTML sanitisation (XSS prevention) |
 | [MathJax](https://www.mathjax.org) | 3.2.2 | Apache-2.0 | LaTeX math rendering |
-| [highlight.js](https://highlightjs.org) | 11.9.0 | BSD-3-Clause | Code syntax highlighting |
+| [highlight.js](https://highlightjs.org) | 11.9.0 | BSD-3-Clause | Code syntax highlighting for exports and shared notes |
 | [Mermaid](https://mermaid.js.org) | 11.12.2 | MIT | Diagram rendering |
 | [vis-network](https://visjs.github.io/vis-network/docs/network/) | 9.1.9 | Apache-2.0 | Graph view |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | 1.4.4 | MIT | QR codes for share links |
+| [Tiptap](https://tiptap.dev) | 3.32.2 | MIT | Note editor, built on ProseMirror into `frontend/note-editor.bundle.js` |
+| [lowlight](https://github.com/wooorm/lowlight) | 3.3.0 | MIT | Code highlighting in the editor, in the same bundle |
 
 Total footprint is about 13 MB, dominated by MathJax's web fonts and Mermaid's
 per-diagram chunks.
@@ -65,6 +67,12 @@ Each library is placed in `frontend/vendor/<library>/` together with its upstrea
 `LICENSE` file, and `frontend/vendor/THIRD_PARTY_NOTICES.md` indexes the lot.
 Those files are part of every distributed artefact, which is what the MIT, BSD
 and Apache licences ask for.
+
+The note editor is different: it is built from npm packages into the committed
+`frontend/note-editor.bundle.js`. `npm run build` in `frontend/editor-src/` writes
+the licence text of every package in that bundle to
+`frontend/note-editor.licenses.txt`, and fails if a package has no licence file or
+a licence outside its allowed list.
 
 ## Working with it
 

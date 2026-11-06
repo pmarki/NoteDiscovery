@@ -72,7 +72,7 @@
     "filtered_notes": "筛选的笔记"
   },
   "editor": {
-    "placeholder": "开始用 Markdown 写作...",
+    "placeholder": "开始用 Markdown 写作，或输入 / 查看命令...",
     "drop_hint": "💡 拖放到此处以插入到光标位置...",
     "mode_edit": "编辑",
     "edited": "已编辑 {{time}}",
@@ -272,12 +272,6 @@
   "language": {
     "title": "语言"
   },
-  "syntax_highlight": {
-    "title": "编辑器语法高亮",
-    "description": "在编辑器中为 Markdown 语法着色",
-    "enable": "启用语法高亮",
-    "disable": "禁用语法高亮"
-  },
   "settings": {
     "account": "账户",
     "logout": "登出",
@@ -285,8 +279,6 @@
     "readable_line_length_desc": "限制预览宽度以便于阅读",
     "hide_underscore_folders": "隐藏系统文件夹",
     "hide_underscore_folders_desc": "在侧边栏和关系图中隐藏 _attachments、_templates 等下划线文件夹",
-    "tab_inserts_tab": "Tab键插入制表符",
-    "tab_inserts_tab_desc": "按Tab键插入制表符而不是切换焦点",
     "new_button_action": "点击 + 时",
     "new_button_action_desc": "Shift+点击始终显示选择器。",
     "new_button_option_chooser": "显示选择器（默认）",
@@ -331,7 +323,13 @@
     "delete_column": "删除列",
     "delete_table": "删除表格",
     "invalid_link": "不允许使用此地址",
-    "open_link": "打开"
+    "open_link": "打开",
+    "heading_1": "标题 1",
+    "heading_2": "标题 2",
+    "heading_3": "标题 3",
+    "divider": "分隔线",
+    "callout": "标注",
+    "note_link": "笔记链接"
   },
   "validation": {
     "forbidden_chars": "名称包含禁止的字符：{{chars}}",

@@ -72,7 +72,7 @@
     "filtered_notes": "Отфильтрованные заметки"
   },
   "editor": {
-    "placeholder": "Начните писать в markdown...",
+    "placeholder": "Начните писать в markdown или введите / для команд...",
     "drop_hint": "💡 Отпустите здесь для вставки в позицию курсора...",
     "mode_edit": "Редактор",
     "edited": "Изменено {{time}}",
@@ -272,12 +272,6 @@
   "language": {
     "title": "Язык"
   },
-  "syntax_highlight": {
-    "title": "Подсветка синтаксиса",
-    "description": "Подсветка markdown-синтаксиса в редакторе",
-    "enable": "Включить подсветку синтаксиса",
-    "disable": "Выключить подсветку синтаксиса"
-  },
   "settings": {
     "account": "Аккаунт",
     "logout": "Выйти",
@@ -285,8 +279,6 @@
     "readable_line_length_desc": "Ограничить ширину предпросмотра для удобства чтения",
     "hide_underscore_folders": "Скрыть системные папки",
     "hide_underscore_folders_desc": "Скрыть _attachments, _templates и другие папки с подчёркиванием на боковой панели и на графе",
-    "tab_inserts_tab": "Tab вставляет табуляцию",
-    "tab_inserts_tab_desc": "Нажмите Tab для вставки табуляции вместо переключения фокуса",
     "new_button_action": "При нажатии +",
     "new_button_action_desc": "Shift+клик всегда показывает селектор.",
     "new_button_option_chooser": "Показать селектор (по умолчанию)",
@@ -331,7 +323,13 @@
     "delete_column": "Удалить столбец",
     "delete_table": "Удалить таблицу",
     "invalid_link": "Этот адрес не разрешён",
-    "open_link": "Открыть"
+    "open_link": "Открыть",
+    "heading_1": "Заголовок 1",
+    "heading_2": "Заголовок 2",
+    "heading_3": "Заголовок 3",
+    "divider": "Разделитель",
+    "callout": "Выноска",
+    "note_link": "Ссылка на заметку"
   },
   "validation": {
     "forbidden_chars": "Имя содержит запрещённые символы: {{chars}}",

@@ -387,8 +387,8 @@ $$
 
 ## Tips
 
-### 1. Preview Mode
-Always use **Split View** or **Preview Mode** to see your equations rendered in real-time.
+### 1. Editing Equations
+Equations render right in the note. Type `$$` and a space at the start of a line, or choose **Formula** from the `/` menu, to open the source box. Click an equation and press **Edit** to change it.
 
 ### 2. Escaping Dollar Signs
 If you need a literal dollar sign (not math), escape it: `$\\$100$` renders as $\\$100$

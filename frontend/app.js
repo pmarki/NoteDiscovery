@@ -244,6 +244,26 @@ const FilenameValidator = {
 /** Max leading spaces Shift+Tab removes per line when matching one “tab indent” vs \t inserts. */
 const EDITOR_TAB_OUTDENT_MAX_SPACES = 4;
 
+// The / menu. `type` is what formatText() runs, `hint` shows the Markdown it stands for.
+const SLASH_COMMANDS = [
+    { type: 'heading1', label: 'format.heading_1', hint: '#', keywords: 'h1 heading title' },
+    { type: 'heading2', label: 'format.heading_2', hint: '##', keywords: 'h2 heading' },
+    { type: 'heading3', label: 'format.heading_3', hint: '###', keywords: 'h3 heading' },
+    { type: 'bullet', label: 'format.bullet_list', hint: '-', keywords: 'bullet list ul' },
+    { type: 'numbered', label: 'format.numbered_list', hint: '1.', keywords: 'numbered ordered list ol' },
+    { type: 'checkbox', label: 'format.checkbox', hint: '- [ ]', keywords: 'task todo checkbox list' },
+    { type: 'quote', label: 'format.quote', hint: '>', keywords: 'quote blockquote' },
+    { type: 'codeblock', label: 'format.codeblock', hint: '```', keywords: 'code block fence' },
+    { type: 'table', label: 'format.table', hint: '', keywords: 'table grid' },
+    { type: 'divider', label: 'format.divider', hint: '---', keywords: 'divider line rule hr separator' },
+    { type: 'callout', label: 'format.callout', hint: '> [!NOTE]', keywords: 'callout note tip warning admonition' },
+    { type: 'formula', label: 'embed.formula', hint: '$$', keywords: 'formula math latex equation' },
+    { type: 'diagram', label: 'embed.diagram', hint: 'mermaid', keywords: 'diagram mermaid chart flowchart' },
+    { type: 'image', label: 'format.image', hint: '', keywords: 'image picture photo' },
+    { type: 'link', label: 'format.link', hint: '', keywords: 'link url address' },
+    { type: 'noteLink', label: 'format.note_link', hint: '[[', keywords: 'wikilink note link' },
+];
+
 const MEDIA_FORMATS_DISPLAY = 'JPG, PNG, GIF, WebP, MP3, MP4, PDF, MD';
 
 /** GFM task item as (everything up to `[`)(state). Literal spaces around the
@@ -415,14 +435,14 @@ function noteApp() {
         dropdownTargetFolder: null, // Folder context for "New" dropdown ('' = root, null = not set)
         dropdownPosition: { top: 0, left: 0 }, // Position for contextual dropdown
 
-        // Wikilink / media autocomplete (triggered by [[ for notes, ![[ for media)
+        // Autocomplete popup (triggered by [[ for notes, ![[ for media, / for block commands)
         wikilinkAutocomplete: {
             open: false,
-            mode: 'note',        // 'note' | 'media'
+            mode: 'note',        // 'note' | 'media' | 'slash'
             query: '',
             items: [],           // [{label, secondary, insert, kind, prefix, modified}]
             activeIndex: 0,
-            position: { top: 0, left: 0, above: false },
+            position: { top: 0, left: 0, above: false, maxHeight: 300 },
         },
         _wlClientRect: null, // Caret rectangle getter from the editor
 
@@ -443,6 +463,13 @@ function noteApp() {
             position: { top: 0, left: 0, above: false },
         },
         _itemOutOfView: false, // Hidden only by scrolling, so scrolling back restores it
+
+        // Formatting buttons shown over selected text
+        selectionBubble: {
+            open: false,
+            active: {},          // { bold, italic, strike, code, link }
+            position: { top: 0, left: 0, above: true },
+        },
 
         // Source of a formula or diagram
         sourcePrompt: {
@@ -1589,7 +1616,7 @@ function noteApp() {
         wlUpdate(suggestion) {
             if (!suggestion) { this.wlClose(); return; }
 
-            this.wikilinkAutocomplete.mode = suggestion.isMedia ? 'media' : 'note';
+            this.wikilinkAutocomplete.mode = suggestion.isSlash ? 'slash' : (suggestion.isMedia ? 'media' : 'note');
             this.wikilinkAutocomplete.query = suggestion.query;
             this._wlClientRect = suggestion.clientRect;
             this.wlComputeItems();
@@ -1603,6 +1630,10 @@ function noteApp() {
         wlComputeItems() {
             const WL_LIMIT = 8;
             const q = this.wikilinkAutocomplete.query.trim().toLowerCase();
+            if (this.wikilinkAutocomplete.mode === 'slash') {
+                this.wikilinkAutocomplete.items = this._slashItems(q);
+                return;
+            }
             const isMedia = this.wikilinkAutocomplete.mode === 'media';
             const results = [];
 
@@ -1646,6 +1677,21 @@ function noteApp() {
             this.wikilinkAutocomplete.items = results.slice(0, WL_LIMIT);
         },
 
+        // Block commands matching `query`, by their translated name or English keywords
+        _slashItems(query) {
+            const items = SLASH_COMMANDS.map(({ type, label, hint, keywords }) => {
+                const name = this.t(label);
+                return {
+                    label: name,
+                    secondary: hint,
+                    insert: type,
+                    search: `${name} ${keywords}`.toLowerCase(),
+                    prefix: name.toLowerCase().startsWith(query),
+                };
+            });
+            return items.filter((item) => item.search.includes(query)).sort((a, b) => b.prefix - a.prefix);
+        },
+
         // Keyboard handling while the popup is open. True means the key was used,
         // so the editor leaves it alone. Stopped here too, or Escape would also leave Zen mode.
         wlOnKeydown(event) {
@@ -1678,12 +1724,16 @@ function noteApp() {
             if (!n) return;
             this.wikilinkAutocomplete.activeIndex =
                 (this.wikilinkAutocomplete.activeIndex + delta + n) % n;
+            this.$nextTick(() => document.querySelector('.wikilink-autocomplete-item.active')?.scrollIntoView({ block: 'nearest' }));
         },
 
         wlAccept(item) {
             if (!item) return;
-            noteEditor?.acceptSuggestion(item.insert);
+            const isSlash = this.wikilinkAutocomplete.mode === 'slash';
+            if (isSlash) noteEditor?.acceptSlash();
+            else noteEditor?.acceptSuggestion(item.insert);
             this.wlClose();
+            if (isSlash) this.formatText(item.insert);
         },
 
         wlClose() {
@@ -1696,13 +1746,18 @@ function noteApp() {
             if (!rect) return;
 
             const POPUP_W = 360;
-            const popupHeight = this.wikilinkAutocomplete.items.length * 30 + 8; // rough row height
+            const popupHeight = Math.min(this.wikilinkAutocomplete.items.length * 30 + 8, 300); // rough row height, CSS cap
+            const area = this._visibleArea();
+            const roomBelow = area.bottom - rect.bottom;
+            const caretTop = Math.min(rect.top, area.bottom); // The caret itself can be behind the keyboard
+            const roomAbove = caretTop - area.top;
             let left = rect.left;
             if (left + POPUP_W > window.innerWidth) left = Math.max(4, window.innerWidth - POPUP_W - 4);
             // Above the caret the popup hangs from its bottom edge, so it stays
             // against the line whatever its real height is.
-            const above = rect.bottom + popupHeight > window.innerHeight;
-            this.wikilinkAutocomplete.position = { top: above ? rect.top : rect.bottom, left, above };
+            const above = roomBelow < popupHeight && roomAbove > roomBelow;
+            const maxHeight = Math.min(300, (above ? roomAbove : roomBelow) - 4);
+            this.wikilinkAutocomplete.position = { top: above ? caretTop : rect.bottom, left, above, maxHeight };
         },
 
         // Resolve a Markdown image path to a vault-relative path (forward slashes).
@@ -5155,14 +5210,19 @@ function noteApp() {
                 onChange: (value) => this._onEditorChange(value),
                 drawNode: (name, target, attrs) => this._drawNode(name, target, attrs),
                 decorateCode: (pre) => this.addCopyButtonToCodeBlock(pre),
-                onStateChange: ({ canUndo, canRedo, inTable, item }) => {
+                onStateChange: ({ canUndo, canRedo, inTable, item, selection }) => {
                     this.canUndo = canUndo;
                     this.canRedo = canRedo;
                     this.inTable = inTable;
                     this._updateItemPopup(item);
+                    this._updateSelectionBubble(selection);
                 },
                 onOpenLink: (event) => this.openEditorLink(event),
                 onOpenWikilink: ({ target }) => this._openInternalHref(this._wikilinkHref(target)),
+                onItemKey: (item, action) => {
+                    const actions = this._itemPopupContent(item)?.actions;
+                    (action === 'open' ? actions?.at(-1) : actions?.[0])?.run();
+                },
                 onInsertSource: () => this.openSourcePrompt(noteEditor?.itemAtSelection(), { isNew: true }),
                 onTasksSet: ({ checked, changed, total }) => {
                     if (!changed) return;
@@ -5178,11 +5238,17 @@ function noteApp() {
                 },
             });
             noteEditor.setEditable(this.viewMode === 'edit');
-            element.addEventListener('scroll', () => {
+            const placePopups = () => {
                 if (this.wikilinkAutocomplete.open) this.wlUpdatePosition();
                 if (this.itemPopup.open || this._itemOutOfView) this._updateItemPopup(noteEditor?.itemAtSelection());
+                this._updateSelectionBubble(noteEditor?.textSelection());
+            };
+            element.addEventListener('scroll', () => {
+                placePopups();
                 this._rememberNoteScroll(element);
             });
+            window.visualViewport?.addEventListener('resize', placePopups);
+            window.visualViewport?.addEventListener('scroll', placePopups);
         },
         
         _onEditorChange(value) {
@@ -5237,15 +5303,24 @@ function noteApp() {
             noteEditor?.format(type);
         },
         
+        // The part of the page in view. An on-screen keyboard only shrinks the visual
+        // viewport, so window.innerHeight still counts the space behind it.
+        _visibleArea() {
+            const viewport = window.visualViewport;
+            const top = viewport?.offsetTop ?? 0;
+            return { top, bottom: top + (viewport?.height ?? window.innerHeight) };
+        },
+        
         // Just below `rect`, or just above it when there's no room. Above, the popup hangs
         // from its bottom edge, so its real height only matters for fitting it at all.
         _popupPosition(rect, height = 46) {
             const WIDTH = 340;
             const GAP = 6;
             const left = Math.max(4, Math.min(rect.left, window.innerWidth - WIDTH - 4));
-            if (rect.bottom + GAP + height <= window.innerHeight) return { top: rect.bottom + GAP, left, above: false };
-            if (rect.top - GAP - height >= 0) return { top: rect.top - GAP, left, above: true };
-            return { top: Math.max(4, window.innerHeight - height - 4), left, above: false };
+            const area = this._visibleArea();
+            if (rect.bottom + GAP + height <= area.bottom) return { top: rect.bottom + GAP, left, above: false };
+            if (rect.top - GAP - height >= area.top) return { top: rect.top - GAP, left, above: true };
+            return { top: Math.max(area.top + 4, area.bottom - height - 4), left, above: false };
         },
         
         _updateItemPopup(item) {
@@ -5259,6 +5334,29 @@ function noteApp() {
                 return;
             }
             this.itemPopup = { open: true, ...content, position: this._popupPosition(this._visibleRect(item.rect, surface)) };
+        },
+        
+        // Above the selection, so it doesn't cover the lines being read next
+        _updateSelectionBubble(selection) {
+            const surface = document.getElementById('note-editor')?.getBoundingClientRect();
+            const visible = selection && surface && selection.rect.bottom > surface.top && selection.rect.top < surface.bottom;
+            if (!visible) {
+                if (this.selectionBubble.open) this.selectionBubble.open = false;
+                return;
+            }
+            const HEIGHT = 40;
+            const GAP = 6;
+            // Phones show their own menu by the selection, which can't be turned off or moved
+            if (window.matchMedia('(pointer: coarse)').matches) {
+                const top = Math.min(this._visibleArea().bottom, surface.bottom) - GAP;
+                this.selectionBubble = { open: true, active: selection.active, position: { top, left: surface.left + GAP, above: true } };
+                return;
+            }
+            const rect = this._visibleRect(selection.rect, surface);
+            const position = rect.top - GAP - HEIGHT >= this._visibleArea().top
+                ? { ...this._popupPosition(rect), top: rect.top - GAP, above: true }
+                : this._popupPosition(rect, HEIGHT);
+            this.selectionBubble = { open: true, active: selection.active, position };
         },
         
         // A tall item can be bigger than the editor, so only its visible part counts
@@ -5399,8 +5497,6 @@ function noteApp() {
                 .then(() => {
                     // Unbalanced braces hide the closing delimiter, so MathJax leaves the text alone
                     if (!element.querySelector('mjx-container')) element.textContent = source;
-                    // \href makes a real link, and a javascript: one would run when clicked
-                    element.querySelectorAll('[href]').forEach((link) => link.removeAttribute('href'));
                 })
                 .catch((error) => console.error('MathJax typesetting failed:', error));
         },
