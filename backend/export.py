@@ -534,6 +534,19 @@ def generate_export_html(
                 skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
             }},
             startup: {{
+                ready: () => {{
+                    MathJax.startup.defaultReady();
+                    // \\href makes a real link, and a javascript: one would run when clicked.
+                    // Removed here because MathJax can rebuild the page's formulas from this tree.
+                    MathJax.startup.input.forEach((input) => input.postFilters.add(({{ data }}) => {{
+                        (data.root || data).walkTree((node) => {{
+                            const href = node.attributes?.getExplicit('href');
+                            if (href !== undefined && !/^(https?|mailto):/i.test(href)) {{
+                                delete node.attributes.getAllAttributes().href;
+                            }}
+                        }});
+                    }}));
+                }},
                 pageReady: () => {{
                     return MathJax.startup.defaultPageReady().then(() => {{
                         // Highlight code blocks after MathJax is done
