@@ -156,16 +156,17 @@ function encodeVaultPath(path) {
  */
 const FilenameValidator = {
     // Characters that are forbidden in filenames across Windows/macOS/Linux,
-    // plus `#`. A hash is legal on disk, but in this app it starts a heading
-    // link (`[[Note#heading]]`) and, unencoded, it is a URL fragment.
+    // plus `#`, `[` and `]`. A hash is legal on disk, but in this app it starts a
+    // heading link (`[[Note#heading]]`) and, unencoded, it is a URL fragment.
+    // Brackets would end an embed of the note's own attachment folder early.
     // Windows: \ / : * ? " < > |
     // macOS: / :
     // Linux: / \0
     // Common set to block (including control characters)
-    FORBIDDEN_CHARS: /[\\/:*?"<>|#\x00-\x1f]/,
+    FORBIDDEN_CHARS: /[\\/:*?"<>|#\[\]\x00-\x1f]/,
     
     // For display purposes - human readable list
-    FORBIDDEN_CHARS_DISPLAY: '\\ / : * ? " < > | #',
+    FORBIDDEN_CHARS_DISPLAY: '\\ / : * ? " < > | # [ ]',
     
     /**
      * Validate a filename (single segment, no path separators)
@@ -337,7 +338,7 @@ function noteApp() {
         
         // Media lookup map for O(1) media wikilink resolution (built on loadNotes)
         // Maps media filename (case-insensitive) -> full path
-        _mediaLookup: new Map(),
+        _mediaPaths: new Set(),
         
         // Preview rendering debounce
         _previewDebounceTimeout: null,
@@ -357,7 +358,7 @@ function noteApp() {
         // Readable line length (preview max-width)
         readableLineLength: true,
         
-        // Hide underscore-prefixed folders (_attachments, _templates) from sidebar
+        // Hide underscore-prefixed folders (such as _templates) from sidebar
         // Read synchronously to prevent flash on initial render
         hideUnderscoreFolders: localStorage.getItem('hideUnderscoreFolders') === 'true',
 
@@ -1521,7 +1522,7 @@ function noteApp() {
             this._noteLookup.byName.clear();
             this._noteLookup.byNameLower.clear();
             this._noteLookup.byEndPath.clear();
-            this._mediaLookup.clear();
+            this._mediaPaths.clear();
             this._noteNameCounts.clear();
             this.$nextTick(() => noteEditor?.refreshRendered(['wikilink', 'embed', 'image']));
             
@@ -1535,15 +1536,9 @@ function noteApp() {
                 const name = note.name;
                 const nameLower = name.toLowerCase();
                 
-                // Handle media files separately - build media lookup map
+                // Media files are found by their exact path
                 if (note.type !== 'note') {
-                    // Map filename WITH extension (case-insensitive) to full path
-                    // Use path to get filename with extension (note.name is stem without extension)
-                    const filenameWithExt = path.split('/').pop().toLowerCase();
-                    // First match wins if there are duplicates
-                    if (!this._mediaLookup.has(filenameWithExt)) {
-                        this._mediaLookup.set(filenameWithExt, path);
-                    }
+                    this._mediaPaths.add(path);
                     continue;
                 }
                 
@@ -1602,9 +1597,29 @@ function noteApp() {
         
         // Resolve media wikilink to full path (O(1) lookup)
         // Returns the full path if found, null otherwise
-        resolveMediaWikilink(mediaName) {
-            const nameLower = mediaName.toLowerCase();
-            return this._mediaLookup.get(nameLower) || null;
+        // An embed target is a path relative to the note holding it. Null if it climbs
+        // out of the vault or nothing is there: a file is never matched by name.
+        resolveMediaWikilink(target) {
+            const parts = this.currentNote.split('/').slice(0, -1);
+            for (const part of target.split('/')) {
+                if (part === '..') {
+                    if (parts.length === 0) return null;
+                    parts.pop();
+                } else if (part && part !== '.') {
+                    parts.push(part);
+                }
+            }
+            const path = parts.join('/');
+            return this._mediaPaths.has(path) ? path : null;
+        },
+        
+        // The embed target for a vault file, as seen from a note
+        relativeMediaPath(notePath, mediaPath) {
+            const from = notePath.split('/').slice(0, -1);
+            const to = mediaPath.split('/');
+            let shared = 0;
+            while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) shared++;
+            return [...from.slice(shared).map(() => '..'), ...to.slice(shared)].join('/');
         },
 
         
@@ -1646,7 +1661,7 @@ function noteApp() {
                 let label, insert;
                 if (isMedia) {
                     label = path.split('/').pop();   // filename with extension
-                    insert = label;
+                    insert = this.relativeMediaPath(this.currentNote, path);
                 } else {
                     const stem = note.name.replace(/\.md$/i, '');
                     label = stem;
@@ -2305,8 +2320,12 @@ function noteApp() {
         buildFolderTree() {
             const tree = {};
             
+            // A note's attachment folder belongs to the note and isn't listed
+            const isAttachmentPath = (path) => path.split('/').some(part => part.endsWith('.attachments'));
+            
             // Add ALL folders from backend (including empty ones)
             this.allFolders.forEach(folderPath => {
+                if (isAttachmentPath(folderPath)) return;
                 const parts = folderPath.split('/');
                 let current = tree;
                 
@@ -2327,6 +2346,7 @@ function noteApp() {
             
             // Add ALL notes to their folders (no filtering - tree only shown when no filters active)
             this.notes.forEach(note => {
+                if (isAttachmentPath(note.folder)) return;
                 if (!note.folder) {
                     // Root level note
                     if (!tree['__root__']) {
@@ -2496,6 +2516,13 @@ function noteApp() {
         
         // Used by single-note rename and move (path changes, identity preserved).
         _optimisticRenameNote(oldPath, newPath) {
+            // A note's attachment folder moves with it
+            if (oldPath.endsWith('.md')) {
+                this._optimisticRenameFolderTree(
+                    oldPath.replace(/\.md$/, '.attachments'),
+                    newPath.replace(/\.md$/, '.attachments'),
+                );
+            }
             const note = this.notes.find(n => n.path === oldPath);
             if (!note) return;
             note.path = newPath;
@@ -2940,8 +2967,7 @@ function noteApp() {
             let link;
             if (isMediaFile) {
                 // For media files (images, audio, video, PDF), use wiki-style embed link
-                const filename = notePath.split('/').pop();
-                link = `![[${filename}]]`;
+                link = `![[${this.relativeMediaPath(this.currentNote, notePath)}]]`;
             } else {
                 // For notes, insert note link
                 const noteName = notePath.split('/').pop().replace('.md', '');
@@ -2954,18 +2980,10 @@ function noteApp() {
             this.draggedItem = null;
         },
         
-        /**
-         * Backend `get_attachment_dir` uses the parent folder of `note_path`.
-         * With no note open, infer a synthetic path from `currentMedia` so uploads go to the same
-         * `_attachments` folder as the file being viewed (or vault root when appropriate).
-         */
-        resolveUploadNotePath() {
-            if (this.currentNote) return this.currentNote;
-            if (!this.currentMedia) return '';
-            const parts = this.currentMedia.split('/').filter(Boolean);
-            const ai = parts.indexOf('_attachments');
-            if (ai === -1 || ai === 0) return '';
-            return `${parts.slice(0, ai).join('/')}/_.md`;
+        // With no note open, uploads go straight into the folder being viewed
+        uploadFolder() {
+            if (this.currentMedia) return this._folderFromPath(this.currentMedia);
+            return this.selectedHomepageFolder || '';
         },
         
         // Handle media files dropped into editor
@@ -2993,7 +3011,7 @@ function noteApp() {
                 return;
             }
             
-            const notePath = this.resolveUploadNotePath();
+            const notePath = this.currentNote;
             const position = this.currentNote ? this._editorDropPosition(event) : null;
             
             for (const file of mediaFiles) {
@@ -3082,7 +3100,7 @@ function noteApp() {
         },
         
         // Upload a media file (image, audio, video, PDF)
-        // Use options.nextToNotes + options.contentFolder to save a new drawing PNG next to .md files (not in _attachments).
+        // Use options.nextToNotes + options.contentFolder to save a new drawing PNG next to .md files (not in the note's attachment folder).
         async uploadMedia(file, notePath, options = {}) {
             const { nextToNotes, contentFolder } = options;
             const formData = new FormData();
@@ -3093,6 +3111,7 @@ function noteApp() {
                 formData.append('note_path', '');
             } else {
                 formData.append('note_path', notePath || '');
+                if (!notePath) formData.append('content_folder', this.uploadFolder());
             }
             
             const response = await fetch('/api/upload-media', {
@@ -3113,16 +3132,17 @@ function noteApp() {
             return data.path;
         },
         
-        // Insert media markdown at cursor position using wiki-style syntax
-        // (media links don't break when notes are moved). The uploaded file is
-        // already in this.notes thanks to uploadMedia()'s optimistic add.
+        // Insert media markdown at cursor position using wiki-style syntax, with a
+        // path relative to the note. The uploaded file is already in this.notes
+        // thanks to uploadMedia()'s optimistic add.
         async insertMediaMarkdown(mediaPath, altText, position = null) {
             const filename = mediaPath.split('/').pop();
             const filenameWithoutExt = filename.replace(/\.[^/.]+$/, '');
             const altWithoutExt = altText.replace(/\.[^/.]+$/, '');
+            const target = this.relativeMediaPath(this.currentNote, mediaPath);
             const markdown = (altWithoutExt && altWithoutExt !== filenameWithoutExt && !altWithoutExt.startsWith('pasted-image'))
-                ? `![[${filename}|${altWithoutExt}]]`
-                : `![[${filename}]]`;
+                ? `![[${target}|${altWithoutExt}]]`
+                : `![[${target}]]`;
             
             noteEditor?.insertMarkdown(markdown, position);
         },
@@ -4457,6 +4477,7 @@ function noteApp() {
                     const errorKey = isMedia ? 'move.failed_media' : 'move.failed_note';
                     throw new Error(errorData.detail || this.t(errorKey));
                 }
+                if (wasCurrentNote) noteEditor?.refreshRendered(['embed', 'image']);
                 if (isNote) await this.loadSharedNotePaths();
             } catch (error) {
                 console.error(`Failed to move ${isMedia ? 'media' : 'note'}:`, error);
@@ -5869,6 +5890,37 @@ function noteApp() {
                 return;
             }
             
+            // The server rewrites the note's links to its attachment folder, so the
+            // file must hold the latest text before the move: writing the editor
+            // buffer afterwards would bring the old links back.
+            noteEditor?.flush();
+            if (this.saveTimeout) {
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = null;
+            }
+            const resetName = () => {
+                this.currentNoteName = oldPath.split('/').pop().replace('.md', '');
+            };
+            try {
+                const saveResponse = await fetch(`/api/notes/${encodeVaultPath(oldPath)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: this.noteContent, base_hash: this.noteBaseHash })
+                });
+                if (saveResponse.status === 409) {
+                    // Changed elsewhere: the regular save asks what to do.
+                    resetName();
+                    this.saveNote();
+                    return;
+                }
+                if (!saveResponse.ok) throw new Error('Server returned error');
+                this.noteBaseHash = (await saveResponse.json()).hash || null;
+            } catch (error) {
+                resetName();
+                ErrorHandler.handle('rename note', error);
+                return;
+            }
+            
             // Optimistic rename: rewrite local path now + favorites + current
             // note pointer. The file itself moves through /api/notes/move so a
             // share token follows it. POST-then-DELETE revoked the link, because
@@ -5876,17 +5928,18 @@ function noteApp() {
             this._optimisticRenameNote(oldPath, newPath);
             this._rebuildTreeAfterMutation();
             
-            if (this.favoritesSet.has(oldPath)) {
-                this.favorites = this.favorites.map(f => f === oldPath ? newPath : f);
+            const wasFavorite = this.favoritesSet.has(oldPath);
+            const setFavorite = (from, to) => {
+                this.favorites = this.favorites.map(f => f === from ? to : f);
                 this.favoritesSet = new Set(this.favorites);
                 this.saveFavorites();
-            }
+            };
+            if (wasFavorite) setFavorite(oldPath, newPath);
             this.currentNote = newPath;
 
             // A pending autosave targets currentNote, which is already the new
             // path. Let it fire and it would create the destination before the
             // move, and the move would refuse to overwrite that file.
-            noteEditor?.flush();
             if (this.saveTimeout) {
                 clearTimeout(this.saveTimeout);
                 this.saveTimeout = null;
@@ -5902,26 +5955,21 @@ function noteApp() {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.detail || 'Server returned error');
                 }
-                // The moved file has the last saved copy. Write the editor
-                // buffer too, so a rename before autosave does not drop keystrokes.
-                const saveResponse = await fetch(`/api/notes/${encodeVaultPath(newPath)}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: this.noteContent, base_hash: this.noteBaseHash })
-                });
-                if (saveResponse.status === 409) {
-                    // Changed elsewhere before the rename: the regular save asks what to do.
-                    this.saveNote();
-                } else if (!saveResponse.ok) {
-                    throw new Error('Server returned error');
-                } else if (newPath === this.currentNote) {
-                    // Our own write: it is the base for the next save.
-                    const saved = await saveResponse.json();
-                    this.noteBaseHash = saved.hash || null;
+                const moved = await response.json();
+                if (moved.content != null && newPath === this.currentNote) {
+                    // Undo would bring the old links back, so the history goes too
+                    this.noteContent = moved.content;
+                    this.noteBaseHash = moved.hash || null;
+                    this._showInEditor(moved.content, { resetHistory: true });
                 }
                 await this.loadSharedNotePaths();
             } catch (error) {
                 ErrorHandler.handle('rename note', error);
+                if (wasFavorite) setFavorite(newPath, oldPath);
+                if (this.currentNote === newPath) {
+                    this.currentNote = oldPath;
+                    resetName();
+                }
                 await this.loadNotes({ silent: true });
                 await this.loadSharedNotePaths();
             }

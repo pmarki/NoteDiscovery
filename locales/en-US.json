@@ -278,7 +278,7 @@
     "readable_line_length": "Readable line length",
     "readable_line_length_desc": "Limit preview width for easier reading",
     "hide_underscore_folders": "Hide system folders",
-    "hide_underscore_folders_desc": "Hide _attachments, _templates and other underscore folders from the sidebar and the graph",
+    "hide_underscore_folders_desc": "Hide _templates and other underscore folders from the sidebar and the graph",
     "new_button_action": "When you click +",
     "new_button_action_desc": "Shift+click always shows the chooser.",
     "new_button_option_chooser": "Show chooser (default)",

@@ -17,7 +17,7 @@ from urllib.parse import quote
 import mimetypes
 
 # Import shared media type definitions and scanner from utils to avoid duplication
-from backend.utils import MEDIA_EXTENSIONS, get_media_type, scan_notes_fast_walk
+from backend.utils import MEDIA_EXTENSIONS, get_media_type
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -165,57 +165,17 @@ def strip_frontmatter(content: str) -> str:
     return '\n'.join(lines[end_idx + 1:]).strip()
 
 
-def find_media_in_attachments(media_name: str, note_folder: Path, notes_dir: Path) -> Optional[Path]:
+def resolve_media_path(target: str, note_folder: Path, notes_dir: Path) -> Optional[Path]:
     """
-    Search for a media file in common attachment locations.
-    Returns the resolved path if found, None otherwise.
+    The file an embed points at, relative to its note's folder.
+    Returns None if it's missing or outside the vault.
     """
-    # Common locations to search for media (fast path)
-    search_paths = [
-        note_folder / media_name,                          # Same folder as note
-        note_folder / '_attachments' / media_name,         # Note's _attachments folder
-        notes_dir / '_attachments' / media_name,           # Root _attachments folder
-    ]
-    
-    # Also search in parent folders' _attachments (for nested notes)
-    current = note_folder
-    while current != notes_dir and current.parent != current:
-        search_paths.append(current / '_attachments' / media_name)
-        current = current.parent
-    
-    for path in search_paths:
-        resolved = path.resolve()
-        if resolved.exists() and resolved.is_file():
-            # Security: ensure path is within notes_dir
-            try:
-                resolved.relative_to(notes_dir.resolve())
-                return resolved
-            except ValueError:
-                continue
-    
-    # Fallback: search all _attachments folders recursively (slower but thorough)
-    # This handles cross-folder media references like in Obsidian
+    resolved = (note_folder / target).resolve()
     try:
-        _files, folders = scan_notes_fast_walk(str(notes_dir), include_media=False)
-        for folder in folders:
-            if folder == '_attachments' or folder.endswith('/_attachments'):
-                attachment_folder = notes_dir / folder
-                candidate = attachment_folder / media_name
-                if candidate.exists() and candidate.is_file():
-                    try:
-                        candidate.resolve().relative_to(notes_dir.resolve())
-                        return candidate.resolve()
-                    except ValueError:
-                        continue
-    except Exception:
-        pass  # Ignore errors in recursive search
-    
-    return None
-
-
-# Legacy alias
-def find_image_in_attachments(image_name: str, note_folder: Path, notes_dir: Path) -> Optional[Path]:
-    return find_media_in_attachments(image_name, note_folder, notes_dir)
+        resolved.relative_to(notes_dir.resolve())
+    except ValueError:
+        return None
+    return resolved if resolved.is_file() else None
 
 
 def generate_media_placeholder(media_type: str, alt_text: str) -> str:
@@ -272,7 +232,7 @@ def process_media_for_export(markdown_content: str, note_folder: Path, notes_dir
             return generate_media_placeholder(media_type, alt_text)
         
         # For images, embed as base64
-        resolved_path = find_media_in_attachments(media_name, note_folder, notes_dir)
+        resolved_path = resolve_media_path(media_name, note_folder, notes_dir)
         
         if resolved_path:
             base64_url = get_image_as_base64(resolved_path)
@@ -356,13 +316,8 @@ def process_media_for_export(markdown_content: str, note_folder: Path, notes_dir
             # Try to resolve the media path relative to note folder
             resolved_path = (note_folder / media_path).resolve()
         
-        # If not found, try the attachment search
         if not resolved_path.exists():
-            # Extract just the filename and search
-            media_name = Path(media_path).name
-            resolved_path = find_media_in_attachments(media_name, note_folder, notes_dir)
-            if not resolved_path:
-                return match.group(0)  # Keep original if not found
+            return match.group(0)  # Keep original if not found
         
         # Security: ensure path is within notes_dir
         try:

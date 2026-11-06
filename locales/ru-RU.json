@@ -278,7 +278,7 @@
     "readable_line_length": "Удобная длина строки",
     "readable_line_length_desc": "Ограничить ширину предпросмотра для удобства чтения",
     "hide_underscore_folders": "Скрыть системные папки",
-    "hide_underscore_folders_desc": "Скрыть _attachments, _templates и другие папки с подчёркиванием на боковой панели и на графе",
+    "hide_underscore_folders_desc": "Скрыть _templates и другие папки с подчёркиванием на боковой панели и на графе",
     "new_button_action": "При нажатии +",
     "new_button_action_desc": "Shift+клик всегда показывает селектор.",
     "new_button_option_chooser": "Показать селектор (по умолчанию)",

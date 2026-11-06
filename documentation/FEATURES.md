@@ -23,7 +23,7 @@
 
 ### Media Support
 - **Drawing editor** — In-app **`drawing-*.png`** sketches next to your notes ([overview](#drawing-editor)); full guide: **[DRAWING.md](DRAWING.md)**
-- **Drag & drop upload** - Drop files from your file system into the editor: images/audio/video/PDF go to `_attachments`; `.md` files land next to the current note and get an inline link at the drop point
+- **Drag & drop upload** - Drop files from your file system into the editor: images/audio/video/PDF go to the note's own attachment folder (`meeting.md` keeps its files in `meeting.attachments/`, hidden from the sidebar) and keep their name, with a counter if it's taken; `.md` files land next to the current note and get an inline link at the drop point
 - **Clipboard paste** - Paste images from clipboard with Ctrl+V
 - **Images** - JPG, PNG, GIF, WebP (default max 10MB, configurable)
 - **Audio** - MP3, WAV, OGG, M4A (default max 50MB, configurable)
@@ -40,7 +40,7 @@
 - **Flexible sorting** - Sort notes by name (A-Z, Z-A), date (newest, oldest), or size (largest, smallest)
 - **Rename anything** - Files and folders, instantly
 - **Visual tree view** - Expandable/collapsible navigation
-- **Hide system folders** - Toggle to hide `_attachments`, `_templates` and other underscore-prefixed folders from the sidebar and the graph
+- **Hide system folders** - Toggle to hide `_templates` and other underscore-prefixed folders from the sidebar and the graph
 - **Tab inserts tab** - Toggle so Tab inserts a literal tab in the editor instead of changing focus; when this is on, Shift+Tab outdents (one leading tab or up to four leading spaces per line in the selection), and if nothing is removed, Shift+Tab still moves focus backward
 - **List & quote continuation (Enter)** - At the end of a line, Enter continues blockquotes (`>`), bullets (`-` / `*` / `+`), ordered lists (`1.` / `1)`), and task lists (`- [ ]` / `- [x]`); pressing Enter again on an empty continued line exits the list or quote. Disabled inside fenced code blocks and when using Shift+Enter (plain newline)
 
@@ -64,7 +64,7 @@ For file naming, API notes, and more: **[DRAWING.md](DRAWING.md)**
 ## 🔗 Linking & Discovery
 
 ### Graph View
-- **Interactive graph** - Visualize your notes and their connections. While Hide system folders is on, notes inside a folder whose name starts with `_` are left off the map (`_templates/meeting.md`, `_attachments/readme.md`, and `work/_documentation/intro.md` are the same case)
+- **Interactive graph** - Visualize your notes and their connections. While Hide system folders is on, notes inside a folder whose name starts with `_` are left off the map (`_templates/meeting.md` and `work/_documentation/intro.md` are the same case)
 - **Navigate with mouse** - Drag to pan, scroll to zoom, double-click nodes to open notes
 - **Multiple link types** - See wikilinks and markdown links distinguished by color
 - **Theme-aware** - Graph colors adapt to your current theme

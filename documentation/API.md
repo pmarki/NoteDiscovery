@@ -252,6 +252,10 @@ Content-Type: application/json
 }
 ```
 
+The note's attachment folder moves with it. The request fails if the destination already has an attachment folder with that name.
+
+If the note's name changes, its own embeds are updated to the new folder name, and the response includes the note's new `content` and `hash`. Embeds of its files from other notes aren't updated.
+
 ## 🎬 Media
 
 ### Get Media
@@ -262,7 +266,7 @@ Retrieve a media file (image, audio, video, PDF) with authentication protection.
 
 **Example:**
 ```bash
-curl http://localhost:8000/api/media/folder/_attachments/image-20240417093343.png
+curl http://localhost:8000/api/media/folder/note.attachments/image.png
 ```
 
 **Security Note:** This endpoint requires authentication and validates that:
@@ -302,9 +306,10 @@ Content-Type: multipart/form-data
 
 file: <media file>
 note_path: <path of note to attach to>
+content_folder: <folder to save in when there is no note>
 ```
 
-Upload a media file to the `_attachments` directory. Files are automatically organized per-folder and named with timestamps to prevent conflicts.
+Upload a media file to the note's attachment folder, which sits next to it: `folder/note.md` keeps its files in `folder/note.attachments/`. With an empty `note_path`, the file is saved directly in `content_folder`. Files keep their name, with a counter added if it's taken (`image.png`, `image-1.png`).
 
 **Supported formats & size limits:**
 | Type | Formats | Max Size |
@@ -318,8 +323,8 @@ Upload a media file to the `_attachments` directory. Files are automatically org
 ```json
 {
   "success": true,
-  "path": "folder/_attachments/media-20240417093343.png",
-  "filename": "media-20240417093343.png",
+  "path": "folder/note.attachments/media.png",
+  "filename": "media.png",
   "message": "Media uploaded successfully"
 }
 ```
@@ -342,8 +347,8 @@ POST /api/media/move
 Content-Type: application/json
 
 {
-  "oldPath": "_attachments/image.png",
-  "newPath": "folder/_attachments/image.png"
+  "oldPath": "image.png",
+  "newPath": "folder/image.png"
 }
 ```
 
@@ -354,14 +359,14 @@ Move a media file to a different location. Supports drag & drop in the UI.
 {
   "success": true,
   "message": "Media moved successfully",
-  "newPath": "folder/_attachments/image.png"
+  "newPath": "folder/image.png"
 }
 ```
 
 **Notes:**
-- Media is stored in `_attachments` folders relative to the note's location
-- Filenames are automatically timestamped (e.g., `media-20240417093343.mp3`)
-- Media appears in the sidebar navigation and can be viewed/deleted directly
+- Embeds store a path relative to the note, such as `![[note.attachments/image.png]]`. A file is never matched by name, so an embed shows as broken if the file isn't at that path
+- Moving a media file doesn't update embeds of it
+- Media appears in the sidebar navigation and can be viewed/deleted directly, except inside attachment folders, which are hidden
 - Drag & drop files into the editor automatically uploads and inserts markdown
 - All media access requires authentication when security is enabled
 
@@ -518,7 +523,7 @@ Returns the relationship graph between notes with link detection.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `include_system_folders` | `true` | When `false`, notes stored under a folder whose name starts with `_` are omitted, along with every edge that starts or ends on one of those notes. `_attachments/readme.md`, `_templates/meeting.md`, and `work/_documentation/intro.md` are the same case. A file named `_draft.md` in a normal folder is still included. Omitting the parameter returns the full graph. |
+| `include_system_folders` | `true` | When `false`, notes stored under a folder whose name starts with `_` are omitted, along with every edge that starts or ends on one of those notes. `_templates/meeting.md` and `work/_documentation/intro.md` are the same case. A file named `_draft.md` in a normal folder is still included. Omitting the parameter returns the full graph. |
 
 **Response:**
 ```json
@@ -592,7 +597,7 @@ GET /api/archive?folder={folder_path}
 
 Downloads a folder and everything under it as a ZIP file. Omit `folder` to archive the whole vault.
 
-Unlike the HTML export above, this returns the **raw files** exactly as they are stored — notes, their `_attachments`, and anything else in the tree — so the archive can be unzipped into another vault or opened in any editor.
+Unlike the HTML export above, this returns the **raw files** exactly as they are stored — notes, their attachment folders, and anything else in the tree — so the archive can be unzipped into another vault or opened in any editor.
 
 **Parameters:**
 | Parameter | Type | Description |

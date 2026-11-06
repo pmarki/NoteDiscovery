@@ -278,7 +278,7 @@
     "readable_line_length": "可读行宽",
     "readable_line_length_desc": "限制预览宽度以便于阅读",
     "hide_underscore_folders": "隐藏系统文件夹",
-    "hide_underscore_folders_desc": "在侧边栏和关系图中隐藏 _attachments、_templates 等下划线文件夹",
+    "hide_underscore_folders_desc": "在侧边栏和关系图中隐藏 _templates 等下划线文件夹",
     "new_button_action": "点击 + 时",
     "new_button_action_desc": "Shift+点击始终显示选择器。",
     "new_button_option_chooser": "显示选择器（默认）",

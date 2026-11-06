@@ -278,7 +278,7 @@
     "readable_line_length": "読みやすい行幅",
     "readable_line_length_desc": "プレビューの幅を制限して読みやすくする",
     "hide_underscore_folders": "システムフォルダを非表示",
-    "hide_underscore_folders_desc": "_attachments、_templatesなどのフォルダをサイドバーとグラフから非表示",
+    "hide_underscore_folders_desc": "_templatesなどのフォルダをサイドバーとグラフから非表示",
     "new_button_action": "+ をクリックしたとき",
     "new_button_action_desc": "Shift+クリックで常にセレクタが開きます。",
     "new_button_option_chooser": "セレクタを表示（デフォルト）",

@@ -60,6 +60,7 @@ const EXACT = {
     'callout with code': '> [!WARNING]\n> ```js\n> a()\n> ```\n',
     'sized image': '![photo|100x200](a.png)\n',
     'sized embed': '![[photo.png|100]]\n',
+    'embed by path': '![[my note.attachments/a b.png]]\n\n![[../x/y.png|100]]\n',
     'code fence': '```python\nprint("a_b")\n\nx = 1 * 2\n```\n',
     tasks: '- [ ] a\n- [x] b\n  - [ ] nested\n',
     'ordered list': '3. three\n4. four\n',

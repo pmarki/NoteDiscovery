@@ -1017,8 +1017,9 @@ async def upload_media(
     next_to_notes: str = Form(""),
 ):
     """
-    Upload a media file (image, audio, video, PDF) and save it to the attachments directory,
-    or (when next_to_notes=1) save a new drawing PNG next to markdown notes in content_folder.
+    Upload a media file (image, audio, video, PDF) and save it to the attachment folder of
+    note_path, or straight into content_folder when there's no note. With next_to_notes=1,
+    save a new drawing PNG next to markdown notes in content_folder.
     Returns the relative path for markdown linking.
     """
     try:
@@ -1079,6 +1080,7 @@ async def upload_media(
                 file.filename or "drawing.png",
                 file_data,
                 sibling_folder=content_folder or "",
+                drawing=True,
             )
             if not file_path:
                 raise HTTPException(status_code=500, detail="Failed to save drawing")
@@ -1092,12 +1094,14 @@ async def upload_media(
                 "message": "Drawing created",
             }
         
-        # Save the file (reusing image save function - it works for any file)
+        # Save the file (reusing image save function - it works for any file).
+        # With no note it goes straight into the folder being viewed.
         file_path = save_uploaded_image(
             config['storage']['notes_dir'],
             note_path,
             file.filename,
-            file_data
+            file_data,
+            sibling_folder=None if note_path else content_folder or "",
         )
         
         if not file_path:
@@ -1179,7 +1183,7 @@ async def move_note_endpoint(request: Request, data: dict):
         if not old_path or not new_path:
             raise HTTPException(status_code=400, detail="Both oldPath and newPath required")
         
-        success, error_msg = move_note(config['storage']['notes_dir'], old_path, new_path)
+        success, error_msg, content = move_note(config['storage']['notes_dir'], old_path, new_path)
         
         if not success:
             raise HTTPException(status_code=400, detail=error_msg or "Failed to move note")
@@ -1190,12 +1194,17 @@ async def move_note_endpoint(request: Request, data: dict):
         # Run plugin hooks
         plugin_manager.dispatch('on_note_save', note_path=new_path, content='')
         
-        return {
+        response = {
             "success": True,
             "oldPath": old_path,
             "newPath": new_path,
             "message": "Note moved successfully"
         }
+        # A rename changed the note's links to its attachment folder
+        if content is not None:
+            response["content"] = content
+            response["hash"] = _content_hash(content)
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -1796,7 +1805,7 @@ def download_folder_archive(request: Request, folder: str = ""):
     """
     Download a folder and everything under it as a zip file.
 
-    The vault on disk is the source of truth: notes, their `_attachments` and any
+    The vault on disk is the source of truth: notes, their attachment folders and any
     other files come out exactly as they are stored, so the archive can be
     unzipped into another vault or read in any editor. Note content is not
     parsed, which means media a note links to from a *different* folder is not
@@ -2052,7 +2061,7 @@ def _is_under_system_folder(path: str) -> bool:
 
     Paths use forward slashes. The filename itself does not count, so
     `_draft.md` in a normal folder is a normal note, while
-    `_attachments/readme.md` and `work/_documentation/intro.md` are system notes.
+    `_templates/meeting.md` and `work/_documentation/intro.md` are system notes.
     """
     parent = path.rsplit("/", 1)[0] if "/" in path else ""
     if not parent or parent == ".":

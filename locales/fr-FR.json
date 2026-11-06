@@ -278,7 +278,7 @@
     "readable_line_length": "Longueur de ligne lisible",
     "readable_line_length_desc": "Limiter la largeur de l'aperçu pour une lecture plus facile",
     "hide_underscore_folders": "Masquer les dossiers système",
-    "hide_underscore_folders_desc": "Masquer _attachments, _templates et autres dossiers préfixés dans la barre latérale et le graphe",
+    "hide_underscore_folders_desc": "Masquer _templates et autres dossiers préfixés dans la barre latérale et le graphe",
     "new_button_action": "Quand vous cliquez sur +",
     "new_button_action_desc": "Maj+clic affiche toujours le sélecteur.",
     "new_button_option_chooser": "Afficher le sélecteur (par défaut)",

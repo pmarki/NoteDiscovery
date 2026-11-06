@@ -278,7 +278,7 @@
     "readable_line_length": "Longitud de línea legible",
     "readable_line_length_desc": "Limitar el ancho de vista previa para facilitar la lectura",
     "hide_underscore_folders": "Ocultar carpetas de sistema",
-    "hide_underscore_folders_desc": "Ocultar _attachments, _templates y otras carpetas con guion bajo en la barra lateral y en el grafo",
+    "hide_underscore_folders_desc": "Ocultar _templates y otras carpetas con guion bajo en la barra lateral y en el grafo",
     "new_button_action": "Cuando haces clic en +",
     "new_button_action_desc": "Mayús+clic siempre muestra el selector.",
     "new_button_option_chooser": "Mostrar selector (por defecto)",

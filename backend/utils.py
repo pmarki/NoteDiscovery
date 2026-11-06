@@ -458,22 +458,32 @@ def scan_notes_fast_walk(notes_dir: str, use_cache: bool = True, include_media: 
         _scan_cache_set(cache_key, value)
     return value
 
-def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str]:
-    """Move a note. Returns (success, error_message)."""
+def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str, Optional[str]]:
+    """Move a note and its attachment folder.
+
+    Returns (success, error_message, content). `content` is the note's new text
+    when a rename changed its links to that folder, otherwise None.
+    """
     old_full_path = Path(notes_dir) / old_path
     new_full_path = Path(notes_dir) / new_path
 
     if not validate_path_security(notes_dir, old_full_path):
-        return False, "Invalid source path"
+        return False, "Invalid source path", None
     if not validate_path_security(notes_dir, new_full_path):
-        return False, "Invalid destination path"
+        return False, "Invalid destination path", None
     if not old_full_path.exists():
-        return False, f"Source note does not exist: {old_path}"
+        return False, f"Source note does not exist: {old_path}", None
     if new_full_path.exists():
-        return False, f"A note already exists at: {new_path}"
+        return False, f"A note already exists at: {new_path}", None
     conflict = note_name_conflict(notes_dir, new_path)
     if conflict and _normalized_rel_path(conflict).lower() != _normalized_rel_path(old_path).lower():
-        return False, f"A note already exists at: {conflict}"
+        return False, f"A note already exists at: {conflict}", None
+
+    old_attachments = get_attachment_dir(notes_dir, old_path)
+    new_attachments = get_attachment_dir(notes_dir, new_path)
+    has_attachments = old_attachments.is_dir()
+    if has_attachments and new_attachments.exists():
+        return False, f"An attachment folder already exists at: {new_attachments.name}", None
 
     _drop_path_caches(old_full_path)
 
@@ -481,11 +491,46 @@ def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str]:
         new_full_path.parent.mkdir(parents=True, exist_ok=True)
         old_full_path.rename(new_full_path)
     except Exception as e:
-        return False, f"Failed to move file: {str(e)}"
+        return False, f"Failed to move file: {str(e)}", None
+
+    if has_attachments:
+        try:
+            shutil.move(str(old_attachments), str(new_attachments))
+        except Exception as e:
+            # A note without its folder would show every embed as broken
+            new_full_path.rename(old_full_path)
+            return False, f"Failed to move attachments: {str(e)}", None
 
     note_index.on_note_renamed(notes_dir, old_full_path, new_full_path)
     _scan_cache_invalidate()
-    return True, ""
+
+    content = None
+    if has_attachments and old_attachments.name != new_attachments.name:
+        text = new_full_path.read_text(encoding='utf-8')
+        rewritten = rewrite_attachment_links(text, old_attachments.name, new_attachments.name)
+        if rewritten != text:
+            save_note(notes_dir, new_path, rewritten)
+            content = rewritten
+    return True, "", content
+
+
+def rewrite_attachment_links(content: str, old_folder: str, new_folder: str) -> str:
+    """Point a note's embeds at its renamed attachment folder.
+
+    Only `![[old/...` and `![...](old/...` change. `![](...)` addresses are URL
+    encoded when they hold a space, so both spellings are matched.
+    """
+    content = content.replace(f'![[{old_folder}/', f'![[{new_folder}/')
+    for old, new in (
+        (old_folder, new_folder),
+        (urllib.parse.quote(old_folder), urllib.parse.quote(new_folder)),
+    ):
+        content = re.sub(
+            r'(!\[[^\]\n]*\]\()' + re.escape(old) + '/',
+            lambda match: f'{match.group(1)}{new}/',
+            content,
+        )
+    return content
 
 
 def move_folder(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str]:
@@ -949,25 +994,57 @@ def sanitize_filename(filename: str) -> str:
     return f"{name}.{ext}" if ext else name
 
 
+ATTACHMENTS_SUFFIX = ".attachments"
+
+
 def get_attachment_dir(notes_dir: str, note_path: str) -> Path:
     """
-    Get the attachments directory for a given note.
-    If note is in root, returns /data/_attachments/
-    If note is in folder, returns /data/folder/_attachments/
+    Get a note's own attachment folder, which sits next to it:
+    work/meeting.md keeps its files in work/meeting.attachments/
     """
-    if not note_path:
-        # Root level
-        return Path(notes_dir) / "_attachments"
-    
-    note_path_obj = Path(note_path)
-    folder = note_path_obj.parent
-    
-    if str(folder) == '.':
-        # Note is in root
-        return Path(notes_dir) / "_attachments"
-    else:
-        # Note is in a folder
-        return Path(notes_dir) / folder / "_attachments"
+    note = Path(note_path)
+    return Path(notes_dir) / note.parent / f"{note.stem}{ATTACHMENTS_SUFFIX}"
+
+
+def _write_new_file(folder: Path, filename: str, file_data: bytes) -> Path:
+    """
+    Write file_data under filename, or photo-1.png, photo-2.png... if it's taken.
+
+    Embeds find files by path, so a name in use must never be reused. Names are
+    compared ignoring case because some filesystems do too, and "xb" still
+    refuses a file created since the listing was read.
+    """
+    stem, ext = Path(filename).stem, Path(filename).suffix
+    taken = {name.lower() for name in os.listdir(folder)}
+    counter = 0
+    while True:
+        candidate = f"{stem}-{counter}{ext}" if counter else filename
+        counter += 1
+        if candidate.lower() in taken:
+            continue
+        try:
+            with open(folder / candidate, "xb") as f:
+                f.write(file_data)
+            return folder / candidate
+        except FileExistsError:
+            continue
+
+
+def _folder_in_vault(notes_dir: str, folder: str) -> Optional[Path]:
+    """The vault folder with this relative path, created if needed, or None if it's unsafe."""
+    cf = (folder or "").strip().replace("\\", "/")
+    segments = [p for p in cf.split("/") if p and p != "."]
+    if any(p == ".." for p in segments):
+        return None
+    base = Path(notes_dir)
+    dest_dir = base.joinpath(*segments) if segments else base
+    if not validate_path_security(notes_dir, dest_dir / ".nd_probe"):
+        return None
+    try:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None
+    return dest_dir
 
 
 def save_uploaded_image(
@@ -977,59 +1054,44 @@ def save_uploaded_image(
     file_data: bytes,
     *,
     sibling_folder: Optional[str] = None,
+    drawing: bool = False,
 ) -> Optional[str]:
     """
     Save uploaded media under the vault.
 
-    Default (sibling_folder is None): store in ``_attachments`` next to the note implied by
-    ``note_path`` (drag/drop, paste, etc.).
+    With a ``note_path``: store in that note's attachment folder (drag/drop, paste, etc.).
 
-    If ``sibling_folder`` is set (including ``""`` for vault root): store ``drawing-{timestamp}.png``
-    in that folder next to ``.md`` files — used for new drawings from the + menu.
+    With ``sibling_folder`` (including ``""`` for vault root): store directly in that folder,
+    used when no note is open. ``drawing`` names the file ``drawing-{timestamp}.png`` instead,
+    for new drawings from the + menu.
 
+    Files keep their name, with a counter added if it's taken.
     Returns a relative path from ``notes_dir``, or None on failure.
     """
     base = Path(notes_dir)
 
     if sibling_folder is not None:
-        cf = (sibling_folder or "").strip().replace("\\", "/")
-        segments = [p for p in cf.split("/") if p and p != "."]
-        if any(p == ".." for p in segments):
-            return None
-        dest_dir = base.joinpath(*segments) if segments else base
-        if not validate_path_security(notes_dir, dest_dir / ".nd_probe"):
+        dest_dir = _folder_in_vault(notes_dir, sibling_folder)
+    else:
+        dest_dir = get_attachment_dir(notes_dir, note_path)
+        if not validate_path_security(notes_dir, dest_dir):
+            logger.warning("Security: Attempted to save image outside notes directory: %s", dest_dir)
             return None
         try:
             dest_dir.mkdir(parents=True, exist_ok=True)
         except OSError:
             return None
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        full_path = dest_dir / f"drawing-{timestamp}.png"
-        if not validate_path_security(notes_dir, full_path):
-            return None
-        try:
-            with open(full_path, "wb") as f:
-                f.write(file_data)
-            _scan_cache_invalidate()
-            return str(full_path.relative_to(base).as_posix())
-        except OSError as e:
-            logger.error("Error saving image: %s", e)
-            return None
-
-    sanitized_name = sanitize_filename(filename)
-    ext = Path(sanitized_name).suffix
-    name_without_ext = Path(sanitized_name).stem
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    final_filename = f"{name_without_ext}-{timestamp}{ext}"
-    attachments_dir = get_attachment_dir(notes_dir, note_path)
-    attachments_dir.mkdir(parents=True, exist_ok=True)
-    full_path = attachments_dir / final_filename
-    if not validate_path_security(notes_dir, full_path):
-        logger.warning("Security: Attempted to save image outside notes directory: %s", full_path)
+    if dest_dir is None:
         return None
+
+    if drawing:
+        final_filename = f"drawing-{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
+    else:
+        # These would end an ![[embed]] early or turn into a heading link
+        final_filename = re.sub(r'[\[\]#]', '_', sanitize_filename(filename))
+
     try:
-        with open(full_path, "wb") as f:
-            f.write(file_data)
+        full_path = _write_new_file(dest_dir, final_filename, file_data)
         _scan_cache_invalidate()
         return str(full_path.relative_to(base).as_posix())
     except OSError as e:

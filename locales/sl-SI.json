@@ -278,7 +278,7 @@
     "readable_line_length": "Berljiva dolžina vrstice",
     "readable_line_length_desc": "Omejite širino predogleda za lažje branje",
     "hide_underscore_folders": "Skrij sistemske mape",
-    "hide_underscore_folders_desc": "Skrij _attachments, _templates in druge mape s podčrtajem v stranski vrstici in na grafu",
+    "hide_underscore_folders_desc": "Skrij _templates in druge mape s podčrtajem v stranski vrstici in na grafu",
     "new_button_action": "Ko kliknete +",
     "new_button_action_desc": "Shift+klik vedno pokaže izbirnik.",
     "new_button_option_chooser": "Pokaži izbirnik (privzeto)",

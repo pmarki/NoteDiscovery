@@ -278,7 +278,7 @@
     "readable_line_length": "Lesbare Zeilenlänge",
     "readable_line_length_desc": "Vorschaubreite für bessere Lesbarkeit begrenzen",
     "hide_underscore_folders": "Systemordner ausblenden",
-    "hide_underscore_folders_desc": "_attachments, _templates und andere Unterstrich-Ordner in der Seitenleiste und im Graphen ausblenden",
+    "hide_underscore_folders_desc": "_templates und andere Unterstrich-Ordner in der Seitenleiste und im Graphen ausblenden",
     "new_button_action": "Wenn du auf + klickst",
     "new_button_action_desc": "Umschalt+Klick zeigt immer die Auswahl.",
     "new_button_option_chooser": "Auswahl anzeigen (Standard)",

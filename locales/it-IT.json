@@ -278,7 +278,7 @@
     "readable_line_length": "Larghezza riga leggibile",
     "readable_line_length_desc": "Limita la larghezza dell'anteprima per una lettura più facile",
     "hide_underscore_folders": "Nascondi cartelle di sistema",
-    "hide_underscore_folders_desc": "Nascondi _attachments, _templates e altre cartelle con underscore dalla barra laterale e dal grafo",
+    "hide_underscore_folders_desc": "Nascondi _templates e altre cartelle con underscore dalla barra laterale e dal grafo",
     "new_button_action": "Quando clicchi su +",
     "new_button_action_desc": "Shift+clic mostra sempre il selettore.",
     "new_button_option_chooser": "Mostra selettore (predefinito)",

@@ -278,7 +278,7 @@
     "readable_line_length": "Czytelna długość linii",
     "readable_line_length_desc": "Ogranicz szerokość podglądu dla łatwiejszego czytania",
     "hide_underscore_folders": "Ukryj foldery systemowe",
-    "hide_underscore_folders_desc": "Ukryj foldery _attachments, _templates i inne foldery zaczynające się od podkreślenia na pasku bocznym i na grafie",
+    "hide_underscore_folders_desc": "Ukryj foldery _templates i inne foldery zaczynające się od podkreślenia na pasku bocznym i na grafie",
     "new_button_action": "Akcja po kliknięciu +",
     "new_button_action_desc": "Shift+kliknięcie zawsze pokazuje menu wyboru.",
     "new_button_option_chooser": "Pokaż menu wyboru (domyślnie)",
