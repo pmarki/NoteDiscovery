@@ -51,6 +51,7 @@ from .utils import (
     folder_exists_exact,
     path_has_hash,
     move_note,
+    is_vault_root,
     move_folder,
     rename_folder,
     delete_folder,
@@ -1350,6 +1351,10 @@ async def delete_folder_endpoint(request: Request, folder_path: str):
             raise HTTPException(status_code=400, detail="Folder path required")
         
         notes_dir = config['storage']['notes_dir']
+        full_path = Path(notes_dir) / folder_path
+        if not validate_path_security(notes_dir, full_path) or is_vault_root(notes_dir, full_path):
+            raise HTTPException(status_code=400, detail="Invalid folder path")
+        
         success = delete_folder(notes_dir, folder_path)
         
         if not success:

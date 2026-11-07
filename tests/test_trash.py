@@ -258,6 +258,15 @@ def test_routes_round_trip(vault, client):
     assert client.delete("/api/trash").json()["deleted"] == 1
 
 
+# "." and "a/.." are left out: the test client tidies them away before sending
+@pytest.mark.parametrize("path", [".%2f", "%2e", "a/%2e%2e", "..%2f..", "%2e%2e"])
+def test_deleting_the_vault_root_or_outside_it_is_a_bad_request(vault, client, path):
+    write_note(vault, "a/b.md")
+
+    assert client.delete(f"/api/folders/{path}").status_code == 400
+    assert (vault / "a/b.md").is_file()
+
+
 @pytest.mark.parametrize("call", [
     lambda c, p: c.get(f"/api/notes/{p}/a.md"),
     lambda c, p: c.post(f"/api/notes/{p}/a.md", json={"content": "x"}),
