@@ -1647,6 +1647,16 @@ function noteApp() {
             return this._mediaPaths.has(path) ? path : null;
         },
         
+        // The file an embed target points at, and any #page=2 or ?query after it.
+        // A file name can hold # or ?, so the whole target is tried first.
+        _embedFile(target) {
+            const path = this.resolveMediaWikilink(target);
+            if (path) return { path, suffix: '' };
+            const suffixAt = target.search(/[#?]/);
+            const file = suffixAt > 0 ? this.resolveMediaWikilink(target.slice(0, suffixAt)) : null;
+            return file ? { path: file, suffix: target.slice(suffixAt) } : null;
+        },
+        
         // The embed target for a vault file, as seen from a note
         relativeMediaPath(notePath, mediaPath) {
             const from = notePath.split('/').slice(0, -1);
@@ -4370,7 +4380,9 @@ function noteApp() {
                 );
             }
             
-            if (targetNote) {
+            if (targetNote && targetNote.type !== 'note') {
+                this.viewMedia(targetNote.path, targetNote.type);
+            } else if (targetNote) {
                 // Load the note, then scroll to anchor if present
                 this.loadNote(targetNote.path).then(() => {
                     if (anchor) {
@@ -4460,6 +4472,9 @@ function noteApp() {
                 const newPrefix = newPath + '/';
                 const wasExpanded = this.expandedFolders.has(draggedPath);
                 
+                // As for a note below: the move can rewrite the open note's links
+                await this._commitPendingEdits();
+                
                 this._optimisticRenameFolderTree(draggedPath, newPath);
                 this._rebuildTreeAfterMutation();
                 
@@ -4491,6 +4506,7 @@ function noteApp() {
                         const errorData = await response.json().catch(() => ({}));
                         throw new Error(errorData.detail || this.t('move.failed_folder'));
                     }
+                    await this._reloadIfUpdated(await response.json());
                     await this.loadSharedNotePaths();
                 } catch (error) {
                     console.error('Failed to move folder:', error);
@@ -4512,6 +4528,11 @@ function noteApp() {
             const wasFavorited = isNote && this.favoritesSet.has(draggedPath);
             const wasCurrentNote = this.currentNote === draggedPath;
             const wasCurrentMedia = this.currentMedia === draggedPath;
+            
+            // The move can rewrite the open note's links, so its edits go first.
+            // After the rename below they would save to the new path, and the
+            // move would refuse to overwrite that file.
+            await this._commitPendingEdits();
             
             this._optimisticRenameNote(draggedPath, newPath);
             this._rebuildTreeAfterMutation();
@@ -4536,6 +4557,7 @@ function noteApp() {
                     const errorKey = isMedia ? 'move.failed_media' : 'move.failed_note';
                     throw new Error(errorData.detail || this.t(errorKey));
                 }
+                await this._reloadIfUpdated(await response.json());
                 if (wasCurrentNote) noteEditor?.refreshRendered(['embed', 'image']);
                 if (isNote) await this.loadSharedNotePaths();
             } catch (error) {
@@ -4545,6 +4567,11 @@ function noteApp() {
             }
         },
         
+        
+        // A move fixes links in other notes, which may include the open one
+        async _reloadIfUpdated({ updatedNotes }) {
+            if (updatedNotes?.includes(this.currentNote)) await this.loadNote(this.currentNote, false);
+        },
         
         // Load a specific note
         async loadNote(notePath, updateHistory = true, searchQuery = '') {
@@ -5177,6 +5204,9 @@ function noteApp() {
             const folderPrefix = folderPath + '/';
             const newFolderPrefix = newPath + '/';
             
+            // The rename can rewrite the open note's links, so its edits go first
+            await this._commitPendingEdits();
+            
             // Optimistic cascade: rewrite folder + every nested folder + every
             // note path. Sidebar reflects the rename instantly.
             this._optimisticRenameFolderTree(folderPath, newPath);
@@ -5205,6 +5235,7 @@ function noteApp() {
                     body: JSON.stringify({ oldPath: folderPath, newPath: newPath })
                 });
                 if (!response.ok) throw new Error('Server returned error');
+                await this._reloadIfUpdated(await response.json());
                 await this.loadSharedNotePaths();
                 return true;
             } catch (error) {
@@ -5354,7 +5385,8 @@ function noteApp() {
             const vaultRelative = this.currentNote
                 ? this.resolveMarkdownMediaPathForNote(this.currentNote, src)
                 : src.split('#')[0].split('?')[0];
-            return `/api/media/${this.encodeVaultRelativePathForMediaApi(vaultRelative)}`;
+            const suffix = src.match(/[?#].*/)?.[0] ?? '';
+            return `/api/media/${this.encodeVaultRelativePathForMediaApi(vaultRelative)}${suffix}`;
         },
         
         _editorDropPosition(event) {
@@ -5590,10 +5622,10 @@ function noteApp() {
             let name;
             let spec;
             if (kind === 'embed') {
-                const mediaPath = this.resolveMediaWikilink(attrs.target.trim());
-                if (!mediaPath) return null;
-                url = `/api/media/${this.encodeVaultRelativePathForMediaApi(mediaPath)}`;
-                name = attrs.target.trim().split('/').pop();
+                const file = this._embedFile(attrs.target.trim());
+                if (!file) return null;
+                url = `/api/media/${this.encodeVaultRelativePathForMediaApi(file.path)}${file.suffix}`;
+                name = file.path.split('/').pop();
                 spec = parseImageSizeSpec(attrs.alias || '', { allowSolo: true });
             } else {
                 url = this._editorImageSrc(attrs.src);
@@ -5736,7 +5768,7 @@ function noteApp() {
             
             if (!media) {
                 const name = attrs.target || attrs.src || '';
-                const type = this.getMediaType(name);
+                const type = this.getMediaType(name.split(/[?#]/)[0]);
                 const icon = { audio: '🎵', video: '🎬', document: '📄' }[type] || '🖼️';
                 element.className = 'note-chip wikilink-broken';
                 element.textContent = `${icon} ${name}`;

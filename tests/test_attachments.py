@@ -11,6 +11,8 @@ from backend.utils import (
     move_note,
     rewrite_attachment_links,
     save_uploaded_image,
+    note_moves,
+    update_links_after_move,
 )
 
 
@@ -85,7 +87,7 @@ def test_moving_a_note_moves_its_folder_without_changing_links(vault):
     write_note(vault, "meeting.md", text)
     save_uploaded_image(str(vault), "meeting.md", "photo.png", b"a")
 
-    assert move_note(str(vault), "meeting.md", "work/meeting.md") == (True, "", None)
+    assert move_note(str(vault), "meeting.md", "work/meeting.md") == (True, "")
     assert (vault / "work/meeting.attachments/photo.png").is_file()
     assert not (vault / "meeting.attachments").exists()
     assert (vault / "work/meeting.md").read_text() == text
@@ -94,7 +96,7 @@ def test_moving_a_note_moves_its_folder_without_changing_links(vault):
 def test_moving_a_note_with_no_attachments_works(vault):
     write_note(vault, "meeting.md", "text")
 
-    assert move_note(str(vault), "meeting.md", "work/meeting.md") == (True, "", None)
+    assert move_note(str(vault), "meeting.md", "work/meeting.md") == (True, "")
 
 
 def test_renaming_a_note_updates_its_own_links(vault):
@@ -105,13 +107,12 @@ def test_renaming_a_note_updates_its_own_links(vault):
         "![[other.attachments/d.png]]",
         "[link](old name.attachments/e.pdf)",
     ]))
-    save_uploaded_image(str(vault), "old name.md", "a.png", b"a")
+    for name in ("a.png", "b.png", "c.png"):
+        save_uploaded_image(str(vault), "old name.md", name, b"a")
 
-    ok, error, content = move_note(str(vault), "old name.md", "new name.md")
+    assert move_with_embeds(vault, "old name.md", "new name.md") == ["new name.md"]
 
-    assert (ok, error) == (True, "")
-    assert content == (vault / "new name.md").read_text()
-    assert content.split("\n") == [
+    assert (vault / "new name.md").read_text().split("\n") == [
         "![[new name.attachments/a.png|100]]",
         "![alt](new%20name.attachments/b.png)",
         "![alt](new name.attachments/c.png)",
@@ -121,11 +122,11 @@ def test_renaming_a_note_updates_its_own_links(vault):
     assert (vault / "new name.attachments/a.png").is_file()
 
 
-def test_rename_with_nothing_to_rewrite_reports_no_content(vault):
+def test_rename_with_nothing_to_rewrite_changes_no_notes(vault):
     write_note(vault, "a.md", "no embeds")
     save_uploaded_image(str(vault), "a.md", "photo.png", b"a")
 
-    assert move_note(str(vault), "a.md", "b.md") == (True, "", None)
+    assert move_with_embeds(vault, "a.md", "b.md") == []
 
 
 def test_move_is_refused_when_the_destination_folder_exists(vault):
@@ -133,7 +134,7 @@ def test_move_is_refused_when_the_destination_folder_exists(vault):
     save_uploaded_image(str(vault), "a.md", "photo.png", b"a")
     (vault / "b.attachments").mkdir()
 
-    ok, error, _ = move_note(str(vault), "a.md", "b.md")
+    ok, error = move_note(str(vault), "a.md", "b.md")
 
     assert not ok and "attachment folder" in error
     assert (vault / "a.md").is_file()
@@ -148,11 +149,73 @@ def test_failed_folder_move_puts_the_note_back(vault, monkeypatch):
         raise OSError("disk full")
 
     monkeypatch.setattr(utils.shutil, "move", fail)
-    ok, error, _ = move_note(str(vault), "a.md", "work/a.md")
+    ok, error = move_note(str(vault), "a.md", "work/a.md")
 
     assert not ok and "disk full" in error
     assert (vault / "a.md").is_file()
     assert not (vault / "work/a.md").exists()
+
+
+def move_with_embeds(vault: Path, old_path: str, new_path: str) -> list:
+    assert move_note(str(vault), old_path, new_path)[0]
+    return sorted(update_links_after_move(str(vault), note_moves(str(vault), old_path, new_path)))
+
+
+def test_renaming_a_note_updates_embeds_in_other_notes(vault):
+    write_note(vault, "work/old name.md", "text")
+    save_uploaded_image(str(vault), "work/old name.md", "a.png", b"a")
+    write_note(vault, "work/same.md", "![[old name.attachments/a.png|100]]")
+    write_note(vault, "root.md", "![alt](work/old%20name.attachments/a.png)")
+    write_note(vault, "other/deep/below.md", "![[../../work/old name.attachments/a.png]]")
+    write_note(vault, "unrelated.md", "![[old name.attachments/a.png]]")
+
+    updated = move_with_embeds(vault, "work/old name.md", "work/new name.md")
+
+    assert updated == ["other/deep/below.md", "root.md", "work/same.md"]
+    assert (vault / "work/same.md").read_text() == "![[new name.attachments/a.png|100]]"
+    assert (vault / "root.md").read_text() == "![alt](work/new%20name.attachments/a.png)"
+    assert (vault / "other/deep/below.md").read_text() == "![[../../work/new name.attachments/a.png]]"
+    assert (vault / "unrelated.md").read_text() == "![[old name.attachments/a.png]]"
+
+
+def test_moving_a_note_updates_embeds_in_other_notes(vault):
+    write_note(vault, "a.md", "![[a.attachments/p.png]]")
+    save_uploaded_image(str(vault), "a.md", "p.png", b"a")
+    write_note(vault, "b.md", "![[a.attachments/p.png]]")
+    write_note(vault, "work/c.md", "![[../a.attachments/p.png]]")
+
+    assert move_with_embeds(vault, "a.md", "work/a.md") == ["b.md", "work/c.md"]
+
+    assert (vault / "b.md").read_text() == "![[work/a.attachments/p.png]]"
+    assert (vault / "work/c.md").read_text() == "![[a.attachments/p.png]]"
+    assert (vault / "work/a.md").read_text() == "![[a.attachments/p.png]]"
+
+
+def test_moved_note_with_no_attachments_changes_nothing(vault):
+    write_note(vault, "a.md", "text")
+    write_note(vault, "b.md", "![[a.attachments/p.png]]")
+
+    assert move_with_embeds(vault, "a.md", "c.md") == []
+    assert (vault / "b.md").read_text() == "![[a.attachments/p.png]]"
+
+
+def test_unreadable_note_does_not_stop_the_others(vault):
+    write_note(vault, "a.md", "text")
+    save_uploaded_image(str(vault), "a.md", "p.png", b"a")
+    (vault / "bad.md").write_bytes(b"\xff\xfe ![[a.attachments/p.png]]")
+    write_note(vault, "good.md", "![[a.attachments/p.png]]")
+
+    assert move_with_embeds(vault, "a.md", "b.md") == ["good.md"]
+    assert (vault / "good.md").read_text() == "![[b.attachments/p.png]]"
+
+
+def test_notes_in_the_trash_are_left_alone(vault):
+    write_note(vault, "a.md", "text")
+    save_uploaded_image(str(vault), "a.md", "p.png", b"a")
+    write_note(vault, ".trash/1/b.md", "![[a.attachments/p.png]]")
+
+    assert move_with_embeds(vault, "a.md", "c.md") == []
+    assert (vault / ".trash/1/b.md").read_text() == "![[a.attachments/p.png]]"
 
 
 def test_rewrite_leaves_a_longer_folder_name_alone():
@@ -191,3 +254,24 @@ def test_export_leaves_a_bare_name_unresolved(vault):
 
     assert "data:image/png;base64" in found
     assert "data:image" not in missing
+
+
+@pytest.mark.parametrize("embed", ["![[photo.png#x]]", "![[photo.png?v=1|shown]]", "![y](photo.png#x)"])
+def test_export_finds_an_embed_with_a_suffix(vault, embed):
+    (vault / "photo.png").write_bytes(b"png")
+
+    assert "data:image/png;base64," in process_media_for_export(embed, vault, vault)
+
+
+@pytest.mark.parametrize("embed", ["![[a.pdf#page=2]]", "![y](a.pdf#page=2)"])
+def test_export_knows_a_pdf_with_a_suffix(vault, embed):
+    (vault / "a.pdf").write_bytes(b"pdf")
+
+    assert "PDF document" in process_media_for_export(embed, vault, vault)
+
+
+def test_export_prefers_a_file_named_with_a_hash(vault):
+    (vault / "a#b.png").write_bytes(b"png")
+    (vault / "a").write_bytes(b"other")
+
+    assert "data:image/png;base64," in process_media_for_export("![[a#b.png]]", vault, vault)

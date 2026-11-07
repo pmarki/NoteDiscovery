@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
+import posixpath
 import re
 import threading
 import time
@@ -848,14 +849,17 @@ class _Resolver:
         link_path = link_path.split("#")[0]
         if not link_path:
             return None
-        link_path = urllib.parse.unquote(link_path)
-        if link_path.startswith("./"):
-            link_path = link_path[2:]
+        return self.resolve_note_path(urllib.parse.unquote(link_path), source_folder)
+
+    def resolve_note_path(self, link_path: str, source_folder: str, by_name: bool = True) -> Optional[str]:
+        """The note a decoded `[text](path)` opens, looked up as the editor does:
+        by path from the source folder, from the vault root, then by name."""
+        link_path = posixpath.normpath(link_path)
         link_path_with_md = link_path if link_path.endswith(".md") else link_path + ".md"
 
         if source_folder and not link_path.startswith("/"):
-            relative_path = f"{source_folder}/{link_path}"
-            relative_path_with_md = f"{source_folder}/{link_path_with_md}"
+            relative_path = posixpath.normpath(f"{source_folder}/{link_path}")
+            relative_path_with_md = posixpath.normpath(f"{source_folder}/{link_path_with_md}")
             relative_path_lower = relative_path.lower()
             relative_path_with_md_lower = relative_path_with_md.lower()
             if relative_path in self.note_paths:
@@ -867,6 +871,8 @@ class _Resolver:
             if relative_path_with_md_lower in self.note_paths_lower:
                 return self.note_paths_lower[relative_path_with_md_lower]
 
+        link_path = link_path.lstrip("/")
+        link_path_with_md = link_path_with_md.lstrip("/")
         link_path_lower = link_path.lower()
         link_path_with_md_lower = link_path_with_md.lower()
         if link_path in self.note_paths:
@@ -877,12 +883,17 @@ class _Resolver:
             return self.note_paths_lower[link_path_lower]
         if link_path_with_md_lower in self.note_paths_lower:
             return self.note_paths_lower[link_path_with_md_lower]
-        return None
+        return self.note_names.get(link_path_lower) if by_name else None
 
 
 # ============================================================================
 # Internal helpers
 # ============================================================================
+
+def link_resolver(note_paths: Set[str]) -> _Resolver:
+    """Resolve links against a given set of notes rather than the live index."""
+    return _Resolver(note_paths)
+
 
 def _fingerprint(
     notes_meta: List[NoteRecord],

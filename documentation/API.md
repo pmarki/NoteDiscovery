@@ -256,7 +256,9 @@ Content-Type: application/json
 
 The note's attachment folder moves with it. The request fails if the destination already has an attachment folder with that name.
 
-If the note's name changes, its own embeds are updated to the new folder name, and the response includes the note's new `content` and `hash`. Embeds of its files from other notes aren't updated.
+Moving a note, folder or media file keeps embeds, `[[wikilinks]]` and Markdown links working across the vault, and the response's `updatedNotes` lists the notes that changed. A link is only changed if the move would break it: `[[name]]` finds a note in any folder, so it survives a move. Links inside code are left alone.
+
+If the moved note itself changed, the response also includes its new `content` and `hash`.
 
 ## 🗑️ Trash
 

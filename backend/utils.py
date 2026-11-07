@@ -7,6 +7,7 @@ to the in-memory index in note_index.py.
 
 import logging
 import os
+import posixpath
 import re
 import shutil
 import threading
@@ -460,32 +461,28 @@ def scan_notes_fast_walk(notes_dir: str, use_cache: bool = True, include_media: 
         _scan_cache_set(cache_key, value)
     return value
 
-def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str, Optional[str]]:
-    """Move a note and its attachment folder.
-
-    Returns (success, error_message, content). `content` is the note's new text
-    when a rename changed its links to that folder, otherwise None.
-    """
+def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str]:
+    """Move a note and its attachment folder. Returns (success, error_message)."""
     old_full_path = Path(notes_dir) / old_path
     new_full_path = Path(notes_dir) / new_path
 
     if not validate_path_security(notes_dir, old_full_path):
-        return False, "Invalid source path", None
+        return False, "Invalid source path"
     if not validate_path_security(notes_dir, new_full_path):
-        return False, "Invalid destination path", None
+        return False, "Invalid destination path"
     if not old_full_path.exists():
-        return False, f"Source note does not exist: {old_path}", None
+        return False, f"Source note does not exist: {old_path}"
     if new_full_path.exists():
-        return False, f"A note already exists at: {new_path}", None
+        return False, f"A note already exists at: {new_path}"
     conflict = note_name_conflict(notes_dir, new_path)
     if conflict and _normalized_rel_path(conflict).lower() != _normalized_rel_path(old_path).lower():
-        return False, f"A note already exists at: {conflict}", None
+        return False, f"A note already exists at: {conflict}"
 
     old_attachments = get_attachment_dir(notes_dir, old_path)
     new_attachments = get_attachment_dir(notes_dir, new_path)
     has_attachments = old_attachments.is_dir()
     if has_attachments and new_attachments.exists():
-        return False, f"An attachment folder already exists at: {new_attachments.name}", None
+        return False, f"An attachment folder already exists at: {new_attachments.name}"
 
     _drop_path_caches(old_full_path)
 
@@ -493,7 +490,7 @@ def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str, 
         new_full_path.parent.mkdir(parents=True, exist_ok=True)
         old_full_path.rename(new_full_path)
     except Exception as e:
-        return False, f"Failed to move file: {str(e)}", None
+        return False, f"Failed to move file: {str(e)}"
 
     if has_attachments:
         try:
@@ -501,19 +498,11 @@ def move_note(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str, 
         except Exception as e:
             # A note without its folder would show every embed as broken
             new_full_path.rename(old_full_path)
-            return False, f"Failed to move attachments: {str(e)}", None
+            return False, f"Failed to move attachments: {str(e)}"
 
     note_index.on_note_renamed(notes_dir, old_full_path, new_full_path)
     _scan_cache_invalidate()
-
-    content = None
-    if has_attachments and old_attachments.name != new_attachments.name:
-        text = new_full_path.read_text(encoding='utf-8')
-        rewritten = rewrite_attachment_links(text, old_attachments.name, new_attachments.name)
-        if rewritten != text:
-            save_note(notes_dir, new_path, rewritten)
-            content = rewritten
-    return True, "", content
+    return True, ""
 
 
 def rewrite_attachment_links(content: str, old_folder: str, new_folder: str) -> str:
@@ -533,6 +522,210 @@ def rewrite_attachment_links(content: str, old_folder: str, new_folder: str) -> 
             content,
         )
     return content
+
+
+# Links shown as code are text. A fence that never closes runs to the end.
+_CODE_RE = re.compile(r'^[ \t]*(```|~~~).*?(?:^[ \t]*\1[^\n]*$|\Z)|`[^`\n]+`', re.M | re.S)
+_EMBED_RE = re.compile(r'(!\[\[)([^\[\]\n|]+)')
+_IMAGE_RE = re.compile(r'(!\[[^\]\n]*\]\()([^()\n]*(?:\([^()\n]*\)[^()\n]*)*)(?=\))')
+_MD_LINK_RE = re.compile(
+    r'(?<!!)(\[(?:[^\[\]\n]|\[[^\[\]\n]*\])*\]\()([^()\n]*(?:\([^()\n]*\)[^()\n]*)*)(?=\))'
+)
+_NOTE_LINK_RE = re.compile(r'(?<!!)(\[\[)([^\[\]\n|]+)(?=(?:\|[^\[\]\n]+)?\]\])')
+_IMAGE_TITLE_RE = re.compile(r'\s+"[^"\n]*"$')
+_URL_SCHEME_RE = re.compile(r'[a-zA-Z][a-zA-Z0-9+.-]*:')
+_ADDRESS_BREAKERS = set(' ()')
+
+
+def note_moves(notes_dir: str, old_path: str, new_path: str) -> Dict[str, str]:
+    """What moving a note moves: the note and its attachment folder."""
+    relative = lambda path: get_attachment_dir(notes_dir, path).relative_to(notes_dir).as_posix()
+    return {old_path: new_path, relative(old_path): relative(new_path)}
+
+
+def _moved_path(path: str, moves: Dict[str, str]) -> str:
+    """Where a vault path is after `moves`, whose keys are files or folders."""
+    for old, new in moves.items():
+        if path == old:
+            return new
+        if path.startswith(f'{old}/'):
+            return new + path[len(old):]
+    return path
+
+
+def _moved_embed(
+    notes_dir: str, target: str, old_folder: str, new_folder: str, moves: Dict[str, str]
+) -> str:
+    """An embed target as it must read now. A file that isn't there stays as written."""
+    if target.startswith(('/', '<')) or _URL_SCHEME_RE.match(target):
+        return target
+    old_path = posixpath.normpath(posixpath.join(old_folder, target))
+    new_path = _moved_path(old_path, moves)
+    if old_path == new_path and old_folder == new_folder:
+        return target
+    full_path = Path(notes_dir) / new_path
+    if not validate_path_security(notes_dir, full_path) or not full_path.is_file():
+        return target
+    return posixpath.relpath(new_path, new_folder or '.')
+
+
+def _moved_wiki_embed(
+    notes_dir: str, target: str, old_folder: str, new_folder: str, moves: Dict[str, str]
+) -> str:
+    """Same for `![[target]]`, where a file name can hold # or ?, so those are tried last."""
+    moved = _moved_embed(notes_dir, target, old_folder, new_folder, moves)
+    if moved != target:
+        return moved
+    path = re.split(r'[#?]', target, maxsplit=1)[0]
+    if not path or path == target:
+        return target
+    return _moved_embed(notes_dir, path, old_folder, new_folder, moves) + target[len(path):]
+
+
+def _moved_address(address: str, move: Callable[[str], str]) -> str:
+    """Run the path in a `(address)` through `move`.
+
+    Around the path there can be URL encoding, a #fragment or ?query, and a title,
+    which all stay. A space or bracket the old path didn't have would end the
+    address early, so the new path gets encoded for it.
+    """
+    title = _IMAGE_TITLE_RE.search(address)
+    target = address[:title.start()] if title else address
+    path = re.split(r'[#?]', target, maxsplit=1)[0]
+    if not path or _URL_SCHEME_RE.match(path):
+        return address
+    encoded = '%' in path
+    plain = urllib.parse.unquote(path) if encoded else path
+    moved = move(plain)
+    if moved == plain:
+        return address
+    if encoded or (_ADDRESS_BREAKERS & set(moved) and not _ADDRESS_BREAKERS & set(plain)):
+        moved = urllib.parse.quote(moved)
+    return moved + target[len(path):] + (title.group() if title else '')
+
+
+def _moved_file_address(
+    notes_dir: str, target: str, old_folder: str, new_folder: str, moves: Dict[str, str]
+) -> str:
+    """The path in a `[text](target)` to a file that isn't a note.
+
+    The editor looks in the note's folder, then from the vault root.
+    """
+    if not target.startswith('/'):
+        beside_note = posixpath.normpath(posixpath.join(old_folder, target))
+        if (Path(notes_dir) / _moved_path(beside_note, moves)).is_file():
+            return _moved_embed(notes_dir, target, old_folder, new_folder, moves)
+    from_root = target.lstrip('/')
+    moved = _moved_embed(notes_dir, from_root, '', '', moves)
+    if moved == from_root:
+        return target
+    return f'/{moved}' if target.startswith('/') else moved
+
+
+def _moved_link_address(
+    notes_dir: str, target: str, old_folder: str, new_folder: str, moves: Dict[str, str], before, after
+) -> str:
+    """The path in a `[text](target)` as it must read now.
+
+    A link written as a path keeps working as a path. One that only found its
+    note by name is treated like `[[name]]`, and survives a move.
+    """
+    was = before.resolve_note_path(target, old_folder)
+    if was is None:
+        return _moved_file_address(notes_dir, target, old_folder, new_folder, moves)
+    by_name = before.resolve_note_path(target, old_folder, by_name=False) is None
+    goal = _moved_path(was, moves)
+    if after.resolve_note_path(target, new_folder, by_name=by_name) == goal:
+        return target
+
+    spelled = goal if target.lower().endswith('.md') else goal[:-len('.md')]
+    name = posixpath.basename(spelled)
+    if by_name and after.resolve_note_path(name, new_folder) == goal:
+        return name
+    relative = posixpath.relpath(spelled, new_folder or '.')
+    if not target.startswith('/') and after.resolve_note_path(relative, new_folder, by_name=False) == goal:
+        return relative
+    return f'/{spelled}'
+
+
+def _moved_note_link(
+    link: str, old_folder: str, new_folder: str, moves: Dict[str, str], before, after
+) -> str:
+    """A `[[link]]` target as it must read now.
+
+    Only a link the move would break changes: `[[name]]` finds a note in any
+    folder, so it survives a move. `before` and `after` resolve links in the
+    vault on either side of the move.
+    """
+    target, hash_mark, heading = link.partition('#')
+    target = target.strip()
+    was = before.resolve_wikilink(target, old_folder)
+    if was is None:
+        return link
+    goal = _moved_path(was, moves)
+    if after.resolve_wikilink(target, new_folder) == goal:
+        return link
+
+    extension = '.md' if target.lower().endswith('.md') else ''
+    new_target = goal[:-len('.md')] + extension
+    name = posixpath.basename(new_target)
+    if '/' not in target and after.resolve_wikilink(name, new_folder) == goal:
+        new_target = name
+    return f'{new_target}{hash_mark}{heading}'
+
+
+def update_links_after_move(notes_dir: str, moves: Dict[str, str]) -> List[str]:
+    """Fix embeds and wikilinks across the vault once files or folders have moved.
+
+    `moves` maps old vault paths to new ones. Each note's links are read as they
+    meant from where the note was, then written for where it is, so notes that
+    moved and notes that link to them are handled the same way. Returns the notes
+    that changed.
+    """
+    moves = {posixpath.normpath(old): posixpath.normpath(new) for old, new in moves.items()}
+    moved_back = {new: old for old, new in moves.items()}
+    paths = [note['path'] for note in scan_notes_fast_walk(notes_dir)[0]]
+    before = note_index.link_resolver({_moved_path(path, moved_back) for path in paths})
+    after = note_index.link_resolver(set(paths))
+
+    # A note that stayed put can only be affected if it names what moved. Links
+    # are the slow part, and most of a vault has none to change.
+    names = {posixpath.splitext(posixpath.basename(old))[0].lower() for old in moves}
+    names |= {urllib.parse.quote(name).lower() for name in names}
+
+    updated = []
+    for path in paths:
+        old_path = _moved_path(path, moved_back)
+        old_folder = posixpath.dirname(old_path)
+        new_folder = posixpath.dirname(path)
+
+        def rewrite(text: str) -> str:
+            text = _EMBED_RE.sub(lambda m: m.group(1) + _moved_wiki_embed(
+                notes_dir, m.group(2), old_folder, new_folder, moves), text)
+            text = _IMAGE_RE.sub(lambda m: m.group(1) + _moved_address(m.group(2), lambda target: _moved_embed(
+                notes_dir, target, old_folder, new_folder, moves)), text)
+            text = _MD_LINK_RE.sub(lambda m: m.group(1) + _moved_address(m.group(2), lambda target: _moved_link_address(
+                notes_dir, target, old_folder, new_folder, moves, before, after)), text)
+            return _NOTE_LINK_RE.sub(lambda m: m.group(1) + _moved_note_link(
+                m.group(2), old_folder, new_folder, moves, before, after), text)
+
+        try:
+            content = (Path(notes_dir) / path).read_text(encoding='utf-8')
+            lowered = content.lower()
+            if old_path == path and not any(name in lowered for name in names):
+                continue
+            parts = []
+            position = 0
+            for code in _CODE_RE.finditer(content):
+                parts += [rewrite(content[position:code.start()]), code.group()]
+                position = code.end()
+            rewritten = ''.join(parts) + rewrite(content[position:])
+            if rewritten != content and save_note(notes_dir, path, rewritten):
+                updated.append(path)
+        except (OSError, UnicodeDecodeError) as e:
+            # The move has happened, so one unreadable note must not fail it
+            logger.warning("Could not update links in '%s': %s", path, e)
+    return updated
 
 
 def move_folder(notes_dir: str, old_path: str, new_path: str) -> tuple[bool, str]:

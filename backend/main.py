@@ -6,6 +6,7 @@ Main FastAPI application
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Form, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
@@ -51,6 +52,8 @@ from .utils import (
     folder_exists_exact,
     path_has_hash,
     move_note,
+    note_moves,
+    update_links_after_move,
     is_vault_root,
     move_folder,
     rename_folder,
@@ -1124,6 +1127,17 @@ async def upload_media(
         raise HTTPException(status_code=500, detail=safe_error_message(e, "Failed to upload file"))
 
 
+async def _update_links(moves: dict) -> list:
+    """Fix links after a move, and tell plugins about the notes that changed.
+
+    This reads every note, so it stays off the event loop.
+    """
+    updated_notes = await run_in_threadpool(update_links_after_move, config['storage']['notes_dir'], moves)
+    for path in updated_notes:
+        plugin_manager.dispatch('on_note_save', note_path=path, content='')
+    return updated_notes
+
+
 @api_router.post("/media/move", tags=["Media"])
 @limiter.limit("30/minute")
 async def move_media_endpoint(request: Request, data: dict):
@@ -1167,7 +1181,12 @@ async def move_media_endpoint(request: Request, data: dict):
         shutil.move(str(old_full_path), str(new_full_path))
         _scan_cache_invalidate()
 
-        return {"success": True, "message": "Media moved successfully", "newPath": new_path}
+        return {
+            "success": True,
+            "message": "Media moved successfully",
+            "newPath": new_path,
+            "updatedNotes": await _update_links({old_path: new_path})
+        }
         
     except HTTPException:
         raise
@@ -1186,7 +1205,7 @@ async def move_note_endpoint(request: Request, data: dict):
         if not old_path or not new_path:
             raise HTTPException(status_code=400, detail="Both oldPath and newPath required")
         
-        success, error_msg, content = move_note(config['storage']['notes_dir'], old_path, new_path)
+        success, error_msg = move_note(config['storage']['notes_dir'], old_path, new_path)
         
         if not success:
             raise HTTPException(status_code=400, detail=error_msg or "Failed to move note")
@@ -1194,17 +1213,22 @@ async def move_note_endpoint(request: Request, data: dict):
         # Update share token path if note was shared
         update_token_path(config['storage']['notes_dir'], old_path, new_path)
         
+        updated_notes = await _update_links(note_moves(config['storage']['notes_dir'], old_path, new_path))
+        
         # Run plugin hooks
-        plugin_manager.dispatch('on_note_save', note_path=new_path, content='')
+        if new_path not in updated_notes:
+            plugin_manager.dispatch('on_note_save', note_path=new_path, content='')
         
         response = {
             "success": True,
             "oldPath": old_path,
             "newPath": new_path,
+            "updatedNotes": updated_notes,
             "message": "Note moved successfully"
         }
-        # A rename changed the note's links to its attachment folder
-        if content is not None:
+        # The move changed links in the note itself
+        if new_path in updated_notes:
+            content = get_note_content(config['storage']['notes_dir'], new_path)
             response["content"] = content
             response["hash"] = _content_hash(content)
         return response
@@ -1303,6 +1327,7 @@ async def move_folder_endpoint(request: Request, data: dict):
             "success": True,
             "oldPath": old_path,
             "newPath": new_path,
+            "updatedNotes": await _update_links({old_path: new_path}),
             "message": "Folder moved successfully"
         }
     except HTTPException:
@@ -1334,6 +1359,7 @@ async def rename_folder_endpoint(request: Request, data: dict):
             "success": True,
             "oldPath": old_path,
             "newPath": new_path,
+            "updatedNotes": await _update_links({old_path: new_path}),
             "message": "Folder renamed successfully"
         }
     except HTTPException:

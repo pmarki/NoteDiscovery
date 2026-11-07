@@ -176,6 +176,16 @@ def resolve_media_path(target: str, note_folder: Path, notes_dir: Path) -> Optio
     return resolved if resolved.is_file() else None
 
 
+def strip_media_suffix(target: str, note_folder: Path, notes_dir: Path) -> str:
+    """
+    An embed target without a #fragment or ?query.
+    A file name can hold # or ?, so a target naming a real file stays whole.
+    """
+    if resolve_media_path(target, note_folder, notes_dir):
+        return target
+    return re.split(r'[#?]', target, maxsplit=1)[0] or target
+
+
 def generate_media_placeholder(media_type: str, alt_text: str) -> str:
     """Generate a placeholder for non-embeddable media (audio, video, PDF)."""
     safe_alt = alt_text.replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
@@ -215,7 +225,7 @@ def process_media_for_export(markdown_content: str, note_folder: Path, notes_dir
     wikilink_pattern = r'!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]'
     
     def replace_wikilink_media(match):
-        media_name = match.group(1).strip()
+        media_name = strip_media_suffix(match.group(1).strip(), note_folder, notes_dir)
         raw_alt = match.group(2).strip() if match.group(2) else ''
         # Wikilink alt-group: solo `|<digits>` is a size, no ambiguity.
         clean_alt, width, height = parse_image_size_spec(raw_alt, allow_solo=True)
@@ -292,6 +302,8 @@ def process_media_for_export(markdown_content: str, note_folder: Path, notes_dir
         # Skip empty paths (from failed wikilink conversion)
         if not media_path:
             return match.group(0)
+        
+        media_path = strip_media_suffix(media_path, note_folder, notes_dir)
         
         # Check media type first
         media_type = get_media_type(media_path)
