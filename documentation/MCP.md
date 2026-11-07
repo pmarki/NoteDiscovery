@@ -420,7 +420,7 @@ If you have authentication enabled in NoteDiscovery:
 
 - Check Cursor/Claude Desktop logs for errors
 - Try running manually: `python -m mcp_server`
-- Verify Python 3.10+ is installed
+- Verify Python 3.11+ is installed
 
 ### Verify connectivity manually
 
