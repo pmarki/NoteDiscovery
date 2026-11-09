@@ -314,6 +314,9 @@
     "note_plural": "zapiski",
     "folder_singular": "mapa",
     "folder_plural": "mape",
+    "file_singular": "datoteka",
+    "file_plural": "datotek",
+    "upload": "Naloži",
     "view_cards": "Pogled kartic",
     "view_list": "Pogled seznama"
   },

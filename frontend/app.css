@@ -1121,9 +1121,17 @@ body {
 .file-card-icon {
     font-size: 2rem;
 }
-.file-card-pdf {
+.file-card-pdf,
+.files-list-pdf {
+    display: flex;
+}
+.file-card-pdf .pdf-icon {
     width: 44px;
     height: 52px;
+}
+.files-list-pdf .pdf-icon {
+    width: 17px;
+    height: 20px;
 }
 /* Covers the icon once loaded. A failed load removes it, so the icon shows. */
 .file-card-thumb {
@@ -1185,6 +1193,51 @@ body {
 @media (max-width: 640px) {
     .files-grid {
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+}
+
+/* The folder view's toolbar: search and actions, then counts and layout */
+.homepage-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+}
+.homepage-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+.homepage-action {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    white-space: nowrap;
+}
+.homepage-action:hover {
+    border-color: var(--accent-primary);
+}
+.homepage-action.is-primary {
+    color: white;
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+.homepage-action.is-primary:hover {
+    background-color: var(--accent-hover);
+}
+/* On phones the search gets its own line and the buttons show icons only */
+@media (max-width: 640px) {
+    .homepage-toolbar-row > .relative {
+        flex-basis: 100%;
+    }
+    .homepage-action span {
+        display: none;
     }
 }
 

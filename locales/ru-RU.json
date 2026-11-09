@@ -314,6 +314,9 @@
     "note_plural": "заметок",
     "folder_singular": "папка",
     "folder_plural": "папок",
+    "file_singular": "файл",
+    "file_plural": "файлов",
+    "upload": "Загрузить",
     "view_cards": "Вид карточками",
     "view_list": "Вид списком"
   },

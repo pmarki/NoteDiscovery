@@ -314,6 +314,9 @@
     "note_plural": "notes",
     "folder_singular": "folder",
     "folder_plural": "folders",
+    "file_singular": "file",
+    "file_plural": "files",
+    "upload": "Upload",
     "view_cards": "Card view",
     "view_list": "List view"
   },

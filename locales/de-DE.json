@@ -314,6 +314,9 @@
     "note_plural": "Notizen",
     "folder_singular": "Ordner",
     "folder_plural": "Ordner",
+    "file_singular": "Datei",
+    "file_plural": "Dateien",
+    "upload": "Hochladen",
     "view_cards": "Kartenansicht",
     "view_list": "Listenansicht"
   },

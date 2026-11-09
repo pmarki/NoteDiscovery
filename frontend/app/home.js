@@ -142,6 +142,11 @@ function homeFeature() {
             return this._filterHomepageByName(this.homepageFolders(), 'folders');
         },
 
+        // "3 notes", "1 folder", "2 files"
+        homepageCount(kind, count) {
+            return `${count} ${this.t(`homepage.${kind}_${count === 1 ? 'singular' : 'plural'}`)}`;
+        },
+        
         // Folders and notes under "Notes", media under "Files". Empty sections are left out.
         homepageSections() {
             const items = this.homepageVisibleNotes();

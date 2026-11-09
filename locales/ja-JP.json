@@ -314,6 +314,9 @@
     "note_plural": "ノート",
     "folder_singular": "フォルダ",
     "folder_plural": "フォルダ",
+    "file_singular": "ファイル",
+    "file_plural": "ファイル",
+    "upload": "アップロード",
     "view_cards": "カード表示",
     "view_list": "リスト表示"
   },

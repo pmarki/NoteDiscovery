@@ -254,9 +254,10 @@ function mediaFeature() {
             await this.uploadFiles(files, null);
         },
         
-        // The toolbar's upload: files join the note's attachments without changing its text
+        // Upload buttons: with a note open, files join its attachments without changing its
+        // text. In the folder view they go into the folder being viewed.
         openUploadPicker() {
-            if (this.currentNote) this.$refs.uploadInput.click();
+            (this.currentNote ? this.$refs.uploadInput : this.$refs.folderUploadInput)?.click();
         },
         
         async onUploadPicked(event) {
@@ -276,7 +277,7 @@ function mediaFeature() {
                 }
             }
             // Show where they went
-            if (this.currentNote === notePath && !this.attachmentsExpanded) {
+            if (notePath && this.currentNote === notePath && !this.attachmentsExpanded) {
                 this.attachmentsExpanded = true;
                 this.saveAttachmentsExpanded();
             }

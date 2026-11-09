@@ -314,6 +314,9 @@
     "note_plural": "jegyzet",
     "folder_singular": "mappa",
     "folder_plural": "mappa",
+    "file_singular": "fájl",
+    "file_plural": "fájl",
+    "upload": "Feltöltés",
     "view_cards": "Kártyanézet",
     "view_list": "Listanézet"
   },

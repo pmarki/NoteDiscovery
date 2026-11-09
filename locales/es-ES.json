@@ -314,6 +314,9 @@
     "note_plural": "notas",
     "folder_singular": "carpeta",
     "folder_plural": "carpetas",
+    "file_singular": "archivo",
+    "file_plural": "archivos",
+    "upload": "Subir",
     "view_cards": "Vista de tarjetas",
     "view_list": "Vista de lista"
   },

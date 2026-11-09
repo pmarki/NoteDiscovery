@@ -314,6 +314,9 @@
     "note_plural": "note",
     "folder_singular": "cartella",
     "folder_plural": "cartelle",
+    "file_singular": "file",
+    "file_plural": "file",
+    "upload": "Carica",
     "view_cards": "Vista a schede",
     "view_list": "Vista elenco"
   },
