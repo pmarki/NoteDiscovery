@@ -360,10 +360,9 @@ function editorFeature() {
         
         // Just below `rect`, or just above it when there's no room. Above, the popup hangs
         // from its bottom edge, so its real height only matters for fitting it at all.
-        _popupPosition(rect, height = 46) {
-            const WIDTH = 340;
+        _popupPosition(rect, height = 46, width = 340) {
             const GAP = 6;
-            const left = Math.max(4, Math.min(rect.left, window.innerWidth - WIDTH - 4));
+            const left = Math.max(4, Math.min(rect.left, window.innerWidth - width - 4));
             const area = this._visibleArea();
             if (rect.bottom + GAP + height <= area.bottom) return { top: rect.bottom + GAP, left, above: false };
             if (rect.top - GAP - height >= area.top) return { top: rect.top - GAP, left, above: true };
@@ -491,13 +490,13 @@ function editorFeature() {
         // What the popup says about `item`, or null if there's nothing to offer
         _itemPopupContent(item) {
             const editable = this.viewMode === 'edit';
-            const edit = (run) => (editable ? [{ label: this.t('editor.mode_edit'), run }] : []);
-            const open = (run) => ({ label: this.t('format.open_link'), run });
+            const edit = (run) => (editable ? [{ label: this.t('editor.mode_edit'), icon: ACTION_ICONS.edit, run }] : []);
+            const open = (run, icon) => ({ label: this.t('format.open_link'), icon, run });
             const { kind, attrs } = item;
             if (kind === 'link') {
                 return {
                     label: attrs.href,
-                    actions: [...edit(() => this.openLinkPrompt('link')), open(() => this.openLinkAddress(attrs.href))],
+                    actions: [...edit(() => this.openLinkPrompt('link')), open(() => this.openLinkAddress(attrs.href), ACTION_ICONS.openNewTab)],
                 };
             }
             if (kind === 'wikilink') {
@@ -505,17 +504,44 @@ function editorFeature() {
                     label: attrs.target,
                     actions: [
                         ...edit(() => this.openWikilinkPrompt(item)),
-                        open(() => this._openInternalHref(this._wikilinkHref(attrs.target))),
+                        open(() => this._openInternalHref(this._wikilinkHref(attrs.target)), ACTION_ICONS.openNote),
                     ],
                 };
             }
             if (kind === 'embed' || kind === 'image') {
                 const media = this._mediaInfo(kind, attrs);
                 const actions = media ? this._mediaActions(media) : [];
+                if (media && editable && (media.type === 'image' || media.type === 'drawing')) {
+                    actions.push(...[4, 2, 1].map((divisor) => ({
+                        label: `1/${divisor}`,
+                        run: () => this._scaleSelectedImage(kind, attrs, divisor),
+                    })));
+                }
                 return actions.length ? { label: media.name, actions } : null;
             }
             const actions = edit(() => this.openSourcePrompt(noteEditor?.itemAtSelection()));
             return actions.length ? { label: this._sourceLabel(kind), actions } : null;
+        },
+        
+        // Show the selected image at a fraction of its original width. Only the width
+        // is written, so the height follows and the aspect stays. 1/1 removes the size.
+        // The file is untouched.
+        _scaleSelectedImage(kind, attrs, divisor) {
+            let size = '';
+            if (divisor !== 1) {
+                const original = noteEditor?.selectedImageSize();
+                if (!original) return;
+                size = String(Math.max(1, Math.round(original.width / divisor)));
+            }
+            if (kind === 'embed') {
+                const { alt } = parseImageSizeSpec(attrs.alias || '', { allowSolo: true });
+                const alias = [alt, size].filter(Boolean).join('|');
+                noteEditor?.updateSelectedNode({ alias: alias || null });
+            } else {
+                // A bare number would be read as alt text here, so the bar stays
+                const { alt } = parseImageSizeSpec(attrs.alt || '');
+                noteEditor?.updateSelectedNode({ alt: size ? `${alt}|${size}` : alt });
+            }
         },
         
         _sourceLabel(kind) {
@@ -525,10 +551,10 @@ function editorFeature() {
         _mediaActions(media) {
             const actions = [];
             if (media.local) {
-                actions.push({ label: this.t('embed.download'), run: () => this._downloadMedia(media) });
+                actions.push({ label: this.t('embed.download'), icon: ACTION_ICONS.download, run: () => this._downloadMedia(media) });
             }
             if (media.local || /^(https?:)?\/\//.test(media.url)) {
-                actions.push({ label: this.t('embed.open_new_tab'), run: () => window.open(media.url, '_blank', 'noopener') });
+                actions.push({ label: this.t('embed.open_new_tab'), icon: ACTION_ICONS.openNewTab, run: () => window.open(media.url, '_blank', 'noopener') });
             }
             return actions;
         },
@@ -739,7 +765,7 @@ function editorFeature() {
                 label: this._sourceLabel(item.kind),
                 value: item.attrs.source || '',
                 isNew,
-                position: this._popupPosition(surface ? this._visibleRect(item.rect, surface) : item.rect, 190),
+                position: this._popupPosition(surface ? this._visibleRect(item.rect, surface) : item.rect, 300, 560),
             };
             this.$nextTick(() => document.getElementById('source-prompt-input')?.focus());
         },

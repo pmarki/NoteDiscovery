@@ -22,12 +22,21 @@
     <div x-show="itemPopup.open"
          @mousedown.prevent
          @mousedown.outside="if (viewMode === 'read') itemPopup.open = false"
-         class="link-prompt"
+         class="link-prompt item-popup"
          :style="`position: fixed; top: ${itemPopup.position.top}px; left: ${itemPopup.position.left}px; z-index: 1190; ${itemPopup.position.above ? 'transform: translateY(-100%);' : ''}`"
          x-cloak>
         <span class="link-popup-address" x-text="itemPopup.label" :title="itemPopup.label"></span>
         <template x-for="action in itemPopup.actions" :key="action.label">
-            <button type="button" @click="action.run()" x-text="action.label"></button>
+            <button type="button" @click="action.run()" :class="{ 'link-prompt-icon': action.icon }" :title="action.icon ? action.label : null" :aria-label="action.icon ? action.label : null">
+                <template x-if="action.icon">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="action.icon"></path>
+                    </svg>
+                </template>
+                <template x-if="!action.icon">
+                    <span x-text="action.label"></span>
+                </template>
+            </button>
         </template>
     </div>
 
@@ -115,7 +124,7 @@
          :style="`position: fixed; top: ${sourcePrompt.position.top}px; left: ${sourcePrompt.position.left}px; z-index: 1200; ${sourcePrompt.position.above ? 'transform: translateY(-100%);' : ''}`"
          x-cloak>
         <textarea id="source-prompt-input"
-                  rows="6"
+                  rows="12"
                   spellcheck="false"
                   x-model="sourcePrompt.value"
                   :aria-label="sourcePrompt.label"
@@ -141,6 +150,10 @@
                :placeholder="linkPrompt.type === 'wikilink' ? '' : 'https://'"
                @keydown.enter.prevent="applyLinkPrompt()"
                @keydown.escape.stop="closeLinkPrompt()">
-        <button type="button" @click="applyLinkPrompt()" x-text="t('common.ok')"></button>
-        <button type="button" x-show="linkPrompt.canRemove" @click="removeLinkFromPrompt()" x-text="t('common.delete')"></button>
+        <button type="button" @click="applyLinkPrompt()" class="link-prompt-icon" :title="t('common.ok')" :aria-label="t('common.ok')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="ACTION_ICONS.confirm"></path></svg>
+        </button>
+        <button type="button" x-show="linkPrompt.canRemove" @click="removeLinkFromPrompt()" class="link-prompt-icon" :title="t('common.delete')" :aria-label="t('common.delete')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="ACTION_ICONS.delete"></path></svg>
+        </button>
     </div>

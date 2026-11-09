@@ -398,6 +398,7 @@ body {
 }
 .source-prompt {
     flex-direction: column;
+    width: 560px;
 }
 .source-prompt textarea {
     width: 100%;
@@ -470,6 +471,19 @@ body {
 .link-prompt.selection-bubble .selection-turn-into {
     padding: 4px 8px;
     white-space: nowrap;
+}
+/* Sized by its buttons, so an image's extra actions all fit; the name gives way */
+.link-prompt.item-popup {
+    width: auto;
+    min-width: 220px;
+}
+.link-prompt.item-popup button {
+    flex-shrink: 0;
+}
+.link-prompt button.link-prompt-icon {
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
 }
 .link-prompt button:hover {
     background-color: var(--bg-hover);

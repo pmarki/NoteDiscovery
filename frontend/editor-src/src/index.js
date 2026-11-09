@@ -534,6 +534,15 @@ export function create({
             return editor.commands.focus();
         },
         selectNodeAt: (pos) => editor.commands.setNodeSelection(pos),
+        // Original size of the image in the selected node, or null before it has loaded
+        selectedImageSize() {
+            const { selection } = editor.state;
+            if (!(selection instanceof NodeSelection)) return null;
+            const dom = editor.view.nodeDOM(selection.from);
+            const image = dom?.nodeName === 'IMG' ? dom : dom?.querySelector?.('img');
+            if (!image?.naturalWidth) return null;
+            return { width: image.naturalWidth, height: image.naturalHeight };
+        },
         deleteSelectedNode: () => editor.chain().focus().deleteSelection().run(),
         refreshRendered(names) {
             drawing.views.forEach((view) => {
