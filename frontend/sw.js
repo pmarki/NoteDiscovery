@@ -6,12 +6,28 @@
 // fresh files without needing a release.
 const CACHE_NAME = 'notediscovery-__APP_VERSION__';
 
-// Assets to cache for faster repeat visits. app.js carries the same ?v= as the
-// script tag in index.html, so this precaches the URL the page actually requests.
+// Assets to cache for faster repeat visits. Our scripts carry the same ?v= as their
+// script tags in index.html, so this precaches the URL the page actually requests.
 const PRECACHE_ASSETS = [
   '/static/logo.svg',
   '/static/favicon.svg',
+  '/static/app/shared.js?v=__APP_VERSION__',
+  '/static/app/core.js?v=__APP_VERSION__',
+  '/static/app/settings.js?v=__APP_VERSION__',
+  '/static/app/tree.js?v=__APP_VERSION__',
+  '/static/app/tags.js?v=__APP_VERSION__',
+  '/static/app/media.js?v=__APP_VERSION__',
+  '/static/app/drawing.js?v=__APP_VERSION__',
+  '/static/app/editor.js?v=__APP_VERSION__',
+  '/static/app/notes.js?v=__APP_VERSION__',
+  '/static/app/create.js?v=__APP_VERSION__',
+  '/static/app/search.js?v=__APP_VERSION__',
+  '/static/app/metadata.js?v=__APP_VERSION__',
+  '/static/app/share.js?v=__APP_VERSION__',
+  '/static/app/home.js?v=__APP_VERSION__',
+  '/static/app/graph.js?v=__APP_VERSION__',
   '/static/app.js?v=__APP_VERSION__',
+  '/static/app.css?v=__APP_VERSION__',
   '/static/note-editor.bundle.js?v=__APP_VERSION__'
 ];
 

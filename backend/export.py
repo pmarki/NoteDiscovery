@@ -794,7 +794,7 @@ def generate_export_html(
         // carries a `|<w>` or `|<w>x<h>` suffix. Wikilink images with a size
         // were already emitted with width/height attributes server-side; this
         // walker handles the standard-markdown case `![alt|100](x)`. Mirrors
-        // parseImageSizeSpec() in frontend/app.js (allowSolo=false here, since
+        // parseImageSizeSpec() in frontend/app/shared.js (allowSolo=false here, since
         // standard markdown `![100](x)` should stay as alt="100").
         document.querySelectorAll('.markdown-preview img').forEach(img => {{
             const rawAlt = img.getAttribute('alt') || '';

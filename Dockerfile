@@ -10,18 +10,21 @@ RUN npm install -g esbuild html-minifier-terser
 COPY frontend/ ./frontend/
 
 # Minify JavaScript (esbuild is ~100x faster than terser)
-RUN esbuild frontend/app.js --minify --outfile=frontend/app.js --allow-overwrite && \
+RUN esbuild frontend/app.js frontend/app/*.js frontend/app.css --minify --outdir=frontend --outbase=frontend --allow-overwrite && \
     esbuild frontend/sw.js --minify --outfile=frontend/sw.js --allow-overwrite
 
-# Minify HTML files (handles inline CSS and JS too)
-RUN html-minifier-terser \
-    --collapse-whitespace \
-    --remove-comments \
-    --remove-redundant-attributes \
-    --minify-css true \
-    --minify-js true \
-    -o frontend/index.html \
-    frontend/index.html && \
+# Minify HTML files (handles inline CSS and JS too). index.html keeps its include
+# markers, and each partial is minified on its own, since the server joins them.
+RUN for page in frontend/index.html $(find frontend/partials -name '*.html'); do \
+        html-minifier-terser \
+        --collapse-whitespace \
+        --remove-comments \
+        --ignore-custom-comments '^\s*include:' \
+        --remove-redundant-attributes \
+        --minify-css true \
+        --minify-js true \
+        -o "$page" "$page" || exit 1; \
+    done && \
     html-minifier-terser \
     --collapse-whitespace \
     --remove-comments \

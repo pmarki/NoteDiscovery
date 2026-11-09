@@ -318,7 +318,7 @@ ARCHIVE_MAX_FOLDER_MB = int(os.getenv('ARCHIVE_MAX_FOLDER_MB', '500'))
 # Shortest query the search endpoint will act on. A single character matches
 # most of a vault and cannot use the search index, so answering it means reading
 # every note for a result nobody wants. Mirrored by SEARCH_MIN_QUERY_LENGTH in
-# frontend/app.js, which stops sending those queries in the first place.
+# frontend/app/shared.js, which stops sending those queries in the first place.
 SEARCH_MIN_QUERY_LENGTH = 2
 
 # Autosave debounce in milliseconds (applies to note typing AND drawing PNG autosave).
@@ -455,6 +455,32 @@ class VersionedStaticFiles(StaticFiles):
 app.mount("/static", VersionedStaticFiles(directory=static_path), name="static")
 
 
+# index.html is put together from frontend/partials/ when served, so each part of
+# the page has its own file. Alpine still sees one page and one noteApp() scope.
+INCLUDE_RE = re.compile(r'[ \t]*<!-- include: (partials/[\w/-]+\.html) -->(\n?)')
+_index_cache = (None, "")
+
+
+def assembled_index() -> str:
+    """index.html with every include marker replaced by the partial it names.
+
+    A marker on its own line is swapped for the whole line, so the page comes out
+    exactly as if it were one file. Read again only when a file's size or
+    modification time moves. A missing partial raises rather than serving half a page.
+    """
+    global _index_cache
+    files = [static_path / "index.html", *sorted((static_path / "partials").rglob("*.html"))]
+    stamp = [(file, file.stat().st_mtime_ns, file.stat().st_size) for file in files]
+    if stamp != _index_cache[0]:
+        def include(match: re.Match) -> str:
+            part = (static_path / match.group(1)).read_text(encoding="utf-8")
+            return part if match.group(2) else part.rstrip("\n")
+
+        markup = INCLUDE_RE.sub(include, files[0].read_text(encoding="utf-8"))
+        _index_cache = (stamp, markup)
+    return _index_cache[1]
+
+
 def _check_vendored_assets() -> None:
     """Warn if the UI references browser libraries that were never downloaded.
 
@@ -462,12 +488,8 @@ def _check_vendored_assets() -> None:
     sync, so adding a library or changing its path cannot silently escape this.
     Only entry points are checked, not every font or lazy-loaded chunk.
     """
-    index_file = static_path / "index.html"
-    if not index_file.exists():
-        return
-
     try:
-        markup = index_file.read_text(encoding="utf-8")
+        markup = assembled_index()
     except OSError:
         return
 
@@ -494,7 +516,13 @@ _check_vendored_assets()
 # Files whose URLs carry the token. Browsers keep those URLs forever, so the token has
 # to change with their content: a release number alone leaves any change made without
 # a bump stuck in every browser that has already loaded the file.
-VERSIONED_ASSETS = ("app.js", "note-editor.bundle.js", "markdown-preview.css")
+VERSIONED_ASSETS = (
+    "app.js",
+    "note-editor.bundle.js",
+    "markdown-preview.css",
+    "app.css",
+    *sorted(f"app/{file.name}" for file in (static_path / "app").glob("*.js")),
+)
 _asset_token_cache = (None, quote_plus(version))
 
 
@@ -530,7 +558,7 @@ def _render_app_name_html(content: str) -> str:
     """Substitute __APP_NAME__ and __APP_VERSION__ placeholders in an HTML document.
 
     The token gives our own scripts a new URL whenever they change. Without it an
-    upgraded client can pair new HTML with the previous app.js still held by the
+    upgraded client can pair new HTML with previous scripts still held by the
     service worker, which breaks the page until a manual reload.
     """
     content = content.replace('__APP_NAME__', html_escape(config['app']['name'], quote=True))
@@ -583,7 +611,7 @@ async def service_worker(request: Request):
     if sw_path.exists():
         async with aiofiles.open(sw_path, 'r', encoding='utf-8') as f:
             content = await f.read()
-        # Same token as index.html: it names the cache and the precached app.js URL
+        # Same token as index.html: it names the cache and the precached script URLs
         content = content.replace('__APP_VERSION__', asset_token())
         return Response(content=content, media_type="application/javascript")
     raise HTTPException(status_code=404, detail="Service worker not found")
@@ -2516,10 +2544,7 @@ async def catch_all(full_path: str, request: Request):
     
     # Serve index.html with app name and the configured default theme injected.
     # The head script uses __DEFAULT_THEME__ when the browser has no saved preference.
-    index_path = static_path / "index.html"
-    async with aiofiles.open(index_path, 'r', encoding='utf-8') as f:
-        content = await f.read()
-    content = _render_app_name_html(content)
+    content = _render_app_name_html(assembled_index())
     content = content.replace('__DEFAULT_THEME__', DEFAULT_THEME)
     return _html_page_response(content, request)
 

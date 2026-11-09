@@ -1,0 +1,47 @@
+    <!-- New note / folder name (replaces window.prompt) -->
+    <div x-show="showCreateNameModal"
+         @click.self="cancelCreateNameModal()"
+         @keydown.escape.window="showCreateNameModal && cancelCreateNameModal()"
+         class="fixed inset-0 flex items-center justify-center"
+         style="background-color: rgba(0, 0, 0, 0.5); z-index: 1100;"
+         x-cloak>
+        <div class="rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+             style="background-color: var(--bg-secondary); color: var(--text-primary);"
+             @click.stop>
+            <h2 class="text-xl font-bold" style="color: var(--text-primary);" :class="createNameModalHelpText().trim() ? 'mb-2' : 'mb-4'" x-text="createNameModalTitle()"></h2>
+            <p x-show="createNameModalHelpText().trim()" class="text-sm mb-4 whitespace-pre-line" style="color: var(--text-secondary);" x-text="createNameModalHelpText()"></p>
+            <div class="mb-4">
+                <label for="create-name-modal-input" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);" x-text="createNameModalLabel()"></label>
+                <input
+                    id="create-name-modal-input"
+                    type="text"
+                    x-model="createNameModalInput"
+                    :placeholder="createNameModalKind === 'folder' ? t('folders.input_placeholder') : t('notes.input_placeholder')"
+                    class="w-full px-3 py-2 rounded border"
+                    style="background-color: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-primary);"
+                    @keydown.enter="submitCreateNameModal()"
+                    autocomplete="off"
+                />
+            </div>
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    @click="submitCreateNameModal()"
+                    class="flex-1 px-4 py-2 rounded font-medium text-white transition-colors"
+                    style="background-color: var(--accent-primary);"
+                    onmouseover="this.style.backgroundColor='var(--accent-hover)'"
+                    onmouseout="this.style.backgroundColor='var(--accent-primary)'"
+                    x-text="t('common.create')"
+                ></button>
+                <button
+                    type="button"
+                    @click="cancelCreateNameModal()"
+                    class="flex-1 px-4 py-2 rounded font-medium transition-colors"
+                    style="background-color: var(--bg-tertiary); color: var(--text-primary);"
+                    onmouseover="this.style.backgroundColor='var(--bg-hover)'"
+                    onmouseout="this.style.backgroundColor='var(--bg-tertiary)'"
+                    x-text="t('common.cancel')"
+                ></button>
+            </div>
+        </div>
+    </div>

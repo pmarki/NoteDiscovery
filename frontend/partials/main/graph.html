@@ -1,0 +1,28 @@
+            <!-- Graph View Overlay (works from homepage or editor) -->
+            <div 
+                x-show="showGraph"
+                id="graph-overlay"
+                class="absolute inset-0"
+                style="background-color: var(--bg-primary); z-index: 50;"
+            >
+                <!-- Graph renders here via vis-network -->
+                <div x-show="!graphLoaded" class="flex items-center justify-center h-full">
+                    <div class="text-center" style="color: var(--text-secondary);">
+                        <svg class="animate-spin h-8 w-8 mx-auto mb-3" style="color: var(--accent-primary);" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Loading graph...</p>
+                    </div>
+                </div>
+                <!-- Close button -->
+                <button 
+                    @click="showGraph = false"
+                    class="absolute top-4 left-4 px-3 py-2 text-sm font-medium rounded-lg transition-colors z-10"
+                    style="background-color: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-primary);"
+                    onmouseover="this.style.backgroundColor='var(--bg-hover)'"
+                    onmouseout="this.style.backgroundColor='var(--bg-secondary)'"
+                >
+                    ← Back
+                </button>
+            </div>

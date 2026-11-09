@@ -21,7 +21,7 @@ WORDS_PER_MINUTE = 200
 # A task item on any marker GitHub-flavoured markdown renders a checkbox for: the
 # three bullets or a number closed by "." or ")", optionally nested inside other
 # markers or a blockquote. Group 1 is the state, " ", "x" or "X". Kept in step with
-# TASK_ITEM_RE in frontend/app.js, which decides which boxes are clickable.
+# TASK_ITEM_RE in frontend/app/shared.js, which decides which boxes are clickable.
 TASK_ITEM_PATTERN = re.compile(
     r'^\s*(?:(?:[-*+]|\d{1,9}[.)]) +|>\s*)*(?:[-*+]|\d{1,9}[.)]) +\[([ xX])(?=\] )'
 )

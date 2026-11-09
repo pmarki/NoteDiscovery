@@ -154,7 +154,7 @@ WORDS_PER_MINUTE = 200  # Change to your average reading speed
 ## Architecture
 
 ### Client-Side (Frontend)
-- Statistics are calculated in JavaScript (`app.js`)
+- Statistics are calculated in JavaScript (`app/metadata.js`)
 - Updates in real-time as you type
 - No API calls required for stats display
 - Instant feedback, zero latency

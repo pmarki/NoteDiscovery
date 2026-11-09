@@ -1,0 +1,36 @@
+                <!-- ==================== TRASH PANEL ==================== -->
+                <div x-show="activePanel === 'trash'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="flex flex-col h-full">
+                    <div class="flex-shrink-0 px-3 py-2 border-b flex items-center justify-between gap-2" style="border-color: var(--border-primary);">
+                        <span class="text-xs font-semibold uppercase tracking-wide" style="color: var(--text-tertiary);" x-text="t('trash.title')"></span>
+                        <button
+                            x-show="trashItems.length > 0"
+                            @click="emptyTrash()"
+                            class="text-xs px-2 py-0.5 rounded hover-accent"
+                            style="color: var(--error);"
+                            x-text="t('trash.empty_all')"
+                        ></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar">
+                        <div class="py-2 px-2">
+                            <template x-for="item in trashItems" :key="item.id">
+                                <div class="px-2 py-1.5 text-sm mb-1 rounded" style="color: var(--text-primary);" :title="item.path">
+                                    <div class="font-medium truncate" x-text="item.name"></div>
+                                    <div class="text-xs truncate" style="color: var(--text-tertiary);" x-text="[item.folder, formatDate(item.deletedAt)].filter(Boolean).join(' · ')"></div>
+                                    <div class="flex items-center gap-3 mt-1">
+                                        <button @click="restoreTrashItem(item)" class="text-xs" style="color: var(--accent-primary);" x-text="t('trash.restore')"></button>
+                                        <button @click="deleteTrashItem(item)" class="text-xs" style="color: var(--error);" x-text="t('trash.delete_forever')"></button>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="trashItems.length === 0">
+                                <div class="text-center py-6 px-3">
+                                    <svg class="w-12 h-12 mx-auto mb-3 opacity-40" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    <p class="text-sm" style="color: var(--text-tertiary);" x-text="t('trash.empty_state')"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <!-- END TRASH PANEL -->
