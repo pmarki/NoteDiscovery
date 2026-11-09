@@ -60,7 +60,6 @@ function coreFeature() {
             await this.loadSharedNotePaths();
             this.loadTrash();
             await this.loadTemplates();
-            await this.checkStatsPlugin();
             this.loadLocalSettings();
             
             // Outside changes (preview task toggles, closing a note) must reach the editor

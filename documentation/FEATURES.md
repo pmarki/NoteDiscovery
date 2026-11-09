@@ -134,18 +134,6 @@ To link to a heading, convert the heading text to a slug: **lowercase, spaces �
 - **View mode memory** - Remembers Edit/Read preference
 - **Responsive design** - Works on all screen sizes
 
-## 📊 Note Statistics
-
-### Built-in Plugin
-- **Word count** - Track document length
-- **Character count** - Including and excluding spaces
-- **Reading time** - Estimated minutes to read
-- **Line count** - Total lines in note
-- **Image count** - Track embedded images
-- **Link count** - Internal and external links (includes wikilinks)
-- **Wikilink count** - Separate count for `[[wikilinks]]`
-- **Expandable panel** - Toggle stats visibility
-
 ## 🔌 Plugin System
 
 ### Extensibility

@@ -406,11 +406,6 @@ function notesFeature() {
                     );
                 }
                 
-                // Calculate stats if plugin enabled
-                if (this.statsPluginEnabled) {
-                    this.calculateStats();
-                }
-                
                 // Parse frontmatter metadata
                 this.parseMetadata();
                 
@@ -510,11 +505,6 @@ function notesFeature() {
             }
             
             this.lastSaved = false;
-            
-            // Calculate stats in real-time if plugin enabled
-            if (this.statsPluginEnabled) {
-                this.calculateStats();
-            }
             
             // Parse metadata in real-time
             this.parseMetadata();

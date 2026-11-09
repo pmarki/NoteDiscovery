@@ -35,10 +35,10 @@ also makes the order your responsibility. Return results in a stable order
 (due date, name, relevance score), not one that shifts between calls, or paginated
 clients can see duplicates.
 
-## Bundled and Contributed Plugins
+## Contributed Plugins
 
-`note_stats` ships in `plugins/` and loads at startup. Community plugins live in
-`plugins/contrib/`, which the loader ignores — install one by copying it into
+No plugins ship with the app. Community plugins live in `plugins/contrib/`,
+which the loader ignores — install one by copying it into
 `plugins/` and restarting. Each carries its own documentation in its docstring;
 see [plugins/contrib/README.md](../plugins/contrib/README.md).
 
@@ -117,9 +117,6 @@ class Plugin:
 That endpoint is then reachable at `/api/plugins/my_plugin/summary`. Routes are
 mounted at startup whether or not the plugin is enabled, so check `self.enabled`
 inside the handler if it should go quiet when toggled off.
-
-The bundled `note_stats` plugin uses both of these — see `plugins/note_stats.py`
-for a working example.
 
 ## Basic Example: Note Logger
 

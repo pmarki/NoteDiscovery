@@ -546,19 +546,14 @@ Content-Type: application/json
 
 **Linux/Mac:**
 ```bash
-curl -X POST http://localhost:8000/api/plugins/note_stats/toggle \
+curl -X POST http://localhost:8000/api/plugins/my_plugin/toggle \
   -H "Content-Type: application/json" \
   -d '{"enabled": true}'
 ```
 
 **Windows PowerShell:**
 ```powershell
-curl.exe -X POST http://localhost:8000/api/plugins/note_stats/toggle -H "Content-Type: application/json" -d "{\"enabled\": true}"
-```
-
-### Calculate Note Stats
-```http
-GET /api/plugins/note_stats/calculate?content={markdown_content}
+curl.exe -X POST http://localhost:8000/api/plugins/my_plugin/toggle -H "Content-Type: application/json" -d "{\"enabled\": true}"
 ```
 
 ## 🔗 Graph

@@ -291,8 +291,3 @@ const MEDIA_UPLOAD_TYPES = [
     'application/pdf'
 ];
 
-/** GFM task item as (everything up to `[`)(state). Literal spaces around the
- *  brackets, not \s, because that is what marked requires; the leading chain covers
- *  containers opened on the same line, e.g. `- > - [ ] x`, which marked does render.
- *  Missing a task marked renders is the one unsafe direction: see _scanTaskLines. */
-const TASK_ITEM_RE = /^(\s*(?:(?:[-*+]|\d{1,9}[.)]) +|>\s*)*(?:[-*+]|\d{1,9}[.)]) +\[)([ xX])(?=\] )/;
