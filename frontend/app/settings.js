@@ -460,6 +460,14 @@ function settingsFeature() {
             }
         },
         
+        saveAttachmentsExpanded() {
+            try {
+                localStorage.setItem('attachmentsExpanded', this.attachmentsExpanded.toString());
+            } catch (error) {
+                console.error('Error saving attachments expanded state:', error);
+            }
+        },
+        
         // Start resizing sidebar
         startResize(event) {
             this.isResizing = true;

@@ -100,6 +100,7 @@ const LOCAL_SETTINGS = {
     readableLineLength: { key: 'readableLineLength', type: 'boolean', default: true },
     favoritesExpanded: { key: 'favoritesExpanded', type: 'boolean', default: true },
     tagsExpanded: { key: 'tagsExpanded', type: 'boolean', default: false },
+    attachmentsExpanded: { key: 'attachmentsExpanded', type: 'boolean', default: false },
     hideUnderscoreFolders: { key: 'hideUnderscoreFolders', type: 'boolean', default: false },
     sidebarPanelCollapsed: { key: 'sidebarPanelCollapsed', type: 'boolean', default: false },
     autoFillNoteTitle: { key: 'autoFillNoteTitle', type: 'boolean', default: false },
@@ -116,6 +117,7 @@ const LOCAL_SETTINGS = {
     viewMode: { key: 'viewMode', type: 'string', default: 'edit', valid: ['edit', 'read'] },
     // Homepage layout. Cards stay the default so existing vaults look unchanged.
     homepageView: { key: 'homepageView', type: 'string', default: 'cards', valid: ['cards', 'list'] },
+    attachmentsView: { key: 'attachmentsView', type: 'string', default: 'cards', valid: ['cards', 'list'] },
     // JSON settings
     favorites: { key: 'noteFavorites', type: 'json', default: [] },
 };

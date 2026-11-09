@@ -7,6 +7,32 @@ function mediaFeature() {
         currentMedia: '',  // Path to current media file (kept as 'currentMedia' for compatibility)
         currentMediaType: 'image',  // 'image', 'audio', 'video', 'document', 'drawing'
         
+        // Whether the bar under the editor lists the attachments or only counts them
+        attachmentsExpanded: false,
+        // How it lists them: 'cards' or 'list', separate from the folder view's choice
+        attachmentsView: 'cards',
+        
+        setAttachmentsView(mode) {
+            if (mode !== 'cards' && mode !== 'list') return;
+            this.attachmentsView = mode;
+            try {
+                localStorage.setItem('attachmentsView', mode);
+            } catch (error) {
+                console.error('Error saving attachments view:', error);
+            }
+        },
+        
+        // Files in the current note's attachment folder, by name. label is the path
+        // inside that folder.
+        currentAttachments() {
+            if (!this.currentNote) return [];
+            const folder = this.currentNote.replace(/\.md$/, '.attachments/');
+            return this.notes
+                .filter(item => item.type !== 'note' && item.path.startsWith(folder))
+                .map(item => ({ ...item, label: item.path.slice(folder.length) }))
+                .sort((a, b) => a.label.localeCompare(b.label));
+        },
+        
         // Resolve media wikilink to full path (O(1) lookup)
         // Returns the full path if found, null otherwise
         // An embed target is a path relative to the note holding it. Null if it climbs
@@ -228,6 +254,34 @@ function mediaFeature() {
             await this.uploadFiles(files, null);
         },
         
+        // The toolbar's upload: files join the note's attachments without changing its text
+        openUploadPicker() {
+            if (this.currentNote) this.$refs.uploadInput.click();
+        },
+        
+        async onUploadPicked(event) {
+            const files = Array.from(event.target.files)
+                .filter(file => MEDIA_UPLOAD_TYPES.includes(file.type.toLowerCase()));
+            event.target.value = '';  // or picking the same file again fires no change
+            if (files.length === 0) {
+                this.toast(this.t('media.no_valid_files', { formats: MEDIA_FORMATS_DISPLAY }), { type: 'warning' });
+                return;
+            }
+            const notePath = this.currentNote;
+            for (const file of files) {
+                try {
+                    await this.uploadMedia(file, notePath);
+                } catch (error) {
+                    ErrorHandler.handle(`upload file ${file.name}`, error);
+                }
+            }
+            // Show where they went
+            if (this.currentNote === notePath && !this.attachmentsExpanded) {
+                this.attachmentsExpanded = true;
+                this.saveAttachmentsExpanded();
+            }
+        },
+        
         // Upload media and import Markdown files, embedding each at `position`
         async uploadFiles(files, position) {
             // Filter for allowed media types
@@ -428,6 +482,16 @@ function mediaFeature() {
                 document: '📄',
             };
             return icons[type] || '';
+        },
+        
+        // Images and drawings show a scaled-down preview in the file cards and lists
+        hasPreview(type) {
+            return type === 'image' || type === 'drawing';
+        },
+        
+        // ?v= changes with the file, so the browser can keep each preview for good
+        thumbnailUrl(file) {
+            return `/api/thumbnails/${this.encodeVaultRelativePathForMediaApi(file.path)}?v=${Date.parse(file.modified) || 0}`;
         },
         
         // Open a note or media file (unified handler for sidebar/homepage clicks)

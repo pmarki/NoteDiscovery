@@ -40,19 +40,6 @@
                     <!-- Grid View - Show when app has content -->
                     <template x-if="!isAppEmpty">
                         <div class="max-w-7xl mx-auto p-6 md:p-8">
-                            <!-- Header -->
-                            <div class="mb-6">
-                                <h1 class="text-3xl font-bold mb-2" style="color: var(--text-primary);" x-text="appName"></h1>
-                                <p class="text-lg" style="color: var(--text-secondary);" x-text="t('app.tagline')"></p>
-                                <!-- Demo Mode Warning Banner -->
-                                <div x-show="demoMode" class="mt-4 flex items-center px-4 py-2.5 text-sm rounded-lg" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%); color: white; font-weight: 500;">
-                                    <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                    </svg>
-                                    <span><strong x-text="t('demo.title') + ':'"></strong> <span x-text="t('demo.warning')"></span></span>
-                                </div>
-                            </div>
-                            
                             <!-- Breadcrumb Navigation -->
                             <div class="mb-4 flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
                                 <template x-if="Array.isArray(homepageBreadcrumb())">
@@ -181,11 +168,22 @@
                                 <p class="text-sm text-center py-8" style="color: var(--text-tertiary);" x-text="t('sidebar.no_results')"></p>
                             </template>
 
+                            <!-- Notes (with folders) and Files, each in its own section -->
+                            <template x-for="section in homepageSections()" :key="section.key">
+                            <section class="homepage-section">
+                            <h2 class="homepage-section-title" x-text="t(section.label)"></h2>
+
+                            <template x-if="section.key === 'files'">
+                                <div x-data="{ get files() { return section.items }, get filesView() { return homepageView } }">
+                                    <!-- include: partials/files.html -->
+                                </div>
+                            </template>
+
                             <!-- Folders and Notes Grid -->
-                            <template x-if="(homepageVisibleNotes().length > 0 || homepageVisibleFolders().length > 0) && homepageView !== 'list'">
+                            <template x-if="section.key === 'notes' && homepageView !== 'list'">
                                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                                     <!-- Folders First -->
-                                    <template x-for="folder in homepageVisibleFolders()" :key="folder.path">
+                                    <template x-for="folder in section.folders" :key="folder.path">
                                         <div 
                                             @click="goToHomepageFolder(folder.path)"
                                             class="homepage-card p-2 sm:p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg"
@@ -226,7 +224,7 @@
                                     </template>
                                     
                                     <!-- Notes -->
-                                    <template x-for="note in homepageVisibleNotes().slice(0, HOMEPAGE_MAX_NOTES)" :key="note.path">
+                                    <template x-for="note in section.items" :key="note.path">
                                         <div 
                                             @click="openItem(note.path, note.type)"
                                             class="homepage-card p-2 sm:p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg"
@@ -236,12 +234,12 @@
                                         >
                                             <!-- Delete Button -->
                                             <button 
-                                                @click.stop="note.type !== 'note' ? deleteMedia(note.path) : deleteNote(note.path, note.name)"
+                                                @click.stop="deleteNote(note.path, note.name)"
                                                 class="card-delete-btn hidden sm:block"
                                                 style="position: absolute; top: 8px; right: 8px; opacity: 0; transition: opacity 0.2s; color: var(--error); padding: 4px; border-radius: 4px; background-color: var(--bg-secondary);"
                                                 onmouseover="this.style.backgroundColor='var(--bg-hover)'"
                                                 onmouseout="this.style.backgroundColor='var(--bg-secondary)'"
-                                                :title="note.type === 'note' ? t('toolbar.delete_note') : (note.type === 'drawing' ? t('toolbar.delete_drawing') : t('toolbar.delete_image'))"
+                                                :title="t('toolbar.delete_note')"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -262,9 +260,9 @@
                             </template>
 
                             <!-- Folders and Notes List -->
-                            <template x-if="(homepageVisibleNotes().length > 0 || homepageVisibleFolders().length > 0) && homepageView === 'list'">
+                            <template x-if="section.key === 'notes' && homepageView === 'list'">
                                 <div class="homepage-list">
-                                    <template x-for="folder in homepageVisibleFolders()" :key="folder.path">
+                                    <template x-for="folder in section.folders" :key="folder.path">
                                         <div
                                             @click="goToHomepageFolder(folder.path)"
                                             class="homepage-list-row"
@@ -287,24 +285,23 @@
                                             </button>
                                         </div>
                                     </template>
-                                    <template x-for="note in homepageVisibleNotes().slice(0, HOMEPAGE_MAX_NOTES)" :key="note.path">
+                                    <template x-for="note in section.items" :key="note.path">
                                         <div
                                             @click="openItem(note.path, note.type)"
                                             class="homepage-list-row"
                                         >
                                             <span class="homepage-list-icon" aria-hidden="true">
-                                                <svg x-show="note.type === 'note'" class="w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                 </svg>
-                                                <span x-show="note.type !== 'note'" x-text="getMediaIcon(note.type)"></span>
                                             </span>
                                             <span class="font-medium text-sm truncate flex-1 min-w-0" x-text="note.name"></span>
                                             <span class="text-xs flex-shrink-0" style="color: var(--text-tertiary);" x-text="formatDate(note.modified)"></span>
                                             <span class="text-xs flex-shrink-0 hidden sm:inline" style="color: var(--text-tertiary);" x-text="formatSize(note.size)"></span>
                                             <button
-                                                @click.stop="note.type !== 'note' ? deleteMedia(note.path) : deleteNote(note.path, note.name)"
+                                                @click.stop="deleteNote(note.path, note.name)"
                                                 class="homepage-list-delete hidden sm:block"
-                                                :title="note.type === 'note' ? t('toolbar.delete_note') : (note.type === 'drawing' ? t('toolbar.delete_drawing') : t('toolbar.delete_image'))"
+                                                :title="t('toolbar.delete_note')"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -316,11 +313,13 @@
                             </template>
                             
                             <!-- Show More Indicator -->
-                            <div x-show="homepageVisibleNotes().length > HOMEPAGE_MAX_NOTES" class="mt-6 text-center">
+                            <div x-show="section.total > HOMEPAGE_MAX_NOTES" class="mt-6 text-center">
                                 <p class="text-sm" style="color: var(--text-secondary);">
-                                    Showing <span x-text="HOMEPAGE_MAX_NOTES"></span> of <span x-text="homepageVisibleNotes().length"></span> notes in this folder.
+                                    Showing <span x-text="HOMEPAGE_MAX_NOTES"></span> of <span x-text="section.total"></span> in this folder.
                                 </p>
                             </div>
+                            </section>
+                            </template>
                         </div>
                     </template>
                 </div>

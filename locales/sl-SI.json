@@ -4,9 +4,6 @@
     "name": "Slovenščina",
     "flag": "🇸🇮"
   },
-  "app": {
-    "tagline": "Vaša lastna baza znanja"
-  },
   "common": {
     "save": "Shrani",
     "cancel": "Prekliči",
@@ -72,6 +69,9 @@
     "filtered_notes": "Filtrirani zapiski"
   },
   "editor": {
+    "attachments": "Priloge",
+    "attachments_toggle": "Pokaži ali skrij priloge",
+    "no_attachments": "Ni prilog",
     "placeholder": "Začnite pisati v markdownu ali vnesite / za ukaze...",
     "drop_hint": "💡 Spustite tukaj za vstavljanje na mesto kazalca...",
     "mode_edit": "Uredi",
@@ -121,6 +121,7 @@
     "empty": "prazno"
   },
   "toolbar": {
+    "upload_attachments": "Naloži priloge",
     "undo": "Razveljavi (Ctrl+Z)",
     "redo": "Ponovi (Ctrl+Y)",
     "delete_note": "Izbriši zapis",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "llllmmddUUMMSS. Enter potrdi, tipkanje zamenja."
   },
   "homepage": {
+    "section_notes": "Zapiski",
+    "section_files": "Datoteke",
     "title": "Domov",
     "welcome": "Dobrodošli v NoteDiscovery",
     "get_started": "Za začetek nekaj ustvarite",

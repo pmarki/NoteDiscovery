@@ -4,9 +4,6 @@
     "name": "Русский",
     "flag": "🇷🇺"
   },
-  "app": {
-    "tagline": "Ваша локальная база знаний"
-  },
   "common": {
     "save": "Сохранить",
     "cancel": "Отмена",
@@ -72,6 +69,9 @@
     "filtered_notes": "Отфильтрованные заметки"
   },
   "editor": {
+    "attachments": "Вложения",
+    "attachments_toggle": "Показать или скрыть вложения",
+    "no_attachments": "Нет вложений",
     "placeholder": "Начните писать в markdown или введите / для команд...",
     "drop_hint": "💡 Отпустите здесь для вставки в позицию курсора...",
     "mode_edit": "Редактор",
@@ -121,6 +121,7 @@
     "empty": "пусто"
   },
   "toolbar": {
+    "upload_attachments": "Загрузить вложения",
     "undo": "Отменить (Ctrl+Z)",
     "redo": "Повторить (Ctrl+Y)",
     "delete_note": "Удалить заметку",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "ггггммддЧЧММСС. Enter — принять, печатать — заменить."
   },
   "homepage": {
+    "section_notes": "Заметки",
+    "section_files": "Файлы",
     "title": "Главная",
     "welcome": "Добро пожаловать в NoteDiscovery",
     "get_started": "Создайте что-нибудь для начала",

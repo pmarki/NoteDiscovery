@@ -62,7 +62,7 @@ function notesFeature() {
             this.dropTarget = null;
             this.dragOverFolder = null;
             // Reset opacity of all draggable items
-            document.querySelectorAll('.note-item, .folder-header').forEach(el => el.style.opacity = '1');
+            document.querySelectorAll('.note-item, .folder-header, .file-card, .files-list .homepage-list-row').forEach(el => el.style.opacity = '1');
             // Reset drag-over class
             document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         },

@@ -428,8 +428,15 @@ function treeFeature() {
         },
         
         // Folder handlers - read from dataset
+        // Opens the folder in the main area, as Home does for the vault, and expands
+        // it. Clicking the folder already shown collapses it instead.
         handleFolderClick(el) {
-            this.toggleFolder(el.dataset.path);
+            const path = el.dataset.path;
+            const shown = !this.currentNote && !this.currentMedia && !this.showGraph
+                && this.selectedHomepageFolder === path;
+            if (shown || !this.isFolderExpanded(path)) this.toggleFolder(path);
+            this.goToHomepageFolder(path);
+            this.mobileSidebarOpen = false;
         },
         handleFolderDragOver(el, event) {
             event.preventDefault();

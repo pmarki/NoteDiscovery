@@ -4,9 +4,6 @@
     "name": "Español",
     "flag": "🇪🇸"
   },
-  "app": {
-    "tagline": "Tu Base de Conocimientos Autoalojada"
-  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -72,6 +69,9 @@
     "filtered_notes": "Notas Filtradas"
   },
   "editor": {
+    "attachments": "Adjuntos",
+    "attachments_toggle": "Mostrar u ocultar adjuntos",
+    "no_attachments": "Sin adjuntos",
     "placeholder": "Empieza a escribir en markdown o escribe / para ver los comandos...",
     "drop_hint": "💡 Suelta aquí para insertar en la posición del cursor...",
     "mode_edit": "Editar",
@@ -121,6 +121,7 @@
     "empty": "vacía"
   },
   "toolbar": {
+    "upload_attachments": "Subir adjuntos",
     "undo": "Deshacer (Ctrl+Z)",
     "redo": "Rehacer (Ctrl+Y)",
     "delete_note": "Eliminar nota",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "aaaammddHHMMSS. Intro acepta, escribe para reemplazar."
   },
   "homepage": {
+    "section_notes": "Notas",
+    "section_files": "Archivos",
     "title": "Inicio",
     "welcome": "Bienvenido a NoteDiscovery",
     "get_started": "Crea algo para empezar",

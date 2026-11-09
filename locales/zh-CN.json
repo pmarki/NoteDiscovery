@@ -4,9 +4,6 @@
     "name": "Chinese (Simplified)",
     "flag": "🇨🇳"
   },
-  "app": {
-    "tagline": "您的自托管知识库"
-  },
   "common": {
     "save": "保存",
     "cancel": "取消",
@@ -72,6 +69,9 @@
     "filtered_notes": "筛选的笔记"
   },
   "editor": {
+    "attachments": "附件",
+    "attachments_toggle": "显示或隐藏附件",
+    "no_attachments": "没有附件",
     "placeholder": "开始用 Markdown 写作，或输入 / 查看命令...",
     "drop_hint": "💡 拖放到此处以插入到光标位置...",
     "mode_edit": "编辑",
@@ -121,6 +121,7 @@
     "empty": "空"
   },
   "toolbar": {
+    "upload_attachments": "上传附件",
     "undo": "撤销 (Ctrl+Z)",
     "redo": "重做 (Ctrl+Y)",
     "delete_note": "删除笔记",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "yyyymmddHHMMSS。Enter 接受，输入以替换。"
   },
   "homepage": {
+    "section_notes": "笔记",
+    "section_files": "文件",
     "title": "首页",
     "welcome": "欢迎使用 NoteDiscovery",
     "get_started": "创建一些内容以开始使用",

@@ -4,9 +4,6 @@
     "name": "Polski",
     "flag": "🇵🇱"
   },
-  "app": {
-    "tagline": "Baza Wiedzy na Twoim serwerze!"
-  },
   "common": {
     "save": "Zapisz",
     "cancel": "Anuluj",
@@ -72,6 +69,9 @@
     "filtered_notes": "Filtrowane notatki"
   },
   "editor": {
+    "attachments": "Załączniki",
+    "attachments_toggle": "Pokaż lub ukryj załączniki",
+    "no_attachments": "Brak załączników",
     "placeholder": "Zacznij pisać w Markdownie lub wpisz /, aby zobaczyć polecenia...",
     "drop_hint": "💡 Upuść tutaj, aby wstawić w miejscu kursora...",
     "mode_edit": "Edycja",
@@ -121,6 +121,7 @@
     "empty": "pusty"
   },
   "toolbar": {
+    "upload_attachments": "Prześlij załączniki",
     "undo": "Cofnij (Ctrl+Z)",
     "redo": "Ponów (Ctrl+Y)",
     "delete_note": "Usuń notatkę",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "yyyymmddHHMMSS. Naciśnij Enter, aby zaakceptować, lub zacznij pisać, aby zastąpić."
   },
   "homepage": {
+    "section_notes": "Notatki",
+    "section_files": "Pliki",
     "title": "Strona główna",
     "welcome": "Witaj w NoteDiscovery",
     "get_started": "Stwórz coś aby rozpocząć",

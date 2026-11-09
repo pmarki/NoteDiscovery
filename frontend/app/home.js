@@ -141,6 +141,19 @@ function homeFeature() {
         homepageVisibleFolders() {
             return this._filterHomepageByName(this.homepageFolders(), 'folders');
         },
+
+        // Folders and notes under "Notes", media under "Files". Empty sections are left out.
+        homepageSections() {
+            const items = this.homepageVisibleNotes();
+            const notes = items.filter(item => item.type === 'note');
+            const files = items.filter(item => item.type !== 'note');
+            return [
+                { key: 'notes', label: 'homepage.section_notes', folders: this.homepageVisibleFolders(), items: notes, total: notes.length },
+                { key: 'files', label: 'homepage.section_files', folders: [], items: files.map(file => ({ ...file, label: file.path.split('/').pop() })), total: files.length },
+            ]
+                .filter(section => section.folders.length || section.items.length)
+                .map(section => ({ ...section, items: section.items.slice(0, this.HOMEPAGE_MAX_NOTES) }));
+        },
         
         // Helper: Format file size nicely
         formatSize(bytes) {

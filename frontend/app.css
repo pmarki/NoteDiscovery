@@ -904,6 +904,11 @@ body {
         padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
     }
 
+    /* The attachments bar sits at the bottom, where the tab bar would cover it */
+    .attachments-bar {
+        margin-bottom: calc(56px + env(safe-area-inset-bottom));
+    }
+
     /* Homepage cards view - add padding for mobile bottom tabs */
     .flex-1.overflow-y-auto {
         padding-bottom: 70px;
@@ -988,6 +993,197 @@ body {
     .homepage-card {
         min-height: 140px;
     }
+}
+
+/* The current note's attachments, under the editor */
+.attachments-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem 0.375rem 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+.attachments-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.attachments-count {
+    color: var(--text-tertiary);
+}
+.attachments-spacer {
+    flex: 1;
+}
+.attachments-header .view-switch {
+    margin-right: 0.5rem;
+}
+.attachments-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.375rem;
+    color: var(--text-secondary);
+}
+.attachments-toggle:hover {
+    background-color: var(--bg-hover);
+}
+.attachments-chevron {
+    transition: transform 0.2s;
+}
+.attachments-chevron.is-open {
+    transform: rotate(180deg);
+}
+.attachments-body {
+    max-height: 30vh;
+    overflow-y: auto;
+    /* Room at the top for a card lifting on hover, which the scroll box would clip */
+    padding: 2px 1rem 0.75rem;
+}
+.attachments-empty {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+/* A cards/list switch */
+.view-switch {
+    display: flex;
+    padding: 0.125rem;
+    border-radius: 0.5rem;
+    background-color: var(--bg-tertiary);
+}
+.view-switch button {
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    color: var(--text-secondary);
+}
+.view-switch button:hover {
+    background-color: var(--bg-secondary);
+}
+.view-switch button.is-active {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
+/* Media files as compact cards, in the folder view and the attachments bar */
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.5rem;
+}
+.file-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.homepage-section .file-card {
+    background-color: var(--bg-secondary);
+}
+.file-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+.file-card-preview {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 96px;
+    margin: -0.25rem -0.5rem 0.25rem;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    background-color: var(--bg-tertiary);
+}
+.file-card-icon {
+    font-size: 2rem;
+}
+.file-card-pdf {
+    width: 44px;
+    height: 52px;
+}
+/* Covers the icon once loaded. A failed load removes it, so the icon shows. */
+.file-card-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.homepage-list-icon {
+    position: relative;
+}
+.files-list-thumb {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    max-width: none;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    border-radius: 4px;
+    object-fit: cover;
+    background-color: var(--bg-tertiary);
+}
+.file-card-name {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 0;
+    padding-right: 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.file-card-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+.file-card-delete {
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    padding: 2px;
+    border-radius: 4px;
+    color: var(--error);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.file-card:hover .file-card-delete,
+.file-card-delete:focus-visible {
+    opacity: 1;
+}
+.file-card-delete:hover {
+    background-color: var(--bg-hover);
+}
+@media (max-width: 640px) {
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+}
+
+.homepage-section + .homepage-section {
+    margin-top: 1.5rem;
+}
+.homepage-section-title {
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
 }
 
 .homepage-list {

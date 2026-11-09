@@ -75,6 +75,7 @@ from . import note_index
 from .plugins import PluginManager
 from .themes import get_available_themes, get_theme_css
 from .trash import delete_entry, empty_trash, list_trash, restore_entry
+from .thumbnails import IMAGE_EXTENSIONS, ThumbnailError, thumbnail_for
 from .share import (
     create_share_token,
     get_share_token,
@@ -465,8 +466,10 @@ def assembled_index() -> str:
     """index.html with every include marker replaced by the partial it names.
 
     A marker on its own line is swapped for the whole line, so the page comes out
-    exactly as if it were one file. Read again only when a file's size or
-    modification time moves. A missing partial raises rather than serving half a page.
+    exactly as if it were one file. Partials can include partials, and the same one
+    can be included more than once. Read again only when a file's size or
+    modification time moves. A missing partial raises rather than serving half a page,
+    and so do partials that include each other.
     """
     global _index_cache
     files = [static_path / "index.html", *sorted((static_path / "partials").rglob("*.html"))]
@@ -476,7 +479,13 @@ def assembled_index() -> str:
             part = (static_path / match.group(1)).read_text(encoding="utf-8")
             return part if match.group(2) else part.rstrip("\n")
 
-        markup = INCLUDE_RE.sub(include, files[0].read_text(encoding="utf-8"))
+        markup = files[0].read_text(encoding="utf-8")
+        for _ in range(10):
+            markup, count = INCLUDE_RE.subn(include, markup)
+            if not count:
+                break
+        else:
+            raise RuntimeError("Partials include each other")
         _index_cache = (stamp, markup)
     return _index_cache[1]
 
@@ -954,6 +963,29 @@ async def create_new_folder(request: Request, data: dict):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=safe_error_message(e, "Failed to create folder"))
+
+
+@api_router.get("/thumbnails/{media_path:path}", tags=["Media"])
+def get_thumbnail(media_path: str):
+    """
+    A small preview of an image, for the file cards and lists.
+
+    A plain def, so resizing runs in the threadpool. URLs carry ?v=<modified>, so a
+    changed image gets a new address and the browser can keep this one for good.
+    """
+    notes_dir = config['storage']['notes_dir']
+    full_path = Path(notes_dir) / media_path
+    if not validate_path_security(notes_dir, full_path):
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not full_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    if full_path.suffix.lower() not in IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Not an image")
+    try:
+        preview = thumbnail_for(full_path)
+    except ThumbnailError:
+        raise HTTPException(status_code=422, detail="Image can't be previewed")
+    return FileResponse(preview, headers={"Cache-Control": "private, max-age=31536000, immutable"})
 
 
 @api_router.get("/media/{media_path:path}", tags=["Media"])

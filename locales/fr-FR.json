@@ -4,9 +4,6 @@
     "name": "Français",
     "flag": "🇫🇷"
   },
-  "app": {
-    "tagline": "Votre Base de Connaissances Auto-Hébergée"
-  },
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -72,6 +69,9 @@
     "filtered_notes": "Notes Filtrées"
   },
   "editor": {
+    "attachments": "Pièces jointes",
+    "attachments_toggle": "Afficher ou masquer les pièces jointes",
+    "no_attachments": "Aucune pièce jointe",
     "placeholder": "Commencez à écrire en markdown ou tapez / pour les commandes...",
     "drop_hint": "💡 Déposez ici pour insérer à la position du curseur...",
     "mode_edit": "Éditer",
@@ -121,6 +121,7 @@
     "empty": "vide"
   },
   "toolbar": {
+    "upload_attachments": "Téléverser des pièces jointes",
     "undo": "Annuler (Ctrl+Z)",
     "redo": "Rétablir (Ctrl+Y)",
     "delete_note": "Supprimer la note",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "aaaammjjHHMMSS. Entrée accepte, tapez pour remplacer."
   },
   "homepage": {
+    "section_notes": "Notes",
+    "section_files": "Fichiers",
     "title": "Accueil",
     "welcome": "Bienvenue sur NoteDiscovery",
     "get_started": "Créez quelque chose pour commencer",

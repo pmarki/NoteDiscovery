@@ -4,9 +4,6 @@
     "name": "日本語",
     "flag": "🇯🇵"
   },
-  "app": {
-    "tagline": "セルフホスト型ナレッジベース"
-  },
   "common": {
     "save": "保存",
     "cancel": "キャンセル",
@@ -72,6 +69,9 @@
     "filtered_notes": "フィルター済みノート"
   },
   "editor": {
+    "attachments": "添付ファイル",
+    "attachments_toggle": "添付ファイルの表示/非表示",
+    "no_attachments": "添付ファイルはありません",
     "placeholder": "マークダウンで書き始めるか、/ でコマンドを表示...",
     "drop_hint": "💡 ここにドロップしてカーソル位置に挿入...",
     "mode_edit": "編集",
@@ -121,6 +121,7 @@
     "empty": "空"
   },
   "toolbar": {
+    "upload_attachments": "添付ファイルをアップロード",
     "undo": "元に戻す (Ctrl+Z)",
     "redo": "やり直す (Ctrl+Y)",
     "delete_note": "ノートを削除",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "yyyymmddHHMMSS。Enterで確定、入力で置換。"
   },
   "homepage": {
+    "section_notes": "ノート",
+    "section_files": "ファイル",
     "title": "ホーム",
     "welcome": "NoteDiscoveryへようこそ",
     "get_started": "何かを作成して始めましょう",

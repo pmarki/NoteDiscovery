@@ -4,9 +4,6 @@
     "name": "Italiano",
     "flag": "🇮🇹"
   },
-  "app": {
-    "tagline": "La tua base di conoscenza personale"
-  },
   "common": {
     "save": "Salva",
     "cancel": "Annulla",
@@ -72,6 +69,9 @@
     "filtered_notes": "Note Filtrate"
   },
   "editor": {
+    "attachments": "Allegati",
+    "attachments_toggle": "Mostra o nascondi gli allegati",
+    "no_attachments": "Nessun allegato",
     "placeholder": "Inizia a scrivere in markdown o digita / per i comandi...",
     "drop_hint": "💡 Rilascia qui per inserire alla posizione del cursore...",
     "mode_edit": "Modifica",
@@ -121,6 +121,7 @@
     "empty": "vuota"
   },
   "toolbar": {
+    "upload_attachments": "Carica allegati",
     "undo": "Annulla (Ctrl+Z)",
     "redo": "Ripeti (Ctrl+Y)",
     "delete_note": "Elimina nota",
@@ -301,6 +302,8 @@
     "auto_fill_note_title_desc": "aaaammddHHMMSS. Invio accetta, digita per sostituire."
   },
   "homepage": {
+    "section_notes": "Note",
+    "section_files": "File",
     "title": "Home",
     "welcome": "Benvenuto in NoteDiscovery",
     "get_started": "Crea qualcosa per iniziare",

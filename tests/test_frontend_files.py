@@ -43,10 +43,10 @@ def test_the_stylesheet_is_loaded_cached_and_hashed():
     assert "app.css" in VERSIONED_ASSETS
 
 
-def test_every_partial_is_included_once():
-    markers = INCLUDE_RE.findall((FRONTEND / "index.html").read_text(encoding="utf-8"))
-    included = sorted(path for path, _ in markers)
-    partials = sorted(str(file.relative_to(FRONTEND)) for file in (FRONTEND / "partials").rglob("*.html"))
+def test_every_partial_is_included():
+    pages = [FRONTEND / "index.html", *(FRONTEND / "partials").rglob("*.html")]
+    included = {path for page in pages for path, _ in INCLUDE_RE.findall(page.read_text(encoding="utf-8"))}
+    partials = {str(file.relative_to(FRONTEND)) for file in (FRONTEND / "partials").rglob("*.html")}
 
     assert included == partials
 
@@ -82,3 +82,31 @@ def test_an_edited_partial_is_served_without_a_restart(tmp_path, monkeypatch):
     part.write_text("two, longer\n", encoding="utf-8")
 
     assert main.assembled_index() == "two, longer\n"
+
+
+def _vault_page(tmp_path, monkeypatch, index, partials):
+    (tmp_path / "partials").mkdir()
+    for name, text in partials.items():
+        (tmp_path / "partials" / name).write_text(text, encoding="utf-8")
+    (tmp_path / "index.html").write_text(index, encoding="utf-8")
+    monkeypatch.setattr(main, "static_path", tmp_path)
+    monkeypatch.setattr(main, "_index_cache", (None, ""))
+
+
+def test_a_partial_can_include_another_more_than_once(tmp_path, monkeypatch):
+    _vault_page(tmp_path, monkeypatch, "<!-- include: partials/outer.html -->\n", {
+        "outer.html": "<a>\n<!-- include: partials/inner.html -->\n<!-- include: partials/inner.html -->\n</a>\n",
+        "inner.html": "<b>x</b>\n",
+    })
+
+    assert main.assembled_index() == "<a>\n<b>x</b>\n<b>x</b>\n</a>\n"
+
+
+def test_partials_that_include_each_other_are_refused(tmp_path, monkeypatch):
+    _vault_page(tmp_path, monkeypatch, "<!-- include: partials/a.html -->\n", {
+        "a.html": "<!-- include: partials/b.html -->\n",
+        "b.html": "<!-- include: partials/a.html -->\n",
+    })
+
+    with pytest.raises(RuntimeError):
+        main.assembled_index()
