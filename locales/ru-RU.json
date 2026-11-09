@@ -325,11 +325,10 @@
     "italic": "Курсив",
     "strikethrough": "Зачёркнутый",
     "link": "Ссылка",
-    "attach": "Прикрепить файл",
+    "upload": "Загрузить",
     "text": "Текст",
     "group_lists": "Списки",
     "group_blocks": "Блоки",
-    "group_media": "Медиа",
     "group_links": "Ссылки",
     "clear_formatting": "Очистить форматирование",
     "turn_into": "Преобразовать в…",
@@ -353,7 +352,11 @@
     "heading_3": "Заголовок 3",
     "divider": "Разделитель",
     "callout": "Выноска",
-    "note_link": "Ссылка на заметку"
+    "attach": "Прикрепить",
+    "attach_note": "Эта заметка",
+    "attach_folder": "Эта папка",
+    "attach_parent": "Родительская папка",
+    "attach_other": "В других местах"
   },
   "validation": {
     "forbidden_chars": "Имя содержит запрещённые символы: {{chars}}",

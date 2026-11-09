@@ -325,11 +325,10 @@
     "italic": "斜体",
     "strikethrough": "删除线",
     "link": "链接",
-    "attach": "附加文件",
+    "upload": "上传",
     "text": "文本",
     "group_lists": "列表",
     "group_blocks": "块",
-    "group_media": "媒体",
     "group_links": "链接",
     "clear_formatting": "清除格式",
     "turn_into": "转换为…",
@@ -353,7 +352,11 @@
     "heading_3": "标题 3",
     "divider": "分隔线",
     "callout": "标注",
-    "note_link": "笔记链接"
+    "attach": "附加",
+    "attach_note": "此笔记",
+    "attach_folder": "此文件夹",
+    "attach_parent": "上级文件夹",
+    "attach_other": "其他位置"
   },
   "validation": {
     "forbidden_chars": "名称包含禁止的字符：{{chars}}",

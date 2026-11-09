@@ -325,11 +325,10 @@
     "italic": "Italic",
     "strikethrough": "Strikethrough",
     "link": "Link",
-    "attach": "Attach file",
+    "upload": "Upload",
     "text": "Text",
     "group_lists": "Lists",
     "group_blocks": "Blocks",
-    "group_media": "Media",
     "group_links": "Links",
     "clear_formatting": "Clear formatting",
     "turn_into": "Turn into…",
@@ -353,7 +352,11 @@
     "heading_3": "Heading 3",
     "divider": "Divider",
     "callout": "Callout",
-    "note_link": "Note link"
+    "attach": "Attach",
+    "attach_note": "This note",
+    "attach_folder": "This folder",
+    "attach_parent": "Parent folder",
+    "attach_other": "Elsewhere"
   },
   "validation": {
     "forbidden_chars": "Name contains forbidden characters: {{chars}}",

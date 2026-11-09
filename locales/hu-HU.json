@@ -325,11 +325,10 @@
     "italic": "Dőlt",
     "strikethrough": "Áthúzott",
     "link": "Link",
-    "attach": "Fájl csatolása",
+    "upload": "Feltöltés",
     "text": "Szöveg",
     "group_lists": "Listák",
     "group_blocks": "Blokkok",
-    "group_media": "Média",
     "group_links": "Hivatkozások",
     "clear_formatting": "Formázás törlése",
     "turn_into": "Átalakítás…",
@@ -353,7 +352,11 @@
     "heading_3": "Fejléc 3",
     "divider": "Elválasztó",
     "callout": "Kiemelt blokk",
-    "note_link": "Jegyzethivatkozás"
+    "attach": "Csatolás",
+    "attach_note": "Ez a jegyzet",
+    "attach_folder": "Ez a mappa",
+    "attach_parent": "Szülőmappa",
+    "attach_other": "Máshol"
   },
   "validation": {
     "forbidden_chars": "A név tiltott karaktereket tartalmaz: {{chars}}",

@@ -325,11 +325,10 @@
     "italic": "Kursiv",
     "strikethrough": "Durchgestrichen",
     "link": "Link",
-    "attach": "Datei anhängen",
+    "upload": "Hochladen",
     "text": "Text",
     "group_lists": "Listen",
     "group_blocks": "Blöcke",
-    "group_media": "Medien",
     "group_links": "Links",
     "clear_formatting": "Formatierung entfernen",
     "turn_into": "Umwandeln in…",
@@ -353,7 +352,11 @@
     "heading_3": "Überschrift 3",
     "divider": "Trennlinie",
     "callout": "Hinweisbox",
-    "note_link": "Notizlink"
+    "attach": "Anhängen",
+    "attach_note": "Diese Notiz",
+    "attach_folder": "Dieser Ordner",
+    "attach_parent": "Übergeordneter Ordner",
+    "attach_other": "Anderswo"
   },
   "validation": {
     "forbidden_chars": "Der Name enthält unzulässige Zeichen: {{chars}}",

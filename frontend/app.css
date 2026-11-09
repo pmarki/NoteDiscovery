@@ -350,6 +350,14 @@ body {
     cursor: pointer;
     white-space: nowrap;
 }
+/* Rows with an icon centre it, since a thumbnail has no baseline */
+.wikilink-autocomplete-item:has(.wl-icon) {
+    align-items: center;
+}
+.wikilink-autocomplete-item .wl-icon {
+    height: 24px;
+    font-size: 14px;
+}
 .wikilink-autocomplete-item.active {
     background-color: var(--bg-hover);
 }

@@ -325,11 +325,10 @@
     "italic": "Ležeče",
     "strikethrough": "Prečrtano",
     "link": "Povezava",
-    "attach": "Priloži datoteko",
+    "upload": "Naloži",
     "text": "Besedilo",
     "group_lists": "Seznami",
     "group_blocks": "Bloki",
-    "group_media": "Mediji",
     "group_links": "Povezave",
     "clear_formatting": "Počisti oblikovanje",
     "turn_into": "Pretvori v…",
@@ -353,7 +352,11 @@
     "heading_3": "Naslov 3",
     "divider": "Ločilna črta",
     "callout": "Poudarjen blok",
-    "note_link": "Povezava do zapiska"
+    "attach": "Priloži",
+    "attach_note": "Ta zapisek",
+    "attach_folder": "Ta mapa",
+    "attach_parent": "Nadrejena mapa",
+    "attach_other": "Drugje"
   },
   "validation": {
     "forbidden_chars": "Ime vsebuje prepovedane znake: {{chars}}",

@@ -13,26 +13,31 @@ function allow({ state, range }) {
     return !state.doc.rangeHasMark(range.from, range.to, state.schema.marks.code);
 }
 
+// `props.embed` picks the node when the app knows better than the typed !, as after Attach
 function insertLink({ editor, range, props }) {
-    const embed = isEmbed(editor.state, range);
+    const typedEmbed = isEmbed(editor.state, range);
+    const embed = props.embed ?? typedEmbed;
     editor.chain().focus().insertContentAt(
-        { from: embed ? range.from - 1 : range.from, to: range.to },
+        { from: typedEmbed ? range.from - 1 : range.from, to: range.to },
         { type: embed ? 'embed' : 'wikilink', attrs: { target: props.target, alias: null } }
     ).run();
 }
 
 /**
  * Report an unfinished [[ or ![[ to the app, which owns the results and the popup.
- * `onChange` receives { query, isMedia, clientRect }, or null when the token ends.
+ * `onChange` receives { query, isMedia, isAttach, clientRect }, or null when the token ends.
+ * `isAttach` means the [[ came from the Attach command, so notes and files both apply.
  */
 export function wikilinkSuggestion({ onChange, onKeyDown }) {
     let active = null;
+    let attachAt = null;
 
     const report = (props) => {
         active = props;
         onChange({
             query: props.query,
             isMedia: isEmbed(props.editor.state, props.range),
+            isAttach: props.range.from === attachAt,
             clientRect: props.clientRect,
         });
     };
@@ -52,6 +57,7 @@ export function wikilinkSuggestion({ onChange, onKeyDown }) {
                     onUpdate: report,
                     onExit: () => {
                         active = null;
+                        attachAt = null;
                         onChange(null);
                     },
                     onKeyDown: ({ event }) => onKeyDown(event),
@@ -60,7 +66,15 @@ export function wikilinkSuggestion({ onChange, onKeyDown }) {
         },
     });
 
-    return { extension, accept: (target) => active?.command({ target }) };
+    return {
+        extension,
+        accept: (target, embed) => active?.command({ target, embed }),
+        // Types the [[ for the Attach command
+        attach(editor) {
+            attachAt = editor.state.selection.from;
+            editor.chain().focus().insertContent('[[').run();
+        },
+    };
 }
 
 // Tables hold one line per cell in Markdown, so block commands have no place there.

@@ -325,11 +325,10 @@
     "italic": "Cursiva",
     "strikethrough": "Tachado",
     "link": "Enlace",
-    "attach": "Adjuntar archivo",
+    "upload": "Subir",
     "text": "Texto",
     "group_lists": "Listas",
     "group_blocks": "Bloques",
-    "group_media": "Multimedia",
     "group_links": "Enlaces",
     "clear_formatting": "Borrar formato",
     "turn_into": "Convertir en…",
@@ -353,7 +352,11 @@
     "heading_3": "Encabezado 3",
     "divider": "Separador",
     "callout": "Destacado",
-    "note_link": "Enlace a nota"
+    "attach": "Adjuntar",
+    "attach_note": "Esta nota",
+    "attach_folder": "Esta carpeta",
+    "attach_parent": "Carpeta superior",
+    "attach_other": "En otro lugar"
   },
   "validation": {
     "forbidden_chars": "El nombre contiene caracteres no permitidos: {{chars}}",
