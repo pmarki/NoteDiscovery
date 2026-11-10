@@ -11,6 +11,7 @@ function coreFeature() {
         autosaveDelayMs: CONFIG.AUTOSAVE_DELAY,  // hydrated from /api/config in loadConfig()
         defaultTheme: CONFIG.DEFAULT_THEME,      // hydrated from /api/config in loadConfig()
         uploadMaxNoteMb: CONFIG.UPLOAD_MAX_NOTE_MB, // hydrated from /api/config in loadConfig()
+        linkPreviews: false, // Cards for links on a line of their own; from /api/config
         notes: [],
 
         currentNote: '',
@@ -368,6 +369,7 @@ function coreFeature() {
                 if (Number.isFinite(config.uploadMaxNoteMb) && config.uploadMaxNoteMb > 0) {
                     this.uploadMaxNoteMb = config.uploadMaxNoteMb;
                 }
+                this.linkPreviews = config.linkPreviews === true;
                 if (typeof config.sharePublicOrigin === 'string' && config.sharePublicOrigin) {
                     this.sharePublicOrigin = config.sharePublicOrigin;
                 }

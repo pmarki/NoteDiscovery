@@ -388,5 +388,9 @@
     "saved_into": "Hozzáadva ehhez: „{{name}}”",
     "saved_files": "{{count}} fájl mentve",
     "some_failed": "{{count}} fájl nem lett mentve, próbáld újra"
+  },
+  "link_card": {
+    "refresh": "Előnézet frissítése",
+    "refresh_failed": "Nem sikerült frissíteni az előnézetet: {{error}}"
   }
 }

@@ -388,5 +388,9 @@
     "saved_into": "Añadido a «{{name}}»",
     "saved_files": "{{count}} archivo(s) guardado(s)",
     "some_failed": "{{count}} archivo(s) sin guardar, inténtalo de nuevo"
+  },
+  "link_card": {
+    "refresh": "Actualizar vista previa",
+    "refresh_failed": "No se pudo actualizar la vista previa: {{error}}"
   }
 }

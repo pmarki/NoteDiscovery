@@ -280,6 +280,7 @@ function editorFeature() {
                 resolveImageSrc: (src) => this._editorImageSrc(src),
                 onChange: (value) => this._onEditorChange(value),
                 drawNode: (name, target, attrs) => this._drawNode(name, target, attrs),
+                linkCards: this.linkPreviews,
                 decorateCode: (pre) => this.addCopyButtonToCodeBlock(pre),
                 onStateChange: ({ canUndo, canRedo, table, emptyLine, item, selection }) => {
                     this.canUndo = canUndo;
@@ -527,9 +528,16 @@ function editorFeature() {
             const open = (run, icon) => ({ label: this.t('format.open_link'), icon, run });
             const { kind, attrs } = item;
             if (kind === 'link') {
+                const card = attrs.card && editable && this.linkPreviews ? [
+                    { label: this.t('link_card.refresh'), icon: ACTION_ICONS.refresh, run: () => this.refreshLinkCard(attrs.href) },
+                ] : [];
                 return {
                     label: attrs.href,
-                    actions: [...edit(() => this.openLinkPrompt('link')), open(() => this.openLinkAddress(attrs.href), ACTION_ICONS.openNewTab)],
+                    actions: [
+                        ...edit(() => this.openLinkPrompt('link')),
+                        ...card,
+                        open(() => this.openLinkAddress(attrs.href), ACTION_ICONS.openNewTab),
+                    ],
                 };
             }
             if (kind === 'wikilink') {
@@ -651,11 +659,80 @@ function editorFeature() {
         // Each may run again on the same element when the item changes.
         
         _drawNode(name, element, attrs) {
-            if (name === 'wikilink') this._drawWikilink(element, attrs);
+            if (name === 'linkCard') this._drawLinkCard(element, attrs.href);
+            else if (name === 'wikilink') this._drawWikilink(element, attrs);
             else if (name === 'mathInline') this._drawMath(element, attrs.source, false);
             else if (name === 'mathBlock') this._drawMath(element, attrs.source, true);
             else if (name === 'mermaidBlock') this._drawMermaid(element, attrs.source);
             else this._drawMedia(element, name, attrs);
+        },
+        
+        // The server's preview of a web page, or null when it couldn't be asked
+        _linkPreview(href, refresh = false) {
+            if (refresh || !linkPreviewRequests.has(href)) {
+                const query = `url=${encodeURIComponent(href)}${refresh ? '&refresh=true' : ''}`;
+                const request = fetch(`/api/link-previews?${query}`)
+                    .then((response) => (response.ok ? response.json() : null))
+                    .catch(() => null)
+                    .then((preview) => {
+                        // Offline or refused: the next drawing asks again
+                        if (!preview) linkPreviewRequests.delete(href);
+                        return preview;
+                    });
+                linkPreviewRequests.set(href, request);
+            }
+            return linkPreviewRequests.get(href);
+        },
+        
+        async _drawLinkCard(element, href) {
+            element.dataset.drawing = href;
+            // Until the preview arrives, the address itself; a redraw keeps what's there
+            if (!element.firstChild) this._fillLinkCard(element, href, null, true);
+            const preview = await this._linkPreview(href);
+            if (element.dataset.drawing === href) this._fillLinkCard(element, href, preview, false);
+        },
+        
+        _fillLinkCard(element, href, preview, loading) {
+            let host = href;
+            try {
+                host = new URL(href).hostname.replace(/^www\./, '');
+            } catch {}
+            const usable = preview && !preview.error && preview.title;
+            const part = (tag, className, text) => {
+                const node = document.createElement(tag);
+                node.className = className;
+                if (text) node.textContent = text;
+                return node;
+            };
+            const body = part('span', 'link-card-body');
+            body.append(part('span', 'link-card-title', usable ? preview.title : host));
+            const description = usable ? preview.description : href;
+            if (description) body.append(part('span', 'link-card-description', description));
+            const site = part('span', 'link-card-site');
+            if (preview?.icon) {
+                const icon = part('img', 'link-card-icon');
+                icon.src = preview.icon;
+                icon.alt = '';
+                site.append(icon);
+            }
+            site.append(part('span', 'truncate', (usable && preview.site_name) || host));
+            body.append(site);
+            element.replaceChildren(body);
+            if (preview?.image) {
+                const image = part('img', 'link-card-image');
+                image.src = preview.image;
+                image.alt = '';
+                image.loading = 'lazy';
+                element.append(image);
+            }
+            element.classList.toggle('link-card-loading', loading);
+            element.title = href;
+        },
+        
+        async refreshLinkCard(href) {
+            const preview = await this._linkPreview(href, true);
+            noteEditor?.refreshRendered(['linkCard']);
+            if (preview?.error) this.toast(this.t('link_card.refresh_failed', { error: preview.error }), { type: 'warning' });
         },
         
         _drawWikilink(element, { target, alias }) {

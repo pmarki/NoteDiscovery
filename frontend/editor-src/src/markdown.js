@@ -24,6 +24,8 @@ export function joinFrontmatter(yaml, body) {
  */
 export function escapeMarkdownText(text) {
     return text
+        // Tiptap writes every & as &amp;, but only one that starts an entity needs it ("a&b", "?x=1&y=2").
+        .replace(/&amp;(?!#\d+;|#x[\da-f]+;|[a-z][a-z\d]*;)/gi, '&')
         .replace(/[\\`]/g, '\\$&')
         .replace(/~~/g, '\\~\\~')
         // Spaced out ("1 * 2") a star can't open or close emphasis.

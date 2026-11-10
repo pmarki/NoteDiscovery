@@ -388,5 +388,9 @@
     "saved_into": "Aggiunto a «{{name}}»",
     "saved_files": "{{count}} file salvati",
     "some_failed": "{{count}} file non salvati, riprova"
+  },
+  "link_card": {
+    "refresh": "Aggiorna anteprima",
+    "refresh_failed": "Impossibile aggiornare l'anteprima: {{error}}"
   }
 }

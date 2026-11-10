@@ -388,5 +388,9 @@
     "saved_into": "Zu „{{name}}“ hinzugefügt",
     "saved_files": "{{count}} Datei(en) gespeichert",
     "some_failed": "{{count}} Datei(en) nicht gespeichert, bitte erneut versuchen"
+  },
+  "link_card": {
+    "refresh": "Vorschau aktualisieren",
+    "refresh_failed": "Vorschau konnte nicht aktualisiert werden: {{error}}"
   }
 }

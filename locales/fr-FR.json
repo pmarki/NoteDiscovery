@@ -388,5 +388,9 @@
     "saved_into": "Ajouté à « {{name}} »",
     "saved_files": "{{count}} fichier(s) enregistré(s)",
     "some_failed": "{{count}} fichier(s) non enregistré(s), réessayez"
+  },
+  "link_card": {
+    "refresh": "Actualiser l'aperçu",
+    "refresh_failed": "Impossible d'actualiser l'aperçu : {{error}}"
   }
 }

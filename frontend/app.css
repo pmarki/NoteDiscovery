@@ -213,6 +213,97 @@ body {
 .note-source-block .mermaid-rendered {
     padding: 20px;
 }
+
+/* A web address alone in its paragraph, shown as a card. Edit mode keeps the
+   address above it, small, so it can still be changed; reading shows the card only. */
+.note-editor-content[contenteditable="true"] .link-card-source {
+    margin-bottom: 0.25em;
+    font-size: 0.8em;
+}
+.note-editor-content[contenteditable="true"] .link-card-source a {
+    color: var(--text-tertiary);
+}
+.note-editor-content[contenteditable="false"] .link-card-source {
+    display: none;
+}
+.note-editor-content .link-card {
+    display: flex;
+    max-width: 640px;
+    margin: 0 0 1em;
+    overflow: hidden;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+}
+.note-editor-content .link-card:hover {
+    background-color: var(--bg-hover);
+}
+.note-editor-content .link-card-loading {
+    opacity: 0.6;
+}
+.link-card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.25em;
+    min-width: 0;
+    padding: 0.75em 1em;
+}
+.link-card-title {
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.link-card-description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: var(--text-secondary);
+    font-size: 0.875em;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+.link-card-site {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-top: auto;
+    color: var(--text-tertiary);
+    font-size: 0.8em;
+}
+.note-editor-content .link-card-icon {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    flex-shrink: 0;
+}
+.note-editor-content .link-card-image {
+    width: 30%;
+    max-width: 200px;
+    min-height: 96px;
+    margin: 0;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 0;
+    /* The text sets the card's height; the image fills it */
+    contain: size;
+}
+@media (max-width: 480px) {
+    .note-editor-content .link-card {
+        flex-direction: column-reverse;
+    }
+    .note-editor-content .link-card-image {
+        width: 100%;
+        max-width: none;
+        height: 160px;
+        contain: none;
+    }
+}
 .note-source-block svg {
     margin: 0 auto;
 }

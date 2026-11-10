@@ -388,5 +388,9 @@
     "saved_into": "Added to “{{name}}”",
     "saved_files": "Saved {{count}} file(s)",
     "some_failed": "{{count}} file(s) not saved, try again"
+  },
+  "link_card": {
+    "refresh": "Refresh preview",
+    "refresh_failed": "Couldn't refresh the preview: {{error}}"
   }
 }

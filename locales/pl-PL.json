@@ -388,5 +388,9 @@
     "saved_into": "Dodano do „{{name}}”",
     "saved_files": "Zapisano pliki: {{count}}",
     "some_failed": "Nie zapisano plików: {{count}}, spróbuj ponownie"
+  },
+  "link_card": {
+    "refresh": "Odśwież podgląd",
+    "refresh_failed": "Nie udało się odświeżyć podglądu: {{error}}"
   }
 }

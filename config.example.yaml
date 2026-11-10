@@ -75,6 +75,18 @@ authentication:
   # Leave empty to disable API key authentication (only session auth works)
   api_key: ""
 
+link_previews:
+  # A link on a line of its own is shown as a card with the page's title, text and
+  # image. The server fetches the page once and keeps the result in .links/ in the
+  # notes folder. Override via the LINK_PREVIEWS_ENABLED env var.
+  enabled: true
+
+  # Links to this server's own network (localhost, 192.168.x.x, ...) get no card
+  # unless this is true, so a note can't make the server probe its network. Turn it
+  # on only if everyone who can edit notes may reach that network anyway.
+  # Override via the LINK_PREVIEWS_ALLOW_PRIVATE_NETWORKS env var.
+  allow_private_networks: false
+
 mcp:
   # Serve MCP (Model Context Protocol) over Streamable HTTP at /mcp, so AI
   # assistants can connect by URL instead of spawning the stdio server.

@@ -76,6 +76,7 @@ from .plugins import PluginManager
 from .themes import get_available_themes, get_theme_css
 from .trash import delete_entry, empty_trash, list_trash, restore_entry
 from .thumbnails import IMAGE_EXTENSIONS, ThumbnailError, thumbnail_for
+from .link_preview import LinkPreviews, PreviewError, public_entry
 from .share import (
     create_share_token,
     get_share_token,
@@ -192,6 +193,15 @@ if config.get('authentication', {}).get('enabled', False):
 config['mcp'] = config.get('mcp') or {}
 if 'MCP_ENABLED' in os.environ:
     config['mcp']['enabled'] = os.getenv('MCP_ENABLED', 'false').lower() in ('true', '1', 'yes')
+
+# Cards for links on a line of their own (backend/link_preview.py)
+# Priority: LINK_PREVIEWS_* env vars > link_previews in config.yaml
+config['link_previews'] = config.get('link_previews') or {}
+for _name, _env in (('enabled', 'LINK_PREVIEWS_ENABLED'), ('allow_private_networks', 'LINK_PREVIEWS_ALLOW_PRIVATE_NETWORKS')):
+    if _env in os.environ:
+        config['link_previews'][_name] = os.getenv(_env, '').lower() in ('true', '1', 'yes')
+LINK_PREVIEWS_ENABLED = config['link_previews'].get('enabled', True) is not False
+LINK_PREVIEWS_ALLOW_PRIVATE = config['link_previews'].get('allow_private_networks', False) is True
 
 # Storage paths: env vars override config.yaml. Logged either way so the
 # resolved location is visible at startup.
@@ -893,6 +903,7 @@ async def get_config():
         "uploadMaxNoteMb": UPLOAD_MAX_NOTE_MB,  # Client-side size cap for .md drops
         # Empty string when unset; frontend falls back to window.location.origin
         "sharePublicOrigin": SHARE_PUBLIC_ORIGIN,
+        "linkPreviews": LINK_PREVIEWS_ENABLED,
         "authentication": {
             "enabled": config.get('authentication', {}).get('enabled', False)
         }
@@ -1025,6 +1036,40 @@ def get_thumbnail(media_path: str):
     except ThumbnailError:
         raise HTTPException(status_code=422, detail="Image can't be previewed")
     return FileResponse(preview, headers={"Cache-Control": "private, max-age=31536000, immutable"})
+
+
+def link_previews() -> LinkPreviews:
+    notes_dir = config['storage']['notes_dir']
+    if LINK_PREVIEWS_ALLOW_PRIVATE:
+        return LinkPreviews(notes_dir, allowed=lambda address: True)
+    return LinkPreviews(notes_dir)
+
+
+@api_router.get("/link-previews", tags=["Link previews"])
+@limiter.limit("60/minute")
+def get_link_preview(request: Request, url: str, refresh: bool = False):
+    """
+    Title, description and images of a web page, for the card of a link on its own line.
+
+    Fetched once and kept in .links/ in the vault; refresh=true fetches it again.
+    A plain def, so fetching runs in the threadpool. A page that can't be read
+    still answers 200, with `error` set, so the card can show the bare link.
+    """
+    if not LINK_PREVIEWS_ENABLED:
+        raise HTTPException(status_code=404, detail="Link previews are turned off")
+    try:
+        return public_entry(link_previews().get(url, refresh=refresh))
+    except PreviewError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@api_router.get("/link-previews/files/{name}", tags=["Link previews"])
+def get_link_preview_file(name: str):
+    """A preview image or icon stored for a link. Addresses carry ?v=, so they never change."""
+    path = link_previews().file(name)
+    if path is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path, headers={"Cache-Control": "private, max-age=31536000, immutable"})
 
 
 @api_router.get("/media/{media_path:path}", tags=["Media"])

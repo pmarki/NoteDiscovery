@@ -69,6 +69,10 @@ const EXACT = {
     'plain brackets': 'An [aside] without a link\n',
     'bold and italic': '**bold** *it* ~~gone~~ `code`\n',
     link: '[text](https://example.com) and [note](folder/My%20Note.md)\n',
+    'bare address': 'https://example.com/a?b=1&c=d_e\n',
+    ampersands: 'Tom & Jerry and a&b\n',
+    'text spelling an entity': 'Write &amp;copy; for ©\n',
+    'bare address in text': 'See https://example.com/x here\n',
     image: '![alt](folder/a.png)\n',
     'hard break': 'line one  \nline two\n',
     quote: '> quoted\n',
@@ -297,6 +301,60 @@ test('the selection report covers text only', () => {
     editor.setMarkdown('some **bold** text\n\n```\ncode\n```\n', { resetHistory: true });
     editor.focus();
     assert.equal(editor.textSelection(), null);
+});
+
+test('a link showing its own address is written bare', () => {
+    assert.equal(roundTrip('[https://example.com/](https://example.com/) and <https://e.com>\n'), 'https://example.com/ and https://e.com\n');
+});
+
+test('an address the bare form would cut keeps the link form', () => {
+    for (const markdown of ['[https://example.com/a.](https://example.com/a.)\n', '[https://e.com/_x](https://e.com/_x)\n',
+        '[https://e.com/?a&amp;b](https://e.com/?a&amp;b)\n']) {
+        const once = roundTrip(markdown);
+        assert.match(once, /^\[/);
+        assert.equal(roundTrip(once), once);
+    }
+});
+
+// A second editor, with cards on
+const cardRoot = document.createElement('div');
+document.body.append(cardRoot);
+const drawnCards = [];
+const cardEditor = create({
+    element: cardRoot,
+    debounceMs: 0,
+    linkCards: true,
+    drawNode: (name, element, attrs) => {
+        if (name === 'linkCard') drawnCards.push(attrs.href);
+    },
+});
+const cardCount = () => cardRoot.querySelectorAll('.link-card').length;
+
+test('only an address alone in its paragraph gets a card', () => {
+    drawnCards.length = 0;
+    cardEditor.setMarkdown([
+        'https://example.com/a',
+        'See https://example.com/b here',
+        '[Named](https://example.com/c)',
+        '- https://example.com/d',
+        '| x |\n|---|\n| https://example.com/e |',
+    ].join('\n\n') + '\n', { resetHistory: true });
+    assert.equal(cardCount(), 2);
+    assert.equal(drawnCards.join(' '), 'https://example.com/a https://example.com/d');
+    assert.equal(cardRoot.querySelectorAll('.link-card-source').length, 2);
+});
+
+test('typing elsewhere keeps the drawn cards', () => {
+    cardEditor.setMarkdown('Intro\n\nhttps://example.com/a\n', { resetHistory: true });
+    drawnCards.length = 0;
+    cardEditor.insertMarkdown('more ', 1);
+    assert.equal(cardCount(), 1);
+    assert.equal(drawnCards.length, 0);
+});
+
+test('the editor without cards draws none', () => {
+    roundTrip('https://example.com/a\n');
+    assert.equal(document.getElementById('root').querySelectorAll('.link-card').length, 0);
 });
 
 console.log(results.join('\n'));

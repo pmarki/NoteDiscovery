@@ -84,6 +84,7 @@ For file naming, API notes, and more: **[DRAWING.md](DRAWING.md)**
 - **Drag to link** - Drag notes or images into the editor to insert links
 - **Click to navigate** - Jump between notes seamlessly
 - **External links** - Open in new tabs automatically
+- **Link cards** - A web address on a line of its own shows as a card with the page's title, description and image. The note keeps just the address; the preview is fetched once by the server and kept in `.links/` in the notes folder, so cards load without reaching the site again. In edit mode the link's popup can refresh the card
 - **URI protocols** - Supports `mailto:`, `tel:`, `ssh:`, `ftp:`, `slack:`, `discord:`, `teams:`, `zoom:`, `whatsapp:`, `telegram:`, `signal:`, `spotify:`, `steam:`, `magnet:`, and more
 
 ### Outline Panel

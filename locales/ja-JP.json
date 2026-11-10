@@ -388,5 +388,9 @@
     "saved_into": "「{{name}}」に追加しました",
     "saved_files": "{{count}} 件のファイルを保存しました",
     "some_failed": "{{count}} 件のファイルを保存できませんでした。もう一度お試しください"
+  },
+  "link_card": {
+    "refresh": "プレビューを更新",
+    "refresh_failed": "プレビューを更新できませんでした: {{error}}"
   }
 }

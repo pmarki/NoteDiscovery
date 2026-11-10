@@ -104,6 +104,13 @@ AUTHENTICATION_PASSWORD=mysecretpassword
 | `MCP_ENABLED` | boolean | `false` | Serve MCP over Streamable HTTP at `/mcp`. Requires `AUTHENTICATION_API_KEY` when authentication is enabled. See [MCP.md](MCP.md#remote-access-streamable-http) |
 | `MCP_LOOPBACK_URL` | string | `http://127.0.0.1:<listening port>` | URL the `/mcp` endpoint uses to call back into NoteDiscovery for tool calls. Only needed for unusual setups (e.g. listening on a unix socket) |
 
+### Link cards
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `LINK_PREVIEWS_ENABLED` | boolean | `true` | Show a link on a line of its own as a card with the page's title, text and image. The server fetches the page once and keeps the result in `.links/` in the notes folder |
+| `LINK_PREVIEWS_ALLOW_PRIVATE_NETWORKS` | boolean | `false` | Also make cards for addresses on the server's own network (`localhost`, `192.168.x.x`, ...). Off, so a note can't make the server probe that network |
+
 ### Demo Mode
 
 | Variable | Type | Default | Description |

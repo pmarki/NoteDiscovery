@@ -388,5 +388,9 @@
     "saved_into": "Dodano v »{{name}}«",
     "saved_files": "Shranjenih datotek: {{count}}",
     "some_failed": "Neshranjenih datotek: {{count}}, poskusite znova"
+  },
+  "link_card": {
+    "refresh": "Osveži predogled",
+    "refresh_failed": "Predogleda ni bilo mogoče osvežiti: {{error}}"
   }
 }
