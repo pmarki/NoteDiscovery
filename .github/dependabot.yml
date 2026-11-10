@@ -1,0 +1,20 @@
+# Proposes updates for what the Docker image is built from. Pinned versions and
+# digests stay put until one of these pull requests changes them.
+version: 2
+updates:
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /scripts/minify
+    schedule:
+      interval: monthly
+
+  # Updates requirements.txt only: regenerate requirements.lock in the same pull
+  # request (see scripts/check_requirements_lock.py), or the Docker build stops.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly

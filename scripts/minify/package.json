@@ -1,0 +1,9 @@
+{
+  "name": "notediscovery-minify",
+  "private": true,
+  "description": "Minifiers for the Docker build, pinned with package-lock.json",
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "html-minifier-terser": "7.2.0"
+  }
+}

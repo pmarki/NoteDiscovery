@@ -20,7 +20,7 @@ NoteDiscovery includes simple password protection for single-user deployments. W
 
 For local testing, authentication is **disabled by default**. To test with auth:
 
-1. Set `authentication.enabled: true` in `config.yaml`
+1. Copy `config.example.yaml` to `config.yaml` and set `authentication.enabled: true` in it
 2. Restart the app
 3. Log in with password: `admin`
 
@@ -32,9 +32,11 @@ For local testing, authentication is **disabled by default**. To test with auth:
 
 For any deployment exposed to a network, follow these steps:
 
-### Step 1: Generate a Secret Key
+### Step 1: Generate a Secret Key (optional)
 
-The secret key encrypts session cookies. Generate a random one:
+The secret key signs session cookies. If you don't set one, the app generates a random key on first start and keeps it in your notes folder as `.secret-key`, so logins survive restarts. Delete that file to log everyone out.
+
+To set your own instead, for example when the notes folder is shared with others, generate one:
 
 ```bash
 # Docker

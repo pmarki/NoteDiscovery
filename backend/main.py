@@ -99,8 +99,10 @@ from .export import (
 )
 from .mcp_http import build_mcp_router
 
-# Load configuration
+# Load configuration: your config.yaml, else the defaults in config.example.yaml
 config_path = Path(__file__).parent.parent / "config.yaml"
+if not config_path.exists():
+    config_path = config_path.with_name("config.example.yaml")
 with open(config_path, 'r', encoding='utf-8') as f:
     config = yaml.safe_load(f)
 
@@ -176,9 +178,7 @@ else:
 if config.get('authentication', {}).get('enabled', False):
     _has_password = bool(config.get('authentication', {}).get('password_hash', ''))
     _has_api_key = bool(config.get('authentication', {}).get('api_key', '').strip())
-    _secret_key = config.get('authentication', {}).get('secret_key', '')
-    _is_default_secret = _secret_key in ('', 'change_this_to_a_random_secret_key_in_production')
-    
+
     if not _has_password and not _has_api_key:
         logger.critical("Authentication enabled but NO auth methods configured - ALL access will be denied!")
     else:
@@ -186,9 +186,6 @@ if config.get('authentication', {}).get('enabled', False):
             logger.warning("No password configured - web UI login will not work")
         if not _has_api_key:
             logger.warning("No API key configured - external integrations will require session cookies")
-    
-    if _is_default_secret:
-        logger.critical("Using default secret_key - sessions can be forged! Change it in config.yaml")
 
 # MCP over Streamable HTTP at /mcp (opt-in)
 # Priority: MCP_ENABLED env var > mcp.enabled in config.yaml
@@ -203,6 +200,41 @@ if 'NOTES_DIR' in os.environ:
     config['storage']['notes_dir'] = os.getenv('NOTES_DIR')
     _notes_source = "NOTES_DIR env var"
 logger.info("Notes directory: %s (from %s)", config['storage']['notes_dir'], _notes_source)
+
+# The shipped secret_key is public, so anyone could sign a session cookie with it.
+# Unless one is configured, a random key is generated once and kept with the notes,
+# like the share tokens, so sessions survive a restart.
+DEFAULT_SECRET_KEYS = ('', 'change_this_to_a_random_secret_key_in_production')
+SECRET_KEY_FILE = '.secret-key'
+
+
+def load_or_create_secret_key(data_dir: Path) -> str:
+    """Read the generated session key from data_dir, creating it on first use."""
+    path = data_dir / SECRET_KEY_FILE
+    if path.is_file() and (key := path.read_text(encoding='utf-8').strip()):
+        return key
+    key = secrets.token_hex(32)
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+        fd, temp = tempfile.mkstemp(dir=data_dir, prefix=SECRET_KEY_FILE)  # Readable by its owner only
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            f.write(key)
+        # Linking is atomic, so of two workers starting together, one key wins and both use it
+        try:
+            os.link(temp, path)
+        except FileExistsError:
+            key = path.read_text(encoding='utf-8').strip() or key
+        finally:
+            os.unlink(temp)
+    except OSError as e:
+        logger.warning("Could not store a session key in %s (%s) - logins won't survive a restart", data_dir, e)
+        return key
+    logger.info("Using the session key in %s", path)
+    return key
+
+
+if config['authentication'].get('secret_key', '').strip() in DEFAULT_SECRET_KEYS:
+    config['authentication']['secret_key'] = load_or_create_secret_key(Path(config['storage']['notes_dir']))
 
 _plugins_source = "config.yaml"
 if 'PLUGINS_DIR' in os.environ:
@@ -626,6 +658,13 @@ async def service_worker(request: Request):
     raise HTTPException(status_code=404, detail="Service worker not found")
 
 
+# Android sends shares here (share_target in the manifest). The service worker keeps
+# them for the page, so this only runs before it's active, and the share is lost.
+@app.post("/share-target", include_in_schema=False)
+async def share_target():
+    return RedirectResponse(url="/", status_code=303)
+
+
 # ============================================================================
 # Custom Exception Handlers
 # ============================================================================
@@ -655,13 +694,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={"detail": exc.detail}
     )
-
-
-# Android sends shares here (share_target in the manifest). The service worker keeps
-# them for the page, so this only runs before it's active, and the share is lost.
-@app.post("/share-target", include_in_schema=False)
-async def share_target():
-    return RedirectResponse(url="/", status_code=303)
 
 
 # ============================================================================

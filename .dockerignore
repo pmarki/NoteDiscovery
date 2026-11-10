@@ -24,3 +24,6 @@ frontend/vendor/
 
 # Built into frontend/note-editor.bundle.js
 frontend/editor-src/
+
+# Local settings; the image ships config.example.yaml
+config.yaml

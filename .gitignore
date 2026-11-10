@@ -27,6 +27,9 @@ ENV/
 env/
 .venv
 
+# Local settings: copy config.example.yaml to config.yaml to change them
+config.yaml
+
 # Data directories
 data/
 *.db

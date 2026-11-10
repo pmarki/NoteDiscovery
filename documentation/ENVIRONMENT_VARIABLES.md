@@ -12,6 +12,7 @@ NoteDiscovery supports environment variables to override configuration settings,
 | `APP_NAME` | string | `NoteDiscovery` | Name shown in the UI, the login page, the browser title and the API docs. Overrides `app.name` in `config.yaml`. |
 | `SHARE_PUBLIC_ORIGIN` | string | _(empty)_ | Optional. When set, share links in the dialog / QR / clipboard (and API `url` fields) use this origin instead of the browser or request host. Example: `https://notes.example.com`. Overrides `server.share_public_origin` in `config.yaml`. |
 | `FORWARDED_ALLOW_IPS` | string | `127.0.0.1` | Reverse proxy deployments only. Set to `*` so `X-Forwarded-Proto` and `X-Forwarded-For` are trusted and the app sees the real scheme and client IP. Read by uvicorn, not by NoteDiscovery. |
+| `PUID` / `PGID` | integer | `1000` | Docker only. The user and group the app runs as. At start, the notes folder and `plugins/` are handed to them, since older images ran as root. Set them to your own IDs (`id -u`, `id -g`) to keep the files yours on the host. Alternatively run the container with `--user`, which skips that step. |
 
 > **Note**: Advanced server settings (CORS origins, debug mode) are configured via `config.yaml` only, not via environment variables. See [config.yaml](#advanced-server-configuration) for details.
 
@@ -83,7 +84,7 @@ docker run -e NOTES_DIR=/vault -v /home/me/MyVault:/vault ...
 |----------|------|---------|-------------|
 | `AUTHENTICATION_ENABLED` | boolean | `config.yaml` | Enable/disable authentication |
 | `AUTHENTICATION_PASSWORD` | string | `admin` | Password (hashed automatically at startup) |
-| `AUTHENTICATION_SECRET_KEY` | string | `config.yaml` | Session secret key (for session security) |
+| `AUTHENTICATION_SECRET_KEY` | string | `config.yaml`, else generated | Session secret key. Without one, a random key is generated and kept in the notes folder as `.secret-key` |
 | `AUTHENTICATION_API_KEY` | string | - | API key for external integrations (MCP, scripts) |
 
 #### Example: Setting password via environment variable
@@ -193,7 +194,7 @@ ui:
 
 Configuration is loaded in this order (later overrides earlier):
 
-1. **`config.yaml`** - Default configuration file
+1. **`config.yaml`** - Your configuration file. Without one, the defaults in `config.example.yaml` are used; copy it to `config.yaml` to change them
 2. **Environment Variables** - Runtime overrides
 3. **Command Line** - Highest priority (if applicable)
 

@@ -16,11 +16,11 @@ except ImportError:
     colorama = None
 
 def get_port():
-    """Get port from: 1) PORT env var, 2) config.yaml, 3) default 8000."""
+    """Get port from: 1) PORT env var, 2) config.yaml or config.example.yaml, 3) default 8000."""
     if os.getenv("PORT"):
         return os.getenv("PORT")
-    config_path = Path("config.yaml")
-    if config_path.exists():
+    config_path = next((p for p in (Path("config.yaml"), Path("config.example.yaml")) if p.exists()), None)
+    if config_path:
         try:
             import yaml
             with open(config_path, 'r', encoding='utf-8') as f:

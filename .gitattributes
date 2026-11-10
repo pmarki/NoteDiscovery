@@ -1,0 +1,2 @@
+# The Docker entrypoint runs under /bin/sh, which fails on CRLF line endings
+*.sh text eol=lf

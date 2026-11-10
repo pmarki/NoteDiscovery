@@ -246,7 +246,7 @@ The image includes bundled config, themes, plugins, and locales. To customize, y
 | Volume | Purpose | Bundled? |
 |--------|---------|----------|
 | `data/` | Your notes | ❌ You must create |
-| `config.yaml` | App settings | ✅ Yes |
+| `config.yaml` | App settings (start from `config.example.yaml`) | ✅ Defaults |
 | `themes/` | Custom themes | ✅ Yes |
 | `plugins/` | Custom plugins | ✅ Yes |
 | `locales/` | Translations | ✅ Yes |
