@@ -378,5 +378,15 @@
     "open_new_tab": "Otwórz w nowej karcie",
     "formula": "Wzór",
     "diagram": "Diagram"
+  },
+  "share_target": {
+    "title": "Zapisz w",
+    "search": "Szukaj folderów i notatek",
+    "root": "Katalog główny",
+    "note_name": "Nazwa nowej notatki",
+    "saved_note": "Zapisano w nowej notatce „{{name}}”",
+    "saved_into": "Dodano do „{{name}}”",
+    "saved_files": "Zapisano pliki: {{count}}",
+    "some_failed": "Nie zapisano plików: {{count}}, spróbuj ponownie"
   }
 }

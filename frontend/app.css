@@ -1313,3 +1313,150 @@ body {
     opacity: 1;
     pointer-events: auto;
 }
+
+/* Something shared from another app: where it goes. Full screen on a phone. */
+.share-target-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.share-target-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 32rem;
+    max-height: min(90vh, 44rem);
+    margin: 0 16px;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+.share-target-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+.share-target-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.share-target-text {
+    max-height: 4.5em;
+    overflow: hidden;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.share-target-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 72px;
+    overflow-y: auto;
+}
+.share-target-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 12rem;
+    padding: 3px 8px 3px 4px;
+    border-radius: 6px;
+    font-size: 12px;
+    background-color: var(--bg-tertiary);
+}
+.share-target-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.share-target-search,
+.share-target-name input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    font-size: 16px; /* smaller makes iOS and some Android browsers zoom in */
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+.share-target-list {
+    flex: 1 1 auto;
+    min-height: 8rem;
+    overflow-y: auto;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+}
+.share-target-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.share-target-item:hover {
+    background-color: var(--bg-hover);
+}
+.share-target-item.selected {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+.share-target-item.selected svg,
+.share-target-item.selected .share-target-secondary {
+    color: inherit !important;
+}
+.share-target-secondary {
+    max-width: 40%;
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+.share-target-name {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.share-target-actions {
+    display: flex;
+    gap: 8px;
+}
+.share-target-actions button {
+    flex: 1;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+.share-target-actions button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.share-target-save {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+.share-target-cancel {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+@media (max-width: 640px) {
+    .share-target-dialog {
+        height: 100%;
+        max-height: none;
+        margin: 0;
+        border-radius: 0;
+        padding: 16px;
+    }
+}

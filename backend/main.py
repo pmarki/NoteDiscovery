@@ -657,6 +657,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+# Android sends shares here (share_target in the manifest). The service worker keeps
+# them for the page, so this only runs before it's active, and the share is lost.
+@app.post("/share-target", include_in_schema=False)
+async def share_target():
+    return RedirectResponse(url="/", status_code=303)
+
+
 # ============================================================================
 # Authentication Helpers
 # ============================================================================
@@ -1074,7 +1081,7 @@ async def put_media(media_path: str, request: Request):
 
 
 @api_router.post("/upload-media", tags=["Media"])
-@limiter.limit("20/minute")
+@limiter.limit("60/minute")
 async def upload_media(
     request: Request,
     file: UploadFile = File(...),

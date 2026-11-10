@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.svg">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon.svg">
-    <link rel="apple-touch-icon" href="/static/logo.svg">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
     
     <!-- PWA Manifest (served from root so the service worker does not cache a stale app name) -->
     <link rel="manifest" href="/manifest.json">
@@ -300,6 +300,8 @@
 
     <!-- include: partials/dialogs/share.html -->
     
+    <!-- include: partials/dialogs/share-target.html -->
+    
     <!-- include: partials/mobile-tabs.html -->
     
     <!-- ?v= changes with the file content, so a change cannot be served from a stale cache -->
@@ -318,6 +320,7 @@
     <script src="/static/app/metadata.js?v=__APP_VERSION__"></script>
     <script src="/static/app/share.js?v=__APP_VERSION__"></script>
     <script src="/static/app/home.js?v=__APP_VERSION__"></script>
+    <script src="/static/app/share-target.js?v=__APP_VERSION__"></script>
     <script src="/static/app/graph.js?v=__APP_VERSION__"></script>
     <script src="/static/app.js?v=__APP_VERSION__"></script>
     

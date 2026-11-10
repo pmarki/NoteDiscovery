@@ -378,5 +378,15 @@
     "open_new_tab": "在新标签页中打开",
     "formula": "公式",
     "diagram": "图表"
+  },
+  "share_target": {
+    "title": "保存到",
+    "search": "搜索文件夹和笔记",
+    "root": "根文件夹",
+    "note_name": "新笔记名称",
+    "saved_note": "已保存到新笔记“{{name}}”",
+    "saved_into": "已添加到“{{name}}”",
+    "saved_files": "已保存 {{count}} 个文件",
+    "some_failed": "{{count}} 个文件未保存，请重试"
   }
 }

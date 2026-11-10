@@ -378,5 +378,15 @@
     "open_new_tab": "In neuem Tab öffnen",
     "formula": "Formel",
     "diagram": "Diagramm"
+  },
+  "share_target": {
+    "title": "Speichern in",
+    "search": "Ordner und Notizen suchen",
+    "root": "Hauptordner",
+    "note_name": "Name der neuen Notiz",
+    "saved_note": "In neuer Notiz „{{name}}“ gespeichert",
+    "saved_into": "Zu „{{name}}“ hinzugefügt",
+    "saved_files": "{{count}} Datei(en) gespeichert",
+    "some_failed": "{{count}} Datei(en) nicht gespeichert, bitte erneut versuchen"
   }
 }

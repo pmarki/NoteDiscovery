@@ -378,5 +378,15 @@
     "open_new_tab": "Apri in una nuova scheda",
     "formula": "Formula",
     "diagram": "Diagramma"
+  },
+  "share_target": {
+    "title": "Salva in",
+    "search": "Cerca cartelle e note",
+    "root": "Cartella principale",
+    "note_name": "Nome della nuova nota",
+    "saved_note": "Salvato nella nuova nota «{{name}}»",
+    "saved_into": "Aggiunto a «{{name}}»",
+    "saved_files": "{{count}} file salvati",
+    "some_failed": "{{count}} file non salvati, riprova"
   }
 }

@@ -378,5 +378,15 @@
     "open_new_tab": "Megnyitás új lapon",
     "formula": "Képlet",
     "diagram": "Diagram"
+  },
+  "share_target": {
+    "title": "Mentés ide",
+    "search": "Mappák és jegyzetek keresése",
+    "root": "Gyökér mappa",
+    "note_name": "Új jegyzet neve",
+    "saved_note": "Mentve az új jegyzetbe: „{{name}}”",
+    "saved_into": "Hozzáadva ehhez: „{{name}}”",
+    "saved_files": "{{count}} fájl mentve",
+    "some_failed": "{{count}} fájl nem lett mentve, próbáld újra"
   }
 }

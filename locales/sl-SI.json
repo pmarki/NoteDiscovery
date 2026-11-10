@@ -378,5 +378,15 @@
     "open_new_tab": "Odpri v novem zavihku",
     "formula": "Formula",
     "diagram": "Diagram"
+  },
+  "share_target": {
+    "title": "Shrani v",
+    "search": "Išči mape in zapiske",
+    "root": "Korenska mapa",
+    "note_name": "Ime novega zapiska",
+    "saved_note": "Shranjeno v nov zapisek »{{name}}«",
+    "saved_into": "Dodano v »{{name}}«",
+    "saved_files": "Shranjenih datotek: {{count}}",
+    "some_failed": "Neshranjenih datotek: {{count}}, poskusite znova"
   }
 }

@@ -378,5 +378,15 @@
     "open_new_tab": "Ouvrir dans un nouvel onglet",
     "formula": "Formule",
     "diagram": "Diagramme"
+  },
+  "share_target": {
+    "title": "Enregistrer dans",
+    "search": "Rechercher des dossiers et des notes",
+    "root": "Dossier racine",
+    "note_name": "Nom de la nouvelle note",
+    "saved_note": "Enregistré dans la nouvelle note « {{name}} »",
+    "saved_into": "Ajouté à « {{name}} »",
+    "saved_files": "{{count}} fichier(s) enregistré(s)",
+    "some_failed": "{{count}} fichier(s) non enregistré(s), réessayez"
   }
 }

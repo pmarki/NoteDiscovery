@@ -378,5 +378,15 @@
     "open_new_tab": "新しいタブで開く",
     "formula": "数式",
     "diagram": "図"
+  },
+  "share_target": {
+    "title": "保存先",
+    "search": "フォルダーとノートを検索",
+    "root": "ルートフォルダ",
+    "note_name": "新しいノートの名前",
+    "saved_note": "新しいノート「{{name}}」に保存しました",
+    "saved_into": "「{{name}}」に追加しました",
+    "saved_files": "{{count}} 件のファイルを保存しました",
+    "some_failed": "{{count}} 件のファイルを保存できませんでした。もう一度お試しください"
   }
 }

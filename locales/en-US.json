@@ -378,5 +378,15 @@
     "open_new_tab": "Open in new tab",
     "formula": "Formula",
     "diagram": "Diagram"
+  },
+  "share_target": {
+    "title": "Save to",
+    "search": "Search folders and notes",
+    "root": "Root folder",
+    "note_name": "New note name",
+    "saved_note": "Saved to new note “{{name}}”",
+    "saved_into": "Added to “{{name}}”",
+    "saved_files": "Saved {{count}} file(s)",
+    "some_failed": "{{count}} file(s) not saved, try again"
   }
 }

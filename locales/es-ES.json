@@ -378,5 +378,15 @@
     "open_new_tab": "Abrir en una pestaña nueva",
     "formula": "Fórmula",
     "diagram": "Diagrama"
+  },
+  "share_target": {
+    "title": "Guardar en",
+    "search": "Buscar carpetas y notas",
+    "root": "Carpeta raíz",
+    "note_name": "Nombre de la nueva nota",
+    "saved_note": "Guardado en la nueva nota «{{name}}»",
+    "saved_into": "Añadido a «{{name}}»",
+    "saved_files": "{{count}} archivo(s) guardado(s)",
+    "some_failed": "{{count}} archivo(s) sin guardar, inténtalo de nuevo"
   }
 }
