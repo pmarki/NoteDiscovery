@@ -325,11 +325,10 @@
     "italic": "Corsivo",
     "strikethrough": "Barrato",
     "link": "Link",
-    "attach": "Allega file",
+    "upload": "Carica",
     "text": "Testo",
     "group_lists": "Elenchi",
     "group_blocks": "Blocchi",
-    "group_media": "Media",
     "group_links": "Link",
     "clear_formatting": "Cancella formattazione",
     "turn_into": "Trasforma in…",
@@ -353,7 +352,11 @@
     "heading_3": "Titolo 3",
     "divider": "Separatore",
     "callout": "Riquadro",
-    "note_link": "Link a nota"
+    "attach": "Allega",
+    "attach_note": "Questa nota",
+    "attach_folder": "Questa cartella",
+    "attach_parent": "Cartella superiore",
+    "attach_other": "Altrove"
   },
   "validation": {
     "forbidden_chars": "Il nome contiene caratteri non consentiti: {{chars}}",
@@ -375,5 +378,15 @@
     "open_new_tab": "Apri in una nuova scheda",
     "formula": "Formula",
     "diagram": "Diagramma"
+  },
+  "share_target": {
+    "title": "Salva in",
+    "search": "Cerca cartelle e note",
+    "root": "Cartella principale",
+    "note_name": "Nome della nuova nota",
+    "saved_note": "Salvato nella nuova nota «{{name}}»",
+    "saved_into": "Aggiunto a «{{name}}»",
+    "saved_files": "{{count}} file salvati",
+    "some_failed": "{{count}} file non salvati, riprova"
   }
 }

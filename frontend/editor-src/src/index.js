@@ -455,7 +455,6 @@ export function create({
         table: (chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
         divider: (chain) => chain.setHorizontalRule(),
         callout: (chain) => chain.wrapIn('callout'),
-        noteLink: (chain) => chain.insertContent('[['),
         clear: (chain) => chain.unsetAllMarks(),
         addRow: (chain) => chain.addRowAfter(),
         addColumn: (chain) => chain.addColumnAfter(),
@@ -497,7 +496,8 @@ export function create({
         },
         flush,
         format(type) {
-            if (type in SOURCE_FORMATS) insertSourceBlock(SOURCE_FORMATS[type]);
+            if (type === 'attach') suggestion.attach(editor);
+            else if (type in SOURCE_FORMATS) insertSourceBlock(SOURCE_FORMATS[type]);
             else FORMATS[type]?.(editor.chain().focus()).run();
         },
         turnInto(type) {

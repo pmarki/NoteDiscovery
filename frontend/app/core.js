@@ -81,6 +81,8 @@ function coreFeature() {
             
             // Parse URL and load specific note if provided
             this.loadItemFromURL();
+            // Something shared from another app, maybe from before a login
+            this.checkPendingShare();
             
             // Set initial homepage state ONLY if we're actually on the homepage
             if (window.location.pathname === '/') {

@@ -259,6 +259,8 @@ const EDITOR_TAB_OUTDENT_MAX_SPACES = 4;
 
 // The / menu. `type` is what formatText() runs, `hint` shows the Markdown it stands for.
 const SLASH_COMMANDS = [
+    { type: 'upload', group: 'format.group_links', label: 'format.upload', hint: '', keywords: 'attach file upload image picture photo audio video pdf', inline: true },
+    { type: 'attach', group: 'format.group_links', label: 'format.attach', hint: '[[', keywords: 'attach wikilink note link file embed image pdf', inline: true },
     { type: 'heading1', group: 'format.text', label: 'format.heading_1', hint: '#', keywords: 'h1 heading title' },
     { type: 'heading2', group: 'format.text', label: 'format.heading_2', hint: '##', keywords: 'h2 heading' },
     { type: 'heading3', group: 'format.text', label: 'format.heading_3', hint: '###', keywords: 'h3 heading' },
@@ -272,10 +274,12 @@ const SLASH_COMMANDS = [
     { type: 'divider', group: 'format.group_blocks', label: 'format.divider', hint: '---', keywords: 'divider line rule hr separator' },
     { type: 'formula', group: 'format.group_blocks', label: 'embed.formula', hint: '$$', keywords: 'formula math latex equation' },
     { type: 'diagram', group: 'format.group_blocks', label: 'embed.diagram', hint: 'mermaid', keywords: 'diagram mermaid chart flowchart' },
-    { type: 'attach', group: 'format.group_media', label: 'format.attach', hint: '', keywords: 'attach file upload image picture photo audio video pdf', inline: true },
-    { type: 'link', group: 'format.group_links', label: 'format.link', hint: '', keywords: 'link url address', inline: true },
-    { type: 'noteLink', group: 'format.group_links', label: 'format.note_link', hint: '[[', keywords: 'wikilink note link', inline: true },
 ];
+
+// Headings of the Attach list, nearest to the open note first. It holds more than the
+// [[ list, since it's also for browsing.
+const ATTACH_GROUPS = ['format.attach_note', 'format.attach_folder', 'format.attach_parent', 'format.attach_other'];
+const ATTACH_LIMIT = 50;
 
 // What selected text can become, in the Turn into menu. `type` is what turnInto() runs.
 const TURN_INTO_BLOCKS = [

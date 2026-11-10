@@ -28,6 +28,7 @@ function noteApp() {
         metadataFeature(),
         shareFeature(),
         homeFeature(),
+        shareTargetFeature(),
         graphFeature(),
     );
 }

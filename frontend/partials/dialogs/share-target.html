@@ -1,0 +1,74 @@
+    <!-- Something shared from another app: where it goes -->
+    <div x-show="shareTarget.open"
+         @keydown.escape.window="shareTarget.open && !shareTarget.busy && cancelShare()"
+         class="share-target-backdrop"
+         x-cloak>
+        <div class="share-target-dialog" role="dialog" aria-modal="true" :aria-label="t('share_target.title')">
+            <h2 class="share-target-title" x-text="t('share_target.title')"></h2>
+
+            <!-- What was shared -->
+            <div class="share-target-preview">
+                <p x-show="_sharedHasText()" class="share-target-text" x-text="_sharedMarkdown()"></p>
+                <div x-show="shareTarget.files.length" class="share-target-files">
+                    <template x-for="(file, index) in shareTarget.files" :key="index + file.name">
+                        <span class="share-target-file" :title="file.name">
+                            <template x-if="shareTarget.previews[index]">
+                                <img :src="shareTarget.previews[index]" alt="" class="share-target-thumb">
+                            </template>
+                            <template x-if="!shareTarget.previews[index] && getMediaType(file.name) === 'document'">
+                                <span class="files-list-pdf">
+                                    <!-- include: partials/pdf-icon.html -->
+                                </span>
+                            </template>
+                            <span x-show="!shareTarget.previews[index] && getMediaType(file.name) !== 'document'" aria-hidden="true" x-text="getMediaIcon(getMediaType(file.name)) || '📎'"></span>
+                            <span class="truncate" x-text="file.name"></span>
+                        </span>
+                    </template>
+                </div>
+            </div>
+
+            <input type="text"
+                   x-model="shareTarget.query"
+                   class="share-target-search"
+                   :placeholder="t('share_target.search')"
+                   :aria-label="t('share_target.search')"
+                   autocomplete="off">
+
+            <!-- Where it goes -->
+            <div class="share-target-list" role="listbox">
+                <template x-for="item in shareTargetItems()" :key="item.kind + ':' + item.path">
+                    <div class="share-target-item"
+                         role="option"
+                         :aria-selected="isShareTargetSelected(item)"
+                         :class="{ selected: isShareTargetSelected(item) }"
+                         :style="`padding-left: ${8 + Math.min(item.depth, 6) * 14}px`"
+                         @click="selectShareTarget(item)">
+                        <template x-if="item.kind === 'folder'">
+                            <svg class="w-4 h-4 flex-shrink-0" style="color: var(--accent-primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                            </svg>
+                        </template>
+                        <template x-if="item.kind === 'note'">
+                            <svg class="w-4 h-4 flex-shrink-0" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </template>
+                        <span class="truncate flex-1 min-w-0" x-text="item.label"></span>
+                        <span x-show="item.secondary" class="share-target-secondary truncate" x-text="item.secondary"></span>
+                    </div>
+                </template>
+            </div>
+
+            <!-- A new note's name, for text going into a folder -->
+            <label x-show="shareTargetMakesNote()" class="share-target-name">
+                <span x-text="t('share_target.note_name')"></span>
+                <input type="text" x-model="shareTarget.noteName" autocomplete="off" @keydown.enter="saveShare()">
+            </label>
+
+            <div class="share-target-actions">
+                <button type="button" class="share-target-cancel" @click="cancelShare()" :disabled="shareTarget.busy" x-text="t('common.cancel')"></button>
+                <button type="button" class="share-target-save" @click="saveShare()" :disabled="!shareTarget.dest || shareTarget.busy"
+                        x-text="shareTarget.busy ? t('common.saving') : t('common.save')"></button>
+            </div>
+        </div>
+    </div>

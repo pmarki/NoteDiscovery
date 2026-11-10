@@ -6,6 +6,10 @@
 // fresh files without needing a release.
 const CACHE_NAME = 'notediscovery-__APP_VERSION__';
 
+// Something shared to the app from another one (see share_target in the manifest),
+// kept until the app has put it somewhere. Not versioned, so an update can't lose it.
+const SHARE_CACHE = 'notediscovery-share';
+
 // Assets to cache for faster repeat visits. Our scripts carry the same ?v= as their
 // script tags in index.html, so this precaches the URL the page actually requests.
 const PRECACHE_ASSETS = [
@@ -25,6 +29,7 @@ const PRECACHE_ASSETS = [
   '/static/app/metadata.js?v=__APP_VERSION__',
   '/static/app/share.js?v=__APP_VERSION__',
   '/static/app/home.js?v=__APP_VERSION__',
+  '/static/app/share-target.js?v=__APP_VERSION__',
   '/static/app/graph.js?v=__APP_VERSION__',
   '/static/app.js?v=__APP_VERSION__',
   '/static/app.css?v=__APP_VERSION__',
@@ -46,12 +51,30 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name !== CACHE_NAME && name !== SHARE_CACHE)
           .map((name) => caches.delete(name))
       );
     }).then(() => self.clients.claim())
   );
 });
+
+// Keep a share for the page, which asks where it goes. The page may need a login
+// first, so it's stored here rather than passed along in the redirect.
+async function receiveShare(request) {
+  const form = await request.formData();
+  const files = form.getAll('files').filter((file) => file instanceof File && file.size > 0);
+  await caches.delete(SHARE_CACHE);  // A new share replaces one never put anywhere
+  const cache = await caches.open(SHARE_CACHE);
+  const meta = {
+    title: form.get('title') || '',
+    text: form.get('text') || '',
+    url: form.get('url') || '',
+    files: files.map((file) => ({ name: file.name, type: file.type })),
+  };
+  await Promise.all(files.map((file, index) => cache.put(`/share-target/file/${index}`, new Response(file))));
+  await cache.put('/share-target/meta', new Response(JSON.stringify(meta)));
+  return Response.redirect('/?share=1', 303);
+}
 
 // Fetch event - network first, fallback to cache for assets
 self.addEventListener('fetch', (event) => {
@@ -59,6 +82,11 @@ self.addEventListener('fetch', (event) => {
   
   // Only handle same-origin requests
   if (url.origin !== location.origin) {
+    return;
+  }
+  
+  if (event.request.method === 'POST' && url.pathname === '/share-target') {
+    event.respondWith(receiveShare(event.request));
     return;
   }
   

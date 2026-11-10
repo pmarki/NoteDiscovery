@@ -325,11 +325,10 @@
     "italic": "Ležeče",
     "strikethrough": "Prečrtano",
     "link": "Povezava",
-    "attach": "Priloži datoteko",
+    "upload": "Naloži",
     "text": "Besedilo",
     "group_lists": "Seznami",
     "group_blocks": "Bloki",
-    "group_media": "Mediji",
     "group_links": "Povezave",
     "clear_formatting": "Počisti oblikovanje",
     "turn_into": "Pretvori v…",
@@ -353,7 +352,11 @@
     "heading_3": "Naslov 3",
     "divider": "Ločilna črta",
     "callout": "Poudarjen blok",
-    "note_link": "Povezava do zapiska"
+    "attach": "Priloži",
+    "attach_note": "Ta zapisek",
+    "attach_folder": "Ta mapa",
+    "attach_parent": "Nadrejena mapa",
+    "attach_other": "Drugje"
   },
   "validation": {
     "forbidden_chars": "Ime vsebuje prepovedane znake: {{chars}}",
@@ -375,5 +378,15 @@
     "open_new_tab": "Odpri v novem zavihku",
     "formula": "Formula",
     "diagram": "Diagram"
+  },
+  "share_target": {
+    "title": "Shrani v",
+    "search": "Išči mape in zapiske",
+    "root": "Korenska mapa",
+    "note_name": "Ime novega zapiska",
+    "saved_note": "Shranjeno v nov zapisek »{{name}}«",
+    "saved_into": "Dodano v »{{name}}«",
+    "saved_files": "Shranjenih datotek: {{count}}",
+    "some_failed": "Neshranjenih datotek: {{count}}, poskusite znova"
   }
 }

@@ -11,6 +11,25 @@
                      :class="{'active': idx === wikilinkAutocomplete.activeIndex}"
                      @mouseenter="wikilinkAutocomplete.activeIndex = idx"
                      @click="wlAccept(item)">
+                    <!-- Notes and files, drawn as in the folder view's list -->
+                    <template x-if="item.path">
+                        <span class="homepage-list-icon wl-icon" aria-hidden="true">
+                            <template x-if="item.kind === 'note'">
+                                <svg class="w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </template>
+                            <template x-if="item.kind === 'document'">
+                                <span class="files-list-pdf">
+                                    <!-- include: partials/pdf-icon.html -->
+                                </span>
+                            </template>
+                            <span x-show="item.kind !== 'note' && item.kind !== 'document'" x-text="getMediaIcon(item.kind)"></span>
+                            <template x-if="hasPreview(item.kind)">
+                                <img :src="thumbnailUrl(item)" alt="" decoding="async" draggable="false" class="files-list-thumb" @error="$el.remove()">
+                            </template>
+                        </span>
+                    </template>
                     <span class="wl-label" x-text="item.label"></span>
                     <span class="wl-secondary" x-show="item.secondary" x-text="item.secondary"></span>
                 </div>

@@ -396,7 +396,7 @@ function mediaFeature() {
                 formData.append('note_path', '');
             } else {
                 formData.append('note_path', notePath || '');
-                if (!notePath) formData.append('content_folder', this.uploadFolder());
+                if (!notePath) formData.append('content_folder', contentFolder ?? this.uploadFolder());
             }
             
             const response = await fetch('/api/upload-media', {

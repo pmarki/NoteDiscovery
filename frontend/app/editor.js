@@ -11,10 +11,10 @@ function editorFeature() {
         // Autocomplete popup (triggered by [[ for notes, ![[ for media, / for block commands)
         wikilinkAutocomplete: {
             open: false,
-            mode: 'note',        // 'note' | 'media' | 'slash'
+            mode: 'note',        // 'note' | 'media' | 'attach' (both) | 'slash'
             inline: false,       // slash mode where a block can't go
             query: '',
-            items: [],           // [{label, secondary, insert, kind, prefix, modified}]
+            items: [],           // [{label, secondary, insert, kind, path, prefix, modified}]
             activeIndex: 0,
             position: { top: 0, left: 0, above: false, maxHeight: 300 },
         },
@@ -74,7 +74,8 @@ function editorFeature() {
         wlUpdate(suggestion) {
             if (!suggestion) { this.wlClose(); return; }
 
-            this.wikilinkAutocomplete.mode = suggestion.isSlash ? 'slash' : (suggestion.isMedia ? 'media' : 'note');
+            this.wikilinkAutocomplete.mode = suggestion.isSlash ? 'slash'
+                : suggestion.isAttach ? 'attach' : (suggestion.isMedia ? 'media' : 'note');
             this.wikilinkAutocomplete.inline = !!suggestion.inline;
             this.wikilinkAutocomplete.query = suggestion.query;
             this._wlClientRect = suggestion.clientRect;
@@ -94,11 +95,13 @@ function editorFeature() {
                 this.wikilinkAutocomplete.items = this._slashItems(q);
                 return;
             }
-            const isMedia = this.wikilinkAutocomplete.mode === 'media';
+            const { mode } = this.wikilinkAutocomplete;
             const results = [];
 
             for (const note of this.notes) {
-                if (isMedia ? note.type === 'note' : note.type !== 'note') continue;
+                const isMedia = note.type !== 'note';
+                if (mode !== 'attach' && isMedia !== (mode === 'media')) continue;
+                if (mode === 'attach' && note.path === this.currentNote) continue;
 
                 const path = note.path;
                 const folder = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
@@ -124,7 +127,9 @@ function editorFeature() {
                     label,
                     secondary: folder,
                     insert,
+                    embed: isMedia,
                     kind: note.type,
+                    path,
                     prefix: q ? labelLower.startsWith(q) : false,
                     modified: note.modified || '',
                 });
@@ -132,9 +137,36 @@ function editorFeature() {
 
             // Prefix matches first, then most-recently-modified, then alphabetical.
             // `modified` is an ISO timestamp, so lexical compare orders by time.
-            results.sort((a, b) =>
-                (b.prefix - a.prefix) || b.modified.localeCompare(a.modified) || a.label.localeCompare(b.label));
-            this.wikilinkAutocomplete.items = results.slice(0, WL_LIMIT);
+            const byMatch = (a, b) =>
+                (b.prefix - a.prefix) || b.modified.localeCompare(a.modified) || a.label.localeCompare(b.label);
+            if (mode !== 'attach') {
+                this.wikilinkAutocomplete.items = results.sort(byMatch).slice(0, WL_LIMIT);
+                return;
+            }
+            // Attach puts what's nearest the note first, each group with its notes before its files
+            const group = this._attachGroup();
+            results.forEach((item) => { item.group = group(item.path); });
+            results.sort((a, b) => (a.group - b.group) || (a.embed - b.embed) || byMatch(a, b));
+            this.wikilinkAutocomplete.items = results.slice(0, ATTACH_LIMIT).map((item, index, items) => ({
+                ...item,
+                heading: item.group === items[index - 1]?.group ? '' : this.t(ATTACH_GROUPS[item.group]),
+            }));
+        },
+
+        // How near a path is to the open note: its own files, its folder, the parent folder, elsewhere
+        _attachGroup() {
+            const note = this.currentNote || '';
+            const own = note.replace(/\.md$/i, '.attachments/');
+            const parentOf = (path) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+            const folder = parentOf(note);
+            const parent = folder ? parentOf(folder) : null;
+            return (path) => {
+                if (note && path.startsWith(own)) return 0;
+                const at = parentOf(path);
+                if (at === folder) return 1;
+                if (at === parent) return 2;
+                return 3;
+            };
         },
 
         // Block commands matching `query`, by their translated name or English keywords
@@ -195,7 +227,7 @@ function editorFeature() {
             if (!item) return;
             const isSlash = this.wikilinkAutocomplete.mode === 'slash';
             if (isSlash) noteEditor?.acceptSlash();
-            else noteEditor?.acceptSuggestion(item.insert);
+            else noteEditor?.acceptSuggestion(item.insert, item.embed);
             this.wlClose();
             if (isSlash) this.formatText(item.insert);
         },
@@ -222,7 +254,8 @@ function editorFeature() {
             if (!rect) return;
 
             const POPUP_W = 360;
-            const popupHeight = Math.min(this.wikilinkAutocomplete.items.length * 30 + 8, 300); // rough row height, CSS cap
+            const rowHeight = this.wikilinkAutocomplete.mode === 'slash' ? 30 : 36; // rough, rows with icons are taller
+            const popupHeight = Math.min(this.wikilinkAutocomplete.items.length * rowHeight + 8, 300); // CSS cap
             const area = this._visibleArea();
             const roomBelow = area.bottom - rect.bottom;
             const caretTop = Math.min(rect.top, area.bottom); // The caret itself can be behind the keyboard
@@ -343,7 +376,7 @@ function editorFeature() {
                 this.openLinkPrompt(type);
                 return;
             }
-            if (type === 'attach') {
+            if (type === 'upload') {
                 this.openAttachPicker();
                 return;
             }

@@ -325,11 +325,10 @@
     "italic": "斜体",
     "strikethrough": "取り消し線",
     "link": "リンク",
-    "attach": "ファイルを添付",
+    "upload": "アップロード",
     "text": "テキスト",
     "group_lists": "リスト",
     "group_blocks": "ブロック",
-    "group_media": "メディア",
     "group_links": "リンク",
     "clear_formatting": "書式をクリア",
     "turn_into": "変換…",
@@ -353,7 +352,11 @@
     "heading_3": "見出し 3",
     "divider": "区切り線",
     "callout": "コールアウト",
-    "note_link": "ノートリンク"
+    "attach": "添付",
+    "attach_note": "このノート",
+    "attach_folder": "このフォルダー",
+    "attach_parent": "親フォルダー",
+    "attach_other": "その他"
   },
   "validation": {
     "forbidden_chars": "名前に使用できない文字が含まれています: {{chars}}",
@@ -375,5 +378,15 @@
     "open_new_tab": "新しいタブで開く",
     "formula": "数式",
     "diagram": "図"
+  },
+  "share_target": {
+    "title": "保存先",
+    "search": "フォルダーとノートを検索",
+    "root": "ルートフォルダ",
+    "note_name": "新しいノートの名前",
+    "saved_note": "新しいノート「{{name}}」に保存しました",
+    "saved_into": "「{{name}}」に追加しました",
+    "saved_files": "{{count}} 件のファイルを保存しました",
+    "some_failed": "{{count}} 件のファイルを保存できませんでした。もう一度お試しください"
   }
 }

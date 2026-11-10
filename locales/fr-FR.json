@@ -325,11 +325,10 @@
     "italic": "Italique",
     "strikethrough": "Barré",
     "link": "Lien",
-    "attach": "Joindre un fichier",
+    "upload": "Téléverser",
     "text": "Texte",
     "group_lists": "Listes",
     "group_blocks": "Blocs",
-    "group_media": "Médias",
     "group_links": "Liens",
     "clear_formatting": "Effacer la mise en forme",
     "turn_into": "Transformer en…",
@@ -353,7 +352,11 @@
     "heading_3": "Titre 3",
     "divider": "Séparateur",
     "callout": "Encadré",
-    "note_link": "Lien vers une note"
+    "attach": "Joindre",
+    "attach_note": "Cette note",
+    "attach_folder": "Ce dossier",
+    "attach_parent": "Dossier parent",
+    "attach_other": "Ailleurs"
   },
   "validation": {
     "forbidden_chars": "Le nom contient des caractères interdits : {{chars}}",
@@ -375,5 +378,15 @@
     "open_new_tab": "Ouvrir dans un nouvel onglet",
     "formula": "Formule",
     "diagram": "Diagramme"
+  },
+  "share_target": {
+    "title": "Enregistrer dans",
+    "search": "Rechercher des dossiers et des notes",
+    "root": "Dossier racine",
+    "note_name": "Nom de la nouvelle note",
+    "saved_note": "Enregistré dans la nouvelle note « {{name}} »",
+    "saved_into": "Ajouté à « {{name}} »",
+    "saved_files": "{{count}} fichier(s) enregistré(s)",
+    "some_failed": "{{count}} fichier(s) non enregistré(s), réessayez"
   }
 }

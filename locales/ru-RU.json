@@ -325,11 +325,10 @@
     "italic": "Курсив",
     "strikethrough": "Зачёркнутый",
     "link": "Ссылка",
-    "attach": "Прикрепить файл",
+    "upload": "Загрузить",
     "text": "Текст",
     "group_lists": "Списки",
     "group_blocks": "Блоки",
-    "group_media": "Медиа",
     "group_links": "Ссылки",
     "clear_formatting": "Очистить форматирование",
     "turn_into": "Преобразовать в…",
@@ -353,7 +352,11 @@
     "heading_3": "Заголовок 3",
     "divider": "Разделитель",
     "callout": "Выноска",
-    "note_link": "Ссылка на заметку"
+    "attach": "Прикрепить",
+    "attach_note": "Эта заметка",
+    "attach_folder": "Эта папка",
+    "attach_parent": "Родительская папка",
+    "attach_other": "В других местах"
   },
   "validation": {
     "forbidden_chars": "Имя содержит запрещённые символы: {{chars}}",
@@ -375,5 +378,15 @@
     "open_new_tab": "Открыть в новой вкладке",
     "formula": "Формула",
     "diagram": "Диаграмма"
+  },
+  "share_target": {
+    "title": "Сохранить в",
+    "search": "Поиск папок и заметок",
+    "root": "Корневая папка",
+    "note_name": "Имя новой заметки",
+    "saved_note": "Сохранено в новую заметку «{{name}}»",
+    "saved_into": "Добавлено в «{{name}}»",
+    "saved_files": "Сохранено файлов: {{count}}",
+    "some_failed": "Не сохранено файлов: {{count}}, попробуйте снова"
   }
 }
