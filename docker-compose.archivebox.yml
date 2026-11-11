@@ -30,8 +30,9 @@ services:
   #     start_period: 5s
 
   archivebox:
-    # Pin the version you tested with: its REST API still changes between releases
-    image: archivebox/archivebox:${ARCHIVEBOX_VERSION:-latest}
+    # The version NoteDiscovery was tested with: its REST API still changes between
+    # releases, so try a newer one before setting ARCHIVEBOX_VERSION to it
+    image: archivebox/archivebox:${ARCHIVEBOX_VERSION:-0.9.77}
     container_name: archivebox
     restart: unless-stopped
     # Only on this machine, for its admin pages. NoteDiscovery reaches it inside the

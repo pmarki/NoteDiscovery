@@ -68,7 +68,7 @@ on `127.0.0.1`.
 - **Size:** the ArchiveBox image is over 1 GB, and each page takes from a few hundred
   KB to tens of MB.
 - **Versions:** ArchiveBox's REST API is still in alpha and changes between
-  releases. Pin the image version that works (`ARCHIVEBOX_VERSION`) rather than
-  following `latest`.
+  releases. The compose file uses 0.9.77, the version NoteDiscovery was tested
+  with; `ARCHIVEBOX_VERSION` picks another, but try it before relying on it.
 - **Privacy:** the compose file turns off ArchiveBox's submission to the Wayback
   Machine, so pages stay on your server.
