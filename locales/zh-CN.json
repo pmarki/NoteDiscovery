@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "刷新预览",
-    "refresh_failed": "无法刷新预览：{{error}}"
+    "refresh_failed": "无法刷新预览：{{error}}",
+    "archiving": "正在保存离线副本…",
+    "archived": "离线",
+    "archive_failed": "离线副本保存失败",
+    "archive_unavailable": "无法连接存档",
+    "copy_page": "页面",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "截图",
+    "archive_retry": "重试"
   }
 }

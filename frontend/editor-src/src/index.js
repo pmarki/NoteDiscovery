@@ -1,4 +1,4 @@
-import { Editor, Extension, posToDOMRect } from '@tiptap/core';
+import { Editor, Extension, getMarkRange, posToDOMRect } from '@tiptap/core';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import Image from '@tiptap/extension-image';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
@@ -11,7 +11,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { common, createLowlight } from 'lowlight';
 
 import { joinFrontmatter, splitFrontmatter } from './markdown.js';
-import { cardAddress, LinkCards, NoteLink } from './linkcard.js';
+import { cardAddress, isBareLink, LinkCards, NoteLink } from './linkcard.js';
 import { Callout, drawnView, drawOptions, Embed, MathBlock, MathInline, MermaidBlock, Wikilink } from './nodes.js';
 import { highlightMatches, SearchHighlight } from './search.js';
 import { acceptsBlock, slashSuggestion, wikilinkSuggestion } from './suggest.js';
@@ -243,7 +243,8 @@ export function create({
         if (selection instanceof NodeSelection) return nodeItem(target, selection.from);
         if (!selection.empty || !target.isActive('link')) return null;
         const { href, rect } = linkAtSelection(target);
-        return { kind: 'link', attrs: { href, card: cardAddress(selection.$from.parent) !== null }, rect };
+        const card = cardAddress(selection.$from.parent) !== null && !target.isActive('table');
+        return { kind: 'link', attrs: { href, card }, rect };
     };
     /** What the app's bubble toolbar is about: selected text the marks can apply to, or null. */
     const textSelection = (target) => {
@@ -567,8 +568,14 @@ export function create({
             if (!editor.can().setLink({ href })) return false;
             const chain = editor.chain().focus();
             if (editor.isActive('link')) {
+                const { selection, schema, doc } = editor.state;
+                const range = getMarkRange(selection.$from, schema.marks.link);
+                // A bare address is its own text, so the text changes with it
+                if (range && isBareLink(doc.textBetween(range.from, range.to), editor.getAttributes('link').href)) {
+                    return chain.insertContentAt(range, { type: 'text', text: href, marks: [{ type: 'link', attrs: { href } }] }).run();
+                }
                 // Back to the old cursor, or the next keystroke would replace the whole link.
-                const { from, to } = editor.state.selection;
+                const { from, to } = selection;
                 return chain.extendMarkRange('link').setLink({ href }).setTextSelection({ from, to }).run();
             }
             if (editor.state.selection.empty) {

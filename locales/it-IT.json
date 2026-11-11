@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Aggiorna anteprima",
-    "refresh_failed": "Impossibile aggiornare l'anteprima: {{error}}"
+    "refresh_failed": "Impossibile aggiornare l'anteprima: {{error}}",
+    "archiving": "Salvataggio copia offline…",
+    "archived": "Offline",
+    "archive_failed": "Copia offline non riuscita",
+    "archive_unavailable": "Archivio non raggiungibile",
+    "copy_page": "Pagina",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Screenshot",
+    "archive_retry": "Riprova"
   }
 }

@@ -407,13 +407,21 @@ function editorFeature() {
             const surface = document.getElementById('note-editor')?.getBoundingClientRect();
             // The item can scroll out of the editor while the popup is open
             const visible = item && surface && item.rect.bottom > surface.top && item.rect.top < surface.bottom;
-            const content = visible ? this._itemPopupContent(item) : null;
+            // A card has these actions on itself
+            const card = item?.kind === 'link' && item.attrs.card && this.linkPreviews;
+            const content = visible && !card ? this._itemPopupContent(item) : null;
             this._itemOutOfView = !!item && !visible;
             if (!content) {
                 this.itemPopup.open = false;
                 return;
             }
             this.itemPopup = { open: true, ...content, position: this._popupPosition(this._visibleRect(item.rect, surface)) };
+            // Its width follows its content, so it's kept on screen once drawn
+            this.$nextTick(() => {
+                const width = this.$refs.itemPopup?.offsetWidth;
+                const maxLeft = Math.max(4, window.innerWidth - width - 4);
+                if (width && this.itemPopup.position.left > maxLeft) this.itemPopup.position.left = maxLeft;
+            });
         },
         
         // Above the selection, so it doesn't cover the lines being read next
@@ -528,14 +536,10 @@ function editorFeature() {
             const open = (run, icon) => ({ label: this.t('format.open_link'), icon, run });
             const { kind, attrs } = item;
             if (kind === 'link') {
-                const card = attrs.card && editable && this.linkPreviews ? [
-                    { label: this.t('link_card.refresh'), icon: ACTION_ICONS.refresh, run: () => this.refreshLinkCard(attrs.href) },
-                ] : [];
                 return {
                     label: attrs.href,
                     actions: [
                         ...edit(() => this.openLinkPrompt('link')),
-                        ...card,
                         open(() => this.openLinkAddress(attrs.href), ACTION_ICONS.openNewTab),
                     ],
                 };
@@ -667,9 +671,10 @@ function editorFeature() {
             else this._drawMedia(element, name, attrs);
         },
         
-        // The server's preview of a web page, or null when it couldn't be asked
-        _linkPreview(href, refresh = false) {
-            if (refresh || !linkPreviewRequests.has(href)) {
+        // The server's preview of a web page, or null when it couldn't be asked.
+        // `reload` asks the server again; `refresh` also has it fetch the page again.
+        _linkPreview(href, { refresh = false, reload = false } = {}) {
+            if (refresh || reload || !linkPreviewRequests.has(href)) {
                 const query = `url=${encodeURIComponent(href)}${refresh ? '&refresh=true' : ''}`;
                 const request = fetch(`/api/link-previews?${query}`)
                     .then((response) => (response.ok ? response.json() : null))
@@ -688,6 +693,11 @@ function editorFeature() {
             element.dataset.drawing = href;
             // Until the preview arrives, the address itself; a redraw keeps what's there
             if (!element.firstChild) this._fillLinkCard(element, href, null, true);
+            if (!linkPreviewRequests.has(href)) {
+                await new Promise((resolve) => setTimeout(resolve, LINK_PREVIEW_DELAY_MS));
+                // Typed on since: this card is gone or shows another address
+                if (!element.isConnected || element.dataset.drawing !== href) return;
+            }
             const preview = await this._linkPreview(href);
             if (element.dataset.drawing === href) this._fillLinkCard(element, href, preview, false);
         },
@@ -717,6 +727,10 @@ function editorFeature() {
             }
             site.append(part('span', 'truncate', (usable && preview.site_name) || host));
             body.append(site);
+            const footer = part('span', 'link-card-footer');
+            if (preview?.archive) footer.append(this._linkArchiveRow(href, preview.archive, part));
+            footer.append(this._linkCardActions(element, href, part));
+            body.append(footer);
             element.replaceChildren(body);
             if (preview?.image) {
                 const image = part('img', 'link-card-image');
@@ -727,10 +741,96 @@ function editorFeature() {
             }
             element.classList.toggle('link-card-loading', loading);
             element.title = href;
+            if (preview?.archive?.status === 'pending') this._pollLinkArchive(href);
+        },
+        
+        // Changing the address, fetching its preview again and opening it. Only edit
+        // mode shows them; reading, the card opens the page itself.
+        _linkCardActions(element, href, part) {
+            const actions = part('span', 'link-card-actions');
+            const button = (label, icon, run) => actions.append(this._linkCardButton(part, label, icon, run));
+            button(this.t('editor.mode_edit'), ACTION_ICONS.edit, () => {
+                element.selectAddress?.();
+                this.openLinkPrompt('link');
+            });
+            button(this.t('link_card.refresh'), ACTION_ICONS.refresh, () => this.refreshLinkCard(href));
+            button(this.t('format.open_link'), ACTION_ICONS.openNewTab, () => this.openLinkAddress(href));
+            return actions;
+        },
+        
+        _linkCardButton(part, label, icon, run) {
+            const node = part('button', 'link-card-action');
+            node.type = 'button';
+            node.title = label;
+            node.setAttribute('aria-label', label);
+            node.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${icon}"></path></svg>`;
+            node.addEventListener('click', (event) => {
+                // The card is a link itself
+                event.preventDefault();
+                event.stopPropagation();
+                run();
+            });
+            return node;
+        },
+        
+        // The offline copy in ArchiveBox: how it's going, and buttons for what it saved
+        _linkArchiveRow(href, archive, part) {
+            const row = part('span', 'link-card-archive');
+            const status = {
+                pending: 'link_card.archiving',
+                archived: 'link_card.archived',
+                failed: 'link_card.archive_failed',
+                unavailable: 'link_card.archive_unavailable',
+            }[archive.status] || 'link_card.archiving';
+            row.append(part('span', `link-card-archive-status link-card-archive-${archive.status}`, this.t(status)));
+            const button = (label, run) => {
+                const node = part('button', 'link-card-archive-button', label);
+                node.type = 'button';
+                node.addEventListener('click', (event) => {
+                    // The card is a link itself
+                    event.preventDefault();
+                    event.stopPropagation();
+                    run();
+                });
+                row.append(node);
+            };
+            const icons = { page: ACTION_ICONS.web, pdf: ACTION_ICONS.pdf, screenshot: ACTION_ICONS.image };
+            for (const [kind, icon] of Object.entries(icons)) {
+                const url = archive.copies?.[kind];
+                if (url) row.append(this._linkCardButton(part, this.t(`link_card.copy_${kind}`), icon, () => window.open(url, '_blank', 'noopener')));
+            }
+            if (archive.status === 'failed' || archive.status === 'unavailable') {
+                button(this.t('link_card.archive_retry'), () => this.archiveLinkAgain(href));
+            }
+            return row;
+        },
+        
+        // Asks again later while any card for the address is still on screen
+        _pollLinkArchive(href) {
+            if (linkArchivePolls.has(href)) return;
+            linkArchivePolls.add(href);
+            setTimeout(async () => {
+                linkArchivePolls.delete(href);
+                const shown = [...document.querySelectorAll('.link-card')].some((card) => card.dataset.drawing === href);
+                if (!shown) return;
+                await this._linkPreview(href, { reload: true });
+                noteEditor?.refreshRendered(['linkCard']);
+            }, LINK_ARCHIVE_POLL_MS);
+        },
+        
+        async archiveLinkAgain(href) {
+            try {
+                const response = await fetch(`/api/link-previews/archive?url=${encodeURIComponent(href)}`, { method: 'POST' });
+                if (!response.ok) throw new Error((await response.json().catch(() => ({}))).detail || 'Server returned error');
+                linkPreviewRequests.set(href, Promise.resolve(await response.json()));
+                noteEditor?.refreshRendered(['linkCard']);
+            } catch (error) {
+                ErrorHandler.handle('archive link', error);
+            }
         },
         
         async refreshLinkCard(href) {
-            const preview = await this._linkPreview(href, true);
+            const preview = await this._linkPreview(href, { refresh: true });
             noteEditor?.refreshRendered(['linkCard']);
             if (preview?.error) this.toast(this.t('link_card.refresh_failed', { error: preview.error }), { type: 'warning' });
         },

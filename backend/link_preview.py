@@ -11,6 +11,10 @@ what it found in `.links/` in the vault, so a card needs no network once it exis
 <key> is a hash of the URL, so a link used in many notes is fetched once. The folder
 starts with a dot, so the tree, search and the index never see it.
 
+With an ArchiveBox server configured, each entry also tracks the page's offline
+copy there (see backend/archivebox.py): queued when the card is first made, then
+checked now and then while a card asks for it, until it's archived or failed.
+
 The URLs come from notes, so fetching must not become a way into the server's own
 network: every address a host resolves to is checked, the connection goes to the
 checked address, and each redirect is checked again (see `fetch`).
@@ -35,6 +39,8 @@ from urllib.parse import quote, urljoin, urlsplit
 
 from PIL import Image, ImageOps
 
+from .archivebox import ArchiveBoxError, snapshot_state
+
 LINKS_DIR = ".links"
 USER_AGENT = "Mozilla/5.0 (compatible; NoteDiscovery link preview)"
 MAX_URL_LENGTH = 2048
@@ -46,6 +52,12 @@ IMAGE_SIZE = (800, 800)
 ICON_SIZE = (64, 64)
 # A page that failed is tried again after this, rather than on every view
 ERROR_RETRY_SECONDS = 24 * 3600
+# How often a card that's still being archived asks ArchiveBox again
+ARCHIVE_CHECK_SECONDS = 15
+# ArchiveBox unreachable: queued again on a view after this
+ARCHIVE_RETRY_SECONDS = 600
+# Queued but never seen in ArchiveBox: given up after this
+ARCHIVE_GIVE_UP_SECONDS = 3600
 # At most this many pages are fetched at once, whatever the number of cards on screen
 _fetch_slots = threading.BoundedSemaphore(4)
 _key_locks: dict = {}
@@ -337,9 +349,10 @@ def _write_atomic(target: Path, data: bytes) -> None:
 class LinkPreviews:
     """Previews kept in `<notes_dir>/.links/`."""
 
-    def __init__(self, notes_dir, allowed=public_address):
+    def __init__(self, notes_dir, allowed=public_address, archive=None):
         self.dir = Path(notes_dir) / LINKS_DIR
         self.allowed = allowed
+        self.archive = archive  # An ArchiveBox, or None
 
     def file(self, name: str):
         """A stored image by its file name, or None. Only names this class writes are served."""
@@ -353,39 +366,108 @@ class LinkPreviews:
 
     def cached(self, url: str):
         """What's stored for `url`, or None."""
-        meta_path, _, _ = self._paths(cache_key(url))
+        return self.by_key(cache_key(url))
+
+    def by_key(self, key: str):
+        """What's stored under a cache key, or None."""
+        if not re.fullmatch(r"[0-9a-f]{32}", key or ""):
+            return None
+        meta_path, _, _ = self._paths(key)
         try:
             return json.loads(meta_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
 
+    def _locked(self, key):
+        with _key_locks_guard:
+            return _key_locks.setdefault(key, threading.Lock())
+
+    def _release(self, key, lock):
+        with _key_locks_guard:
+            if not lock.locked():
+                _key_locks.pop(key, None)
+
     def get(self, url: str, refresh: bool = False) -> dict:
         """The preview of `url`, fetching it when it's new, failed a day ago, or asked to refresh."""
         url = normalize_url(url)
         key = cache_key(url)
-        with _key_locks_guard:
-            lock = _key_locks.setdefault(key, threading.Lock())
+        lock = self._locked(key)
         # Cards for the same URL in several notes, opened at once, fetch it once
         with lock:
             entry = self.cached(url)
             stale = entry and entry.get("error") and time.time() - entry.get("fetched_at", 0) > ERROR_RETRY_SECONDS
             if entry is None or stale or refresh:
                 with _fetch_slots:
-                    entry = self._fetch(url, key)
-        with _key_locks_guard:
-            if not lock.locked():
-                _key_locks.pop(key, None)
+                    entry = self._fetch(url, key, entry)
+            if self.archive and not entry.get("blocked"):
+                entry = self._follow_archive(key, entry)
+        self._release(key, lock)
         return entry
 
-    def _fetch(self, url: str, key: str) -> dict:
+    def archive_again(self, url: str) -> dict:
+        """Asks ArchiveBox for a new copy of `url`, after a failed one."""
+        url = normalize_url(url)
+        key = cache_key(url)
+        lock = self._locked(key)
+        with lock:
+            entry = self.cached(url)
+            if entry is None or not self.archive or entry.get("blocked"):
+                raise PreviewError("This link has no offline copy")
+            entry = self._submit(key, entry, again=True)
+        self._release(key, lock)
+        return entry
+
+    def _save(self, key, entry):
+        meta_path, _, _ = self._paths(key)
+        _write_atomic(meta_path, json.dumps(entry, ensure_ascii=False).encode("utf-8"))
+
+    def _submit(self, key, entry, again=False):
+        now = int(time.time())
+        try:
+            self.archive.submit(entry["url"], again=again)
+            entry["archive"] = {"status": "pending", "submitted_at": now, "checked_at": now}
+        except ArchiveBoxError as error:
+            entry["archive"] = {"status": "error", "error": str(error), "checked_at": now}
+        self._save(key, entry)
+        return entry
+
+    def _follow_archive(self, key, entry):
+        """Queues a new card in ArchiveBox, or asks how a queued one is doing."""
+        state = entry.get("archive")
+        now = time.time()
+        if state is None or (state["status"] == "error" and now - state.get("checked_at", 0) > ARCHIVE_RETRY_SECONDS):
+            return self._submit(key, entry)
+        if state["status"] != "pending" or now - state.get("checked_at", 0) < ARCHIVE_CHECK_SECONDS:
+            return entry
+        state = dict(state, checked_at=int(now))
+        try:
+            snapshot = self.archive.snapshot(entry["url"])
+        except ArchiveBoxError as error:
+            state["error"] = str(error)  # Kept pending: it may just be restarting
+            snapshot = None
+        if snapshot is not None:
+            state.update(snapshot_state(snapshot))
+            state.pop("error", None)
+        elif now - state.get("submitted_at", 0) > ARCHIVE_GIVE_UP_SECONDS:
+            state["status"] = "failed"
+        entry["archive"] = state
+        self._save(key, entry)
+        return entry
+
+    def _fetch(self, url: str, key: str, previous=None) -> dict:
         self.dir.mkdir(parents=True, exist_ok=True)
-        meta_path, image_path, icon_path = self._paths(key)
+        _, image_path, icon_path = self._paths(key)
         entry = {"url": url, "title": "", "description": "", "site_name": "", "image": False,
                  "icon": False, "error": None, "fetched_at": int(time.time())}
+        # A refreshed preview is still the same page in the archive
+        if previous and previous.get("archive"):
+            entry["archive"] = previous["archive"]
         try:
             found = self._read(url)
         except PreviewError as error:
             entry["error"] = str(error)
+            # Not something ArchiveBox should be sent to either
+            entry["blocked"] = isinstance(error, BlockedAddress)
             found = None
         if found:
             entry.update({key_: found[key_] for key_ in ("title", "description", "site_name")})
@@ -395,7 +477,7 @@ class LinkPreviews:
         for flag, path in (("image", image_path), ("icon", icon_path)):
             if not entry[flag]:
                 path.unlink(missing_ok=True)
-        _write_atomic(meta_path, json.dumps(entry, ensure_ascii=False).encode("utf-8"))
+        self._save(key, entry)
         return entry
 
     def _read(self, url: str) -> dict:
@@ -439,10 +521,17 @@ class LinkPreviews:
             return False
 
 
-def public_entry(entry: dict) -> dict:
-    """The preview as the API sends it, with addresses for the stored images."""
+def public_entry(entry: dict, with_archive: bool = False) -> dict:
+    """The preview as the API sends it, with addresses for the stored images and copies."""
     key = cache_key(entry["url"])
     result = {name: entry.get(name) for name in ("url", "title", "description", "site_name", "error", "fetched_at")}
     result["image"] = f"/api/link-previews/files/{key}.webp?v={entry['fetched_at']}" if entry.get("image") else None
     result["icon"] = f"/api/link-previews/files/{key}.icon.png?v={entry['fetched_at']}" if entry.get("icon") else None
+    state = entry.get("archive")
+    if with_archive and state:
+        result["archive"] = {
+            # pending, archived, failed, or unavailable when ArchiveBox couldn't be reached
+            "status": "unavailable" if state["status"] == "error" else state["status"],
+            "copies": {kind: f"/api/link-previews/archive/{key}/{kind}" for kind in state.get("outputs") or {}},
+        }
     return result

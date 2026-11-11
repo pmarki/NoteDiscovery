@@ -41,6 +41,7 @@
     <div x-show="itemPopup.open"
          @mousedown.prevent
          @mousedown.outside="if (viewMode === 'read') itemPopup.open = false"
+         x-ref="itemPopup"
          class="link-prompt item-popup"
          :style="`position: fixed; top: ${itemPopup.position.top}px; left: ${itemPopup.position.left}px; z-index: 1190; ${itemPopup.position.above ? 'transform: translateY(-100%);' : ''}`"
          x-cloak>

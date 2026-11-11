@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Előnézet frissítése",
-    "refresh_failed": "Nem sikerült frissíteni az előnézetet: {{error}}"
+    "refresh_failed": "Nem sikerült frissíteni az előnézetet: {{error}}",
+    "archiving": "Offline másolat mentése…",
+    "archived": "Offline",
+    "archive_failed": "Az offline másolat sikertelen",
+    "archive_unavailable": "Az archívum nem érhető el",
+    "copy_page": "Oldal",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Képernyőkép",
+    "archive_retry": "Újra"
   }
 }

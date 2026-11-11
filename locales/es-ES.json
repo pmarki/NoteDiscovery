@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Actualizar vista previa",
-    "refresh_failed": "No se pudo actualizar la vista previa: {{error}}"
+    "refresh_failed": "No se pudo actualizar la vista previa: {{error}}",
+    "archiving": "Guardando copia sin conexión…",
+    "archived": "Sin conexión",
+    "archive_failed": "Falló la copia sin conexión",
+    "archive_unavailable": "Archivo no accesible",
+    "copy_page": "Página",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Captura",
+    "archive_retry": "Reintentar"
   }
 }

@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Osveži predogled",
-    "refresh_failed": "Predogleda ni bilo mogoče osvežiti: {{error}}"
+    "refresh_failed": "Predogleda ni bilo mogoče osvežiti: {{error}}",
+    "archiving": "Shranjevanje kopije brez povezave…",
+    "archived": "Brez povezave",
+    "archive_failed": "Kopija brez povezave ni uspela",
+    "archive_unavailable": "Arhiv ni dosegljiv",
+    "copy_page": "Stran",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Posnetek zaslona",
+    "archive_retry": "Poskusi znova"
   }
 }

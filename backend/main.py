@@ -5,7 +5,7 @@ Main FastAPI application
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Form, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -77,6 +77,7 @@ from .themes import get_available_themes, get_theme_css
 from .trash import delete_entry, empty_trash, list_trash, restore_entry
 from .thumbnails import IMAGE_EXTENSIONS, ThumbnailError, thumbnail_for
 from .link_preview import LinkPreviews, PreviewError, public_entry
+from .archivebox import KINDS as ARCHIVE_KINDS, ArchiveBox, ArchiveBoxError
 from .share import (
     create_share_token,
     get_share_token,
@@ -202,6 +203,24 @@ for _name, _env in (('enabled', 'LINK_PREVIEWS_ENABLED'), ('allow_private_networ
         config['link_previews'][_name] = os.getenv(_env, '').lower() in ('true', '1', 'yes')
 LINK_PREVIEWS_ENABLED = config['link_previews'].get('enabled', True) is not False
 LINK_PREVIEWS_ALLOW_PRIVATE = config['link_previews'].get('allow_private_networks', False) is True
+
+# Offline copies of carded links in ArchiveBox (backend/archivebox.py), on when a URL is set
+# Priority: ARCHIVEBOX_* env vars > archivebox in config.yaml
+config['archivebox'] = config.get('archivebox') or {}
+for _name, _env in (('url', 'ARCHIVEBOX_URL'), ('api_key', 'ARCHIVEBOX_API_KEY'), ('tag', 'ARCHIVEBOX_TAG')):
+    if _env in os.environ:
+        config['archivebox'][_name] = os.getenv(_env, '')
+_archivebox_url = (config['archivebox'].get('url') or '').strip()
+ARCHIVEBOX = None
+if LINK_PREVIEWS_ENABLED and _archivebox_url:
+    if urlparse(_archivebox_url).scheme not in ('http', 'https'):
+        logger.warning("archivebox.url %r is not an http(s) URL; offline copies are off", _archivebox_url)
+    elif not (config['archivebox'].get('api_key') or '').strip():
+        logger.warning("archivebox.url is set but archivebox.api_key is empty; offline copies are off")
+    else:
+        ARCHIVEBOX = ArchiveBox(_archivebox_url, config['archivebox']['api_key'].strip(),
+                                (config['archivebox'].get('tag') or 'notediscovery').strip())
+        logger.info("Offline copies of link cards: ArchiveBox at %s", _archivebox_url)
 
 # Storage paths: env vars override config.yaml. Logged either way so the
 # resolved location is visible at startup.
@@ -904,6 +923,7 @@ async def get_config():
         # Empty string when unset; frontend falls back to window.location.origin
         "sharePublicOrigin": SHARE_PUBLIC_ORIGIN,
         "linkPreviews": LINK_PREVIEWS_ENABLED,
+        "linkArchive": ARCHIVEBOX is not None,  # Cards show their ArchiveBox copies
         "authentication": {
             "enabled": config.get('authentication', {}).get('enabled', False)
         }
@@ -1041,8 +1061,8 @@ def get_thumbnail(media_path: str):
 def link_previews() -> LinkPreviews:
     notes_dir = config['storage']['notes_dir']
     if LINK_PREVIEWS_ALLOW_PRIVATE:
-        return LinkPreviews(notes_dir, allowed=lambda address: True)
-    return LinkPreviews(notes_dir)
+        return LinkPreviews(notes_dir, allowed=lambda address: True, archive=ARCHIVEBOX)
+    return LinkPreviews(notes_dir, archive=ARCHIVEBOX)
 
 
 @api_router.get("/link-previews", tags=["Link previews"])
@@ -1058,9 +1078,60 @@ def get_link_preview(request: Request, url: str, refresh: bool = False):
     if not LINK_PREVIEWS_ENABLED:
         raise HTTPException(status_code=404, detail="Link previews are turned off")
     try:
-        return public_entry(link_previews().get(url, refresh=refresh))
+        return public_entry(link_previews().get(url, refresh=refresh), with_archive=ARCHIVEBOX is not None)
     except PreviewError as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+
+@api_router.post("/link-previews/archive", tags=["Link previews"])
+@limiter.limit("30/minute")
+def archive_link_again(request: Request, url: str):
+    """Asks ArchiveBox for a new offline copy of a carded link, after one failed."""
+    if ARCHIVEBOX is None:
+        raise HTTPException(status_code=404, detail="Offline copies are turned off")
+    try:
+        return public_entry(link_previews().archive_again(url), with_archive=True)
+    except PreviewError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+# Archived pages are someone else's HTML: served without scripts, and in an origin of
+# their own, so they can't reach the app or its cookies, nor load from the web.
+ARCHIVED_PAGE_POLICY = (
+    "sandbox; default-src 'none'; img-src data: blob:; media-src data: blob:; "
+    "style-src 'unsafe-inline' data:; font-src data:"
+)
+ARCHIVE_MEDIA_TYPES = {'page': 'text/html; charset=utf-8', 'pdf': 'application/pdf'}
+
+
+@api_router.get("/link-previews/archive/{key}/{kind}", tags=["Link previews"])
+def get_link_archive(key: str, kind: str):
+    """An offline copy of a carded link (page, pdf or screenshot), read from ArchiveBox."""
+    if ARCHIVEBOX is None or kind not in ARCHIVE_KINDS:
+        raise HTTPException(status_code=404, detail="Not found")
+    entry = link_previews().by_key(key)
+    state = (entry or {}).get('archive') or {}
+    path = (state.get('outputs') or {}).get(kind)
+    if not path:
+        raise HTTPException(status_code=404, detail="No such copy")
+    try:
+        upstream = ARCHIVEBOX.open_file(state.get('snapshot_id', ''), state.get('timestamp', ''), path)
+    except ArchiveBoxError as error:
+        raise HTTPException(status_code=502, detail=str(error))
+    media_type = ARCHIVE_MEDIA_TYPES.get(kind)
+    if media_type is None:
+        upstream_type = (upstream.headers.get('Content-Type') or '').split(';')[0].strip().lower()
+        media_type = upstream_type if upstream_type in ('image/png', 'image/jpeg', 'image/webp') else 'image/png'
+    headers = {"X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600"}
+    if kind == 'page':
+        headers["Content-Security-Policy"] = ARCHIVED_PAGE_POLICY
+
+    def chunks():
+        with upstream:
+            while chunk := upstream.read(64 * 1024):
+                yield chunk
+
+    return StreamingResponse(chunks(), media_type=media_type, headers=headers)
 
 
 @api_router.get("/link-previews/files/{name}", tags=["Link previews"])

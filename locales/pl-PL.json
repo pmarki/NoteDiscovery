@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Odśwież podgląd",
-    "refresh_failed": "Nie udało się odświeżyć podglądu: {{error}}"
+    "refresh_failed": "Nie udało się odświeżyć podglądu: {{error}}",
+    "archiving": "Zapisywanie kopii offline…",
+    "archived": "Offline",
+    "archive_failed": "Nie udało się zapisać kopii offline",
+    "archive_unavailable": "Archiwum niedostępne",
+    "copy_page": "Strona",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Zrzut ekranu",
+    "archive_retry": "Spróbuj ponownie"
   }
 }

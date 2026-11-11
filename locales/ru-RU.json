@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Обновить превью",
-    "refresh_failed": "Не удалось обновить превью: {{error}}"
+    "refresh_failed": "Не удалось обновить превью: {{error}}",
+    "archiving": "Сохранение офлайн-копии…",
+    "archived": "Офлайн",
+    "archive_failed": "Не удалось сохранить офлайн-копию",
+    "archive_unavailable": "Архив недоступен",
+    "copy_page": "Страница",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Скриншот",
+    "archive_retry": "Повторить"
   }
 }

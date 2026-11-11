@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "Actualiser l'aperçu",
-    "refresh_failed": "Impossible d'actualiser l'aperçu : {{error}}"
+    "refresh_failed": "Impossible d'actualiser l'aperçu : {{error}}",
+    "archiving": "Enregistrement hors ligne…",
+    "archived": "Hors ligne",
+    "archive_failed": "Échec de la copie hors ligne",
+    "archive_unavailable": "Archive injoignable",
+    "copy_page": "Page",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Capture",
+    "archive_retry": "Réessayer"
   }
 }

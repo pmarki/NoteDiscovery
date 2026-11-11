@@ -110,6 +110,9 @@ AUTHENTICATION_PASSWORD=mysecretpassword
 |----------|------|---------|-------------|
 | `LINK_PREVIEWS_ENABLED` | boolean | `true` | Show a link on a line of its own as a card with the page's title, text and image. The server fetches the page once and keeps the result in `.links/` in the notes folder |
 | `LINK_PREVIEWS_ALLOW_PRIVATE_NETWORKS` | boolean | `false` | Also make cards for addresses on the server's own network (`localhost`, `192.168.x.x`, ...). Off, so a note can't make the server probe that network |
+| `ARCHIVEBOX_URL` | string | *(empty)* | ArchiveBox server that keeps an offline copy of every link card, e.g. `http://archivebox:5797`. Off while empty. See [ARCHIVEBOX.md](ARCHIVEBOX.md) |
+| `ARCHIVEBOX_API_KEY` | string | *(empty)* | API token from ArchiveBox's admin. Required with `ARCHIVEBOX_URL` |
+| `ARCHIVEBOX_TAG` | string | `notediscovery` | Tag ArchiveBox puts on the pages NoteDiscovery sends |
 
 ### Demo Mode
 

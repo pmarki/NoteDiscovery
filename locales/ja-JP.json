@@ -391,6 +391,14 @@
   },
   "link_card": {
     "refresh": "プレビューを更新",
-    "refresh_failed": "プレビューを更新できませんでした: {{error}}"
+    "refresh_failed": "プレビューを更新できませんでした: {{error}}",
+    "archiving": "オフラインコピーを保存中…",
+    "archived": "オフライン",
+    "archive_failed": "オフラインコピーに失敗しました",
+    "archive_unavailable": "アーカイブに接続できません",
+    "copy_page": "ページ",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "スクリーンショット",
+    "archive_retry": "再試行"
   }
 }
