@@ -269,6 +269,7 @@
     "failed_media": "メディアファイルの移動に失敗しました。"
   },
   "search": {
+    "saved_pages": "保存したページ",
     "previous": "前へ (Shift+F3)",
     "next": "次へ (F3)",
     "matches": "{{current}} / {{total}}",
@@ -397,6 +398,7 @@
     "archive_failed": "オフラインコピーに失敗しました",
     "archive_unavailable": "アーカイブに接続できません",
     "copy_page": "ページ",
+    "copy_article": "記事",
     "copy_pdf": "PDF",
     "copy_screenshot": "スクリーンショット",
     "archive_retry": "再試行"

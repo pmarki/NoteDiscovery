@@ -281,3 +281,222 @@ def test_copies_of_0_9_snapshots_are_read_by_snapshot_id(client):
     assert copy.status_code == 200
     assert copy.content == b"%PDF-1.7"
     assert copy.headers["content-type"] == "application/pdf"
+
+
+# ---- Saved pages' text: reader view, search and MCP ----
+
+SNAPSHOT_ID = "06af32ce693479eb80003524b117ac43"
+
+
+def extracted(url):
+    """A 0.9 snapshot with the text extractors' results, as the real one lists them."""
+    def result(plugin, files):
+        return {"plugin": plugin, "status": "succeeded", "output_files": {name: {} for name in files},
+                "pwd": f"/data/archive/snapshots/{SNAPSHOT_ID}/{plugin}"}
+    snapshot = finished(
+        url,
+        result("singlefile", ["singlefile.html"]),
+        result("htmltotext", ["htmltotext.txt"]),
+        result("readability", ["article.json", "content.html", "content.txt"]),
+        result("trafilatura", ["content.html", "content.md", "content.txt"]),
+    )
+    snapshot["id"] = SNAPSHOT_ID
+    return snapshot
+
+
+def serve_text(text, article=b"<html><head><title></title></head><body><article>Hi</article></body></html>"):
+    FakeArchiveBox.files = {
+        f"/snapshot/{SNAPSHOT_ID}/readability/content.txt": ("text/plain", text.encode()),
+        f"/snapshot/{SNAPSHOT_ID}/readability/content.html": ("text/html", article),
+    }
+
+
+def test_the_best_extractor_gives_the_article_and_the_text():
+    state = snapshot_state(extracted("u"))
+
+    assert state["outputs"]["article"] == "readability/content.html"
+    assert state["outputs"]["text"] == "readability/content.txt"
+    assert state["outputs"]["page"] == "singlefile/singlefile.html"
+
+
+def test_text_shown_as_a_web_page_is_kept_as_text(previews):
+    url = "https://example.com/a"
+    previews.get(url)
+    snapshot = extracted(url)
+    snapshot["archiveresults"] = [r for r in snapshot["archiveresults"] if r["plugin"] in ("singlefile", "trafilatura")]
+    FakeArchiveBox.snapshots[url] = snapshot
+    FakeArchiveBox.files = {f"/snapshot/{SNAPSHOT_ID}/trafilatura/content.txt": (
+        "text/html", b"<html><head><style>p{}</style></head><body><p>First</p><script>x()</script><p>Second &amp; last</p></body></html>")}
+
+    previews.get(url)
+
+    assert previews.text(url)["text"] == "First\n\nSecond & last"
+
+
+def test_text_alone_is_no_copy():
+    snapshot = finished("u", {"plugin": "htmltotext", "status": "succeeded", "output_files": {"htmltotext.txt": {}},
+                              "pwd": "/data/x/htmltotext"})
+
+    assert snapshot_state(snapshot)["status"] == "failed"
+
+
+def test_the_text_is_kept_once_the_page_is_saved(previews, tmp_path):
+    url = "https://example.com/a"
+    previews.get(url)
+    FakeArchiveBox.snapshots[url] = extracted(url)
+    serve_text("Web   archiving\n\n\n   is collecting.\t\n")
+
+    state = previews.get(url)["archive"]
+
+    assert state["status"] == "archived" and state["text"] is True
+    assert (tmp_path / ".links" / f"{cache_key(url)}.txt").read_text() == "Web archiving\n\nis collecting."
+    assert previews.text(url) == {"url": url, "title": "Page", "text": "Web archiving\n\nis collecting."}
+    # Not asked again once it's there
+    FakeArchiveBox.files = {}
+    previews.get(url)
+    assert previews.text(url)["text"] == "Web archiving\n\nis collecting."
+
+
+def test_a_page_saved_before_texts_were_kept_gets_its_text(previews):
+    url = "https://example.com/a"
+    previews.get(url)
+    old = extracted(url)
+    old["archiveresults"] = old["archiveresults"][:1]  # Only the single-file page counted then
+    FakeArchiveBox.snapshots[url] = old
+    entry = previews.get(url)
+    assert "text" not in entry["archive"]
+    assert previews.text(url) is None
+    # As saved by the version before texts were kept
+    del entry["archive"]["text_checked"]
+    previews._save(cache_key(url), entry)
+
+    FakeArchiveBox.snapshots[url] = extracted(url)
+    serve_text("Later text")
+    entry = previews.get(url)
+
+    assert entry["archive"]["text"] is True
+    assert previews.text(url)["text"] == "Later text"
+
+
+def test_text_archivebox_couldnt_give_is_asked_for_again(previews):
+    url = "https://example.com/a"
+    previews.get(url)
+    FakeArchiveBox.snapshots[url] = extracted(url)
+    assert previews.get(url)["archive"]["text"] is False
+
+    serve_text("Now there")
+    assert previews.get(url)["archive"]["text"] is True
+
+
+def test_saved_pages_are_searched_without_case_or_accents(previews):
+    for url, text in (("https://example.com/a", "Los ESPÁRRAGOS verdes"), ("https://example.com/b", "Nothing here")):
+        previews.get(url)
+        FakeArchiveBox.snapshots[url] = extracted(url)
+        serve_text(text)
+        previews.get(url)
+
+    found = previews.search("esparragos")
+
+    assert [page["url"] for page in found] == ["https://example.com/a"]
+    assert '<mark class="search-highlight">ESPÁRRAGOS</mark>' in found[0]["matches"][0]["context"]
+    assert found[0]["article"] == f"/api/link-previews/archive/{cache_key('https://example.com/a')}/article"
+    assert previews.search("missing") == []
+
+
+def test_search_lists_saved_pages_apart_from_notes(client, tmp_path):
+    url = "https://example.com/a"
+    (tmp_path / "note.md").write_text(f"Crawlers\n\n{url}\n")
+    client.get("/api/link-previews", params={"url": url})
+    FakeArchiveBox.snapshots[url] = extracted(url)
+    serve_text("Web crawlers <script>x</script> collect pages")
+    client.get("/api/link-previews", params={"url": url})
+
+    answer = client.get("/api/search", params={"q": "crawlers"}).json()
+
+    assert [note["path"] for note in answer["results"]] == ["note.md"]
+    assert [page["url"] for page in answer["pages"]] == [url]
+    # Escaped like note snippets, since the app shows them as HTML
+    assert "&lt;script&gt;" in answer["pages"][0]["matches"][0]["context"]
+    assert "pages" not in client.get("/api/search", params={"q": "crawlers", "limit": 5, "offset": 5}).json()
+
+
+def test_search_without_archivebox_has_no_saved_pages(previews, tmp_path, monkeypatch):
+    monkeypatch.setitem(main.config["storage"], "notes_dir", str(tmp_path))
+    monkeypatch.setattr(main, "ARCHIVEBOX", None)
+    client = TestClient(main.app)
+
+    assert "pages" not in client.get("/api/search", params={"q": "crawlers"}).json()
+    assert client.get("/api/link-previews/text", params={"url": "https://example.com/a"}).status_code == 404
+
+
+def test_the_api_gives_a_saved_pages_text(client):
+    url = "https://example.com/a"
+    client.get("/api/link-previews", params={"url": url})
+    assert client.get("/api/link-previews/text", params={"url": url}).status_code == 404
+    FakeArchiveBox.snapshots[url] = extracted(url)
+    serve_text("The text")
+    client.get("/api/link-previews", params={"url": url})
+
+    page = client.get("/api/link-previews/text", params={"url": url}).json()
+
+    assert page == {"url": url, "title": "Page", "text": "The text"}
+    assert client.get("/api/link-previews/text", params={"url": "ftp://x"}).status_code == 400
+
+
+def test_the_reader_view_gets_the_cards_title_and_a_dark_scheme(client):
+    url = "https://example.com/a"
+    client.get("/api/link-previews", params={"url": url})
+    FakeArchiveBox.snapshots[url] = extracted(url)
+    serve_text("x")
+    preview = client.get("/api/link-previews", params={"url": url}).json()
+
+    article = client.get(preview["archive"]["copies"]["article"])
+
+    assert article.status_code == 200
+    assert article.headers["content-security-policy"].startswith("sandbox;")
+    assert "<title>Page</title>" in article.text
+    assert "prefers-color-scheme: dark" in article.text
+    assert article.text.index("prefers-color-scheme") < article.text.index("</head>")
+
+
+class FakeClient:
+    def __init__(self, search=None, page=None):
+        from mcp_server.client import APIResponse
+        self._response = APIResponse
+        self._search, self._page = search, page
+
+    def search(self, query, limit=None, offset=0):
+        return self._response(success=True, data=self._search)
+
+    def get_saved_page(self, url):
+        if self._page is None:
+            return self._response(success=False, data=None, error="No saved text for this address")
+        return self._response(success=True, data=self._page)
+
+
+def mcp_server_with(client):
+    from mcp_server.server import MCPServer
+    server = MCPServer.__new__(MCPServer)
+    server.client = client
+    return server
+
+
+def test_mcp_search_lists_saved_pages():
+    server = mcp_server_with(FakeClient(search={"results": [], "pages": [{
+        "url": "https://example.com/a", "title": "Web archiving",
+        "matches": [{"context": '...Web <mark class="search-highlight">crawlers</mark> &amp; more...'}],
+    }]}))
+
+    text = server._tool_search_notes({"query": "crawlers"})
+
+    assert "Saved web pages (1)" in text
+    assert "**Web archiving** https://example.com/a" in text
+    assert "Web crawlers & more" in text
+
+
+def test_mcp_reads_a_saved_page():
+    server = mcp_server_with(FakeClient(page={"url": "https://example.com/a", "title": "Web archiving", "text": "Body"}))
+
+    assert server._tool_get_saved_page({"url": "https://example.com/a"}).endswith("Body")
+    assert "Failed" in mcp_server_with(FakeClient())._tool_get_saved_page({"url": "https://example.com/b"})
+    assert "required" in server._tool_get_saved_page({})

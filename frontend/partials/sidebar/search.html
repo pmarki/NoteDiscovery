@@ -21,7 +21,7 @@
                             </svg>
                             <button
                                 x-show="searchQuery.length > 0"
-                                @click="searchQuery = ''; searchResults = []; currentSearchHighlight = ''; clearSearchHighlights();"
+                                @click="searchQuery = ''; searchResults = []; searchPages = []; currentSearchHighlight = ''; clearSearchHighlights();"
                                 class="absolute right-1.5 top-1.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                 style="color: var(--text-tertiary);"
                                 :title="t('sidebar.clear_search')"
@@ -71,12 +71,33 @@
                 </template>
             </div>
                         </template>
+                        <!-- Saved copies of carded links: open as a reader view, or the page itself -->
+                        <template x-if="isSearchable() && searchPages.length > 0">
+                            <div class="p-2">
+                                <div class="text-xs px-2 py-1 mb-1" style="color: var(--text-tertiary);">
+                                    <span x-text="t('search.saved_pages') + ' (' + searchPages.length + ')'"></span>
+                                </div>
+                                <template x-for="page in searchPages" :key="page.url">
+                                    <a
+                                        :href="page.article || page.url"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="hover-accent block px-2 py-1.5 text-sm cursor-pointer mb-1"
+                                        style="color: var(--text-primary); text-decoration: none;"
+                                        :title="page.url"
+                                    >
+                                        <div class="font-medium truncate" x-text="page.title || page.url"></div>
+                                        <div class="text-xs truncate" style="color: var(--text-tertiary);" x-html="page.matches[0]?.context || ''"></div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
                         <template x-if="isSearchable() && isSearching">
                             <div class="p-6 text-center">
                                 <p class="text-sm" style="color: var(--text-tertiary);" x-text="t('search.searching', {query: searchQuery})"></p>
                             </div>
                         </template>
-                        <template x-if="isSearchable() && !isSearching && searchResults.length === 0">
+                        <template x-if="isSearchable() && !isSearching && searchResults.length === 0 && searchPages.length === 0">
                             <div class="p-6 text-center">
                                 <svg class="w-12 h-12 mx-auto mb-3 opacity-40" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>

@@ -105,6 +105,7 @@ function coreFeature() {
                     } else {
                         this.searchQuery = '';
                         this.searchResults = [];
+                        this.searchPages = [];
                         this.clearSearchHighlights();
                     }
                 } else if (e.state && e.state.mediaPath) {
@@ -140,6 +141,7 @@ function coreFeature() {
                     // Clear search
                     this.searchQuery = '';
                     this.searchResults = [];
+                    this.searchPages = [];
                     this.clearSearchHighlights();
                 }
             });

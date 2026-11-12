@@ -1063,11 +1063,36 @@ def _folded_match_spans(content: str, folded_query: str, limit: int) -> List[Tup
     return spans
 
 
+def match_snippets(content: str, folded_query: str, limit: int, context: int = 15) -> List[Dict]:
+    """The first `limit` matches of an already folded query in `content`, each as
+    its line number and an escaped snippet with the match in <mark>."""
+    from html import escape
+    matches = []
+    for start_index, end_index in _folded_match_spans(content, folded_query, limit):
+        context_start = max(0, start_index - context)
+        context_end = min(len(content), end_index + context)
+
+        before = escape(content[context_start:start_index].replace('\n', ' '))
+        after = escape(content[end_index:context_end].replace('\n', ' '))
+        matched_clean = escape(content[start_index:end_index].replace('\n', ' '))
+
+        snippet = f'{before}<mark class="search-highlight">{matched_clean}</mark>{after}'
+        if context_start > 0:
+            snippet = '...' + snippet
+        if context_end < len(content):
+            snippet = snippet + '...'
+
+        matches.append({
+            "line_number": content.count('\n', 0, start_index) + 1,
+            "context": snippet,
+        })
+    return matches
+
+
 def search_notes(notes_dir: str, query: str) -> List[Dict]:
     """Full-text search through note contents. Narrow the candidate set via
     the inverted index, then run the snippet extractor on each candidate.
     Matching ignores case and accents: "esparragos" finds "Espárragos"."""
-    from html import escape
     results: List[Dict] = []
 
     folded_query = note_index.fold_for_search(query)
@@ -1097,32 +1122,9 @@ def search_notes(notes_dir: str, query: str) -> List[Dict]:
             with open(md_file, 'r', encoding='utf-8') as f:
                 content = f.read()
 
-            spans = _folded_match_spans(content, folded_query, 3)
-            if not spans:
+            matched_lines = match_snippets(content, folded_query, 3)
+            if not matched_lines:
                 continue
-
-            matched_lines = []
-            for start_index, end_index in spans:
-                matched_text = content[start_index:end_index]
-
-                context_start = max(0, start_index - 15)
-                context_end = min(len(content), end_index + 15)
-
-                before = escape(content[context_start:start_index].replace('\n', ' '))
-                after = escape(content[end_index:context_end].replace('\n', ' '))
-                matched_clean = escape(matched_text.replace('\n', ' '))
-
-                snippet = f'{before}<mark class="search-highlight">{matched_clean}</mark>{after}'
-                if context_start > 0:
-                    snippet = '...' + snippet
-                if context_end < len(content):
-                    snippet = snippet + '...'
-
-                line_number = content.count('\n', 0, start_index) + 1
-                matched_lines.append({
-                    "line_number": line_number,
-                    "context": snippet,
-                })
 
             relative_path = Path(path)
             results.append({

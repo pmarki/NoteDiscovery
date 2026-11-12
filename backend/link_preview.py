@@ -58,6 +58,8 @@ ARCHIVE_CHECK_SECONDS = 15
 ARCHIVE_RETRY_SECONDS = 600
 # Queued but never seen in ArchiveBox: given up after this
 ARCHIVE_GIVE_UP_SECONDS = 3600
+# A saved page's text, kept beside its preview for search and MCP
+MAX_TEXT_BYTES = 1024 * 1024
 # At most this many pages are fetched at once, whatever the number of cards on screen
 _fetch_slots = threading.BoundedSemaphore(4)
 _key_locks: dict = {}
@@ -239,6 +241,41 @@ class _HeadParser(HTMLParser):
     def handle_data(self, data):
         if self._in_title:
             self.title += data
+
+
+class _TextParser(HTMLParser):
+    """The text of an HTML page, a block per line, without its scripts and styles."""
+
+    SKIP = {"script", "style", "head", "noscript", "template"}
+    BLOCKS = {"p", "div", "li", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "br", "section", "article", "pre", "blockquote"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts = []
+        self._skipping = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.SKIP:
+            self._skipping += 1
+        elif tag in self.BLOCKS:
+            self.parts.append("\n\n")
+
+    def handle_endtag(self, tag):
+        if tag in self.SKIP and self._skipping:
+            self._skipping -= 1
+        elif tag in self.BLOCKS:
+            self.parts.append("\n\n")
+
+    def handle_data(self, data):
+        if not self._skipping:
+            self.parts.append(data)
+
+
+def html_text(html: str) -> str:
+    parser = _TextParser()
+    parser.feed(html)
+    parser.close()
+    return "".join(parser.parts)
 
 
 def _decode(body: bytes, content_type_header: str) -> str:
@@ -437,7 +474,11 @@ class LinkPreviews:
         now = time.time()
         if state is None or (state["status"] == "error" and now - state.get("checked_at", 0) > ARCHIVE_RETRY_SECONDS):
             return self._submit(key, entry)
-        if state["status"] != "pending" or now - state.get("checked_at", 0) < ARCHIVE_CHECK_SECONDS:
+        # A copy saved before its text was kept, or whose text couldn't be read yet
+        text_missing = state["status"] == "archived" and not state.get("text_checked")
+        if state["status"] != "pending" and not text_missing:
+            return entry
+        if now - state.get("checked_at", 0) < ARCHIVE_CHECK_SECONDS:
             return entry
         state = dict(state, checked_at=int(now))
         try:
@@ -448,11 +489,77 @@ class LinkPreviews:
         if snapshot is not None:
             state.update(snapshot_state(snapshot))
             state.pop("error", None)
+            if "text" in state["outputs"] and not state.get("text"):
+                state["text"] = self._store_text(key, state)
         elif now - state.get("submitted_at", 0) > ARCHIVE_GIVE_UP_SECONDS:
             state["status"] = "failed"
+        if state["status"] == "archived" and (state.get("text") or "text" not in state["outputs"]):
+            state["text_checked"] = True
         entry["archive"] = state
         self._save(key, entry)
         return entry
+
+    def _store_text(self, key, state) -> bool:
+        """Keeps the saved page's text in .links/; False when ArchiveBox couldn't give it."""
+        try:
+            with self.archive.open_file(state["snapshot_id"], state["timestamp"], state["outputs"]["text"]) as response:
+                body = response.read(MAX_TEXT_BYTES)
+                media_type = (response.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        except (ArchiveBoxError, OSError):
+            return False
+        text = body.decode("utf-8", "replace")
+        # ArchiveBox may wrap a text file in a page of its own
+        if media_type == "text/html":
+            text = html_text(text)
+        # Extractors leave the page's indentation and runs of blank lines
+        text = re.sub(r"[^\S\n]+", " ", text)
+        text = re.sub(r" ?\n[\s]*\n\s*", "\n\n", text).strip()
+        _write_atomic(self.dir / f"{key}.txt", text.encode("utf-8"))
+        return True
+
+    def text(self, url: str):
+        """A saved page's text with its address and title, or None."""
+        url = normalize_url(url)
+        entry = self.cached(url)
+        try:
+            text = (self.dir / f"{cache_key(url)}.txt").read_text(encoding="utf-8")
+        except OSError:
+            return None
+        return {"url": url, "title": (entry or {}).get("title") or "", "text": text}
+
+    def search(self, query: str, limit: int = 20) -> list:
+        """Saved pages whose text holds `query`, case and accents ignored, newest first."""
+        from .note_index import fold_for_search
+        from .utils import match_snippets
+
+        folded_query = fold_for_search(query)
+        if not folded_query or not self.dir.is_dir():
+            return []
+        found = []
+        for path in self.dir.glob("*.txt"):
+            key = path.stem
+            entry = self.by_key(key)
+            if entry is None:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            # A page has no lines worth naming, but room for a longer snippet
+            matches = match_snippets(text, folded_query, 3, context=60)
+            if not matches:
+                continue
+            outputs = (entry.get("archive") or {}).get("outputs") or {}
+            found.append({
+                "url": entry["url"],
+                "title": entry.get("title") or "",
+                "site_name": entry.get("site_name") or "",
+                "article": f"/api/link-previews/archive/{key}/article" if "article" in outputs else None,
+                "matches": [{"context": match["context"]} for match in matches],
+                "fetched_at": entry.get("fetched_at", 0),
+            })
+        found.sort(key=lambda page: page["fetched_at"], reverse=True)
+        return found[:limit]
 
     def _fetch(self, url: str, key: str, previous=None) -> dict:
         self.dir.mkdir(parents=True, exist_ok=True)

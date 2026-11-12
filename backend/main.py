@@ -13,6 +13,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHea
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.background import BackgroundTask
 import os
+import html
 import re
 import mimetypes
 import tempfile
@@ -1095,13 +1096,55 @@ def archive_link_again(request: Request, url: str):
         raise HTTPException(status_code=400, detail=str(error))
 
 
+@api_router.get("/link-previews/text", tags=["Link previews"])
+def get_link_text(url: str):
+    """The text of a carded link's saved page, as ArchiveBox extracted it. For MCP."""
+    if ARCHIVEBOX is None:
+        raise HTTPException(status_code=404, detail="Offline copies are turned off")
+    try:
+        page = link_previews().text(url)
+    except PreviewError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    if page is None:
+        raise HTTPException(status_code=404, detail="No saved text for this address")
+    return page
+
+
 # Archived pages are someone else's HTML: served without scripts, and in an origin of
 # their own, so they can't reach the app or its cookies, nor load from the web.
 ARCHIVED_PAGE_POLICY = (
     "sandbox; default-src 'none'; img-src data: blob:; media-src data: blob:; "
     "style-src 'unsafe-inline' data:; font-src data:"
 )
-ARCHIVE_MEDIA_TYPES = {'page': 'text/html; charset=utf-8', 'pdf': 'application/pdf'}
+ARCHIVE_MEDIA_TYPES = {
+    'page': 'text/html; charset=utf-8',
+    'article': 'text/html; charset=utf-8',
+    'pdf': 'application/pdf',
+    'text': 'text/plain; charset=utf-8',
+}
+# The reader view in the app's colours when the system is dark, under the card's title
+ARTICLE_DARK_STYLE = (
+    "<style>@media (prefers-color-scheme: dark) {"
+    " html, body, main { background: #111827 !important; color: #e5e7eb !important }"
+    " a { color: #60a5fa !important } blockquote { color: #9ca3af !important; border-color: #374151 !important }"
+    " }</style>"
+)
+MAX_ARTICLE_BYTES = 8 * 1024 * 1024
+
+
+def _article_page(body: bytes, title: str) -> bytes:
+    """The reader view with the card's title, and a dark scheme for dark systems."""
+    page = body.decode('utf-8', 'replace')
+    extra = ARTICLE_DARK_STYLE
+    if title:
+        named = f"<title>{html.escape(title)}</title>"
+        # Readability leaves the title empty
+        page, filled = re.subn(r"<title>\s*</title>", lambda _: named, page, count=1, flags=re.IGNORECASE)
+        if not filled and not re.search(r"<title[\s>]", page, re.IGNORECASE):
+            extra += named
+    head = re.search(r"</head\s*>", page, re.IGNORECASE)
+    at = head.start() if head else 0
+    return (page[:at] + extra + page[at:]).encode('utf-8')
 
 
 @api_router.get("/link-previews/archive/{key}/{kind}", tags=["Link previews"])
@@ -1123,8 +1166,12 @@ def get_link_archive(key: str, kind: str):
         upstream_type = (upstream.headers.get('Content-Type') or '').split(';')[0].strip().lower()
         media_type = upstream_type if upstream_type in ('image/png', 'image/jpeg', 'image/webp') else 'image/png'
     headers = {"X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600"}
-    if kind == 'page':
+    if kind in ('page', 'article', 'text'):
         headers["Content-Security-Policy"] = ARCHIVED_PAGE_POLICY
+    if kind == 'article':
+        with upstream:
+            body = upstream.read(MAX_ARTICLE_BYTES)
+        return Response(_article_page(body, entry.get('title') or ''), media_type=media_type, headers=headers)
 
     def chunks():
         with upstream:
@@ -2334,6 +2381,12 @@ async def search(
             "results": paginated.items,
             "query": q
         }
+        # Saved copies of carded links, a list of their own, given with the first page
+        if ARCHIVEBOX is not None and offset == 0 and len(q.strip()) >= SEARCH_MIN_QUERY_LENGTH:
+            response["pages"] = [
+                {name: page[name] for name in ("url", "title", "site_name", "article", "matches")}
+                for page in link_previews().search(q)
+            ]
         
         # Include pagination metadata only when limit is specified
         if limit is not None:

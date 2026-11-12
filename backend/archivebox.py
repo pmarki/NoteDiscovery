@@ -23,11 +23,17 @@ import urllib.request
 
 TIMEOUT_SECONDS = 10
 
-# What a card offers, and which ArchiveBox outputs supply it
+# What a card offers, and which ArchiveBox outputs supply it, best first. `article`
+# is the page as a reader view; `text` is its plain text, for search and MCP.
 KINDS = {
     "page": {"plugins": ("singlefile",), "extensions": (".html", ".htm"), "default": "singlefile.html"},
     "pdf": {"plugins": ("pdf",), "extensions": (".pdf",), "default": "output.pdf"},
     "screenshot": {"plugins": ("screenshot",), "extensions": (".png", ".jpg", ".jpeg", ".webp"), "default": "screenshot.png"},
+    "article": {"plugins": ("readability", "trafilatura", "defuddle", "mercury"), "extensions": (".html",),
+                "default": None},
+    # 0.9 shows trafilatura's .txt as a web page, so it comes last
+    "text": {"plugins": ("defuddle", "readability", "mercury", "htmltotext", "trafilatura"), "extensions": (".txt",),
+             "default": None},
 }
 DONE = {"succeeded", "failed", "skipped", "sealed", "noresults", "exception"}
 
@@ -68,7 +74,7 @@ def _output_path(result, plugin, kind):
 def snapshot_state(snapshot):
     """Status of a snapshot as a card shows it: pending, archived or failed, and its outputs."""
     results = snapshot.get("archiveresults") or []
-    outputs = {}
+    found = {}  # kind -> (rank of its plugin, path)
     unfinished = False
     for result in results:
         plugin = str(result.get("plugin") or result.get("extractor") or "").lower()
@@ -78,13 +84,19 @@ def snapshot_state(snapshot):
         if status != "succeeded":
             continue
         for kind, spec in KINDS.items():
-            if plugin in spec["plugins"] and kind not in outputs:
-                path = _output_path(result, plugin, kind)
-                if path:
-                    outputs[kind] = path
+            if plugin not in spec["plugins"]:
+                continue
+            rank = spec["plugins"].index(plugin)
+            if kind in found and found[kind][0] <= rank:
+                continue
+            path = _output_path(result, plugin, kind)
+            if path:
+                found[kind] = (rank, path)
+    outputs = {kind: path for kind, (_, path) in found.items()}
     sealed = str(snapshot.get("status") or "").lower() == "sealed"
     if (sealed or results) and not unfinished:
-        status = "archived" if outputs else "failed"
+        # Text alone is no copy to open
+        status = "archived" if set(outputs) - {"text"} else "failed"
     else:
         status = "pending"
     return {

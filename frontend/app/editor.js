@@ -794,7 +794,7 @@ function editorFeature() {
                 });
                 row.append(node);
             };
-            const icons = { page: ACTION_ICONS.web, pdf: ACTION_ICONS.pdf, screenshot: ACTION_ICONS.image };
+            const icons = { page: ACTION_ICONS.web, article: ACTION_ICONS.article, pdf: ACTION_ICONS.pdf, screenshot: ACTION_ICONS.image };
             for (const [kind, icon] of Object.entries(icons)) {
                 const url = archive.copies?.[kind];
                 if (url) row.append(this._linkCardButton(part, this.t(`link_card.copy_${kind}`), icon, () => window.open(url, '_blank', 'noopener')));

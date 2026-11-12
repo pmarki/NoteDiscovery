@@ -66,6 +66,25 @@ TOOLS: list[dict[str, Any]] = [
             "required": ["path"]
         }
     },
+    {
+        "name": "get_saved_page",
+        "description": (
+            "Read the saved text of a web page linked from a note. A web address alone on "
+            "its line in a note is kept offline in ArchiveBox, and its article text can be "
+            "read here even when the site has changed or gone. Use it for addresses found "
+            "in notes or under 'Saved web pages' in search results."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "The page's address as written in the note (e.g., 'https://example.com/article')"
+                }
+            },
+            "required": ["url"]
+        }
+    },
     
     # =========================================================================
     # Tags & Organization

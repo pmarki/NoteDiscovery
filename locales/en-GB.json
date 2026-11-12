@@ -269,6 +269,7 @@
     "failed_media": "Failed to move media file."
   },
   "search": {
+    "saved_pages": "Saved pages",
     "previous": "Previous (Shift+F3)",
     "next": "Next (F3)",
     "matches": "{{current}} of {{total}}",
@@ -397,6 +398,7 @@
     "archive_failed": "Offline copy failed",
     "archive_unavailable": "Archive unreachable",
     "copy_page": "Page",
+    "copy_article": "Article",
     "copy_pdf": "PDF",
     "copy_screenshot": "Screenshot",
     "archive_retry": "Try again"

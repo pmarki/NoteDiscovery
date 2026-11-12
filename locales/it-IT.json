@@ -269,6 +269,7 @@
     "failed_media": "Impossibile spostare il file multimediale."
   },
   "search": {
+    "saved_pages": "Pagine salvate",
     "previous": "Precedente (Shift+F3)",
     "next": "Successivo (F3)",
     "matches": "{{current}} di {{total}}",
@@ -397,6 +398,7 @@
     "archive_failed": "Copia offline non riuscita",
     "archive_unavailable": "Archivio non raggiungibile",
     "copy_page": "Pagina",
+    "copy_article": "Articolo",
     "copy_pdf": "PDF",
     "copy_screenshot": "Screenshot",
     "archive_retry": "Riprova"

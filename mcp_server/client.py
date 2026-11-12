@@ -316,6 +316,18 @@ class NoteDiscoveryClient:
             params["offset"] = str(offset)
         return self._request("GET", "/api/search", params=params)
     
+    def get_saved_page(self, url: str) -> APIResponse:
+        """
+        Get the saved text of a carded web page.
+
+        Args:
+            url: The page's address
+
+        Returns:
+            APIResponse with url, title and text
+        """
+        return self._request("GET", "/api/link-previews/text", params={"url": url})
+    
     # =========================================================================
     # Tags API
     # =========================================================================

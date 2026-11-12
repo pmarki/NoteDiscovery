@@ -3,6 +3,7 @@ function searchFeature() {
     return {
         searchQuery: '',
         searchResults: [],
+        searchPages: [], // Saved copies of carded links matching the search
         currentSearchHighlight: '', // Track current highlighted search term
         currentMatchIndex: 0, // Current match being viewed
         totalMatches: 0, // Total number of matches in the note
@@ -137,6 +138,7 @@ function searchFeature() {
 
             this.isSearching = true;
             this.searchResults = [];
+            this.searchPages = [];
 
             this.searchDebounceTimeout = setTimeout(() => {
                 this.searchNotes();

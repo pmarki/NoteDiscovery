@@ -180,9 +180,10 @@ The MCP server provides these tools to AI assistants:
 
 | Tool | Description |
 |------|-------------|
-| `search_notes` | Full-text search across all notes (supports pagination) |
+| `search_notes` | Full-text search across all notes, and saved web pages with [ArchiveBox](ARCHIVEBOX.md) (supports pagination) |
 | `list_notes` | List all notes with metadata (supports pagination) |
 | `get_note` | Read a specific note's content |
+| `get_saved_page` | Read the saved text of a web page linked from a note (needs [ArchiveBox](ARCHIVEBOX.md)) |
 | `get_recent_notes` | Get recently modified notes (last N days) |
 
 ### Organization

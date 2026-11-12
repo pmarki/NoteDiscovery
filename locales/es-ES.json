@@ -269,6 +269,7 @@
     "failed_media": "Error al mover el archivo multimedia."
   },
   "search": {
+    "saved_pages": "Páginas guardadas",
     "previous": "Anterior (Shift+F3)",
     "next": "Siguiente (F3)",
     "matches": "{{current}} de {{total}}",
@@ -397,6 +398,7 @@
     "archive_failed": "Falló la copia sin conexión",
     "archive_unavailable": "Archivo no accesible",
     "copy_page": "Página",
+    "copy_article": "Artículo",
     "copy_pdf": "PDF",
     "copy_screenshot": "Captura",
     "archive_retry": "Reintentar"

@@ -5,10 +5,11 @@ With an [ArchiveBox](https://archivebox.io) server connected, NoteDiscovery also
 asks it to save every such page, so the note keeps working when the site changes
 or disappears.
 
-The card then says how the copy is going (*Saving offline copy…*, *Saved offline*,
-*Offline copy failed*) and, once saved, has buttons for:
+The card then says how the copy is going (*Saving offline copy…*, *Offline*,
+*Offline copy failed*) and, once saved, has icons for:
 
 - **Page**: the page as a single HTML file (SingleFile)
+- **Article**: the article alone, as a reader view (Readability), dark when your system is
 - **PDF**: the page printed to PDF
 - **Screenshot**: an image of the page
 
@@ -17,6 +18,16 @@ reachable from outside. A saved page opens without its scripts and can't load
 anything from the web.
 
 A failed copy has a **Try again** button.
+
+### Searching saved pages
+
+NoteDiscovery also keeps the text ArchiveBox extracted from each saved page, in
+`.links/` beside the card's preview. Search finds words in it: matching pages are
+listed under **Saved pages**, below the notes, and open in the reader view. A tag
+filter leaves them out, since tags belong to notes.
+
+Through [MCP](MCP.md), `search_notes` lists them too, and `get_saved_page` gives an
+assistant a page's whole text, so it can read what your notes link to.
 
 ## Setting it up
 
@@ -64,7 +75,9 @@ on `127.0.0.1`.
   for addresses already in your notes. Links to the server's own network get no card
   and are never sent to ArchiveBox.
 - **Where copies live:** in ArchiveBox's data folder (`./archivebox` with the compose
-  file), not in the notes folder. Back it up separately.
+  file), not in the notes folder. Back it up separately. Only each page's extracted
+  text is kept in the notes folder, for search.
+- **Pages saved before texts were kept** get theirs the next time their card is shown.
 - **Size:** the ArchiveBox image is over 1 GB, and each page takes from a few hundred
   KB to tens of MB.
 - **Versions:** ArchiveBox's REST API is still in alpha and changes between
