@@ -233,25 +233,6 @@ function homeFeature() {
             
             window.history.pushState({ homepageFolder: '' }, '', '/');
         },
-        
-        // Mobile files/home tab - context-aware behavior
-        mobileFilesTabClick() {
-            if (this.currentNote || this.currentMedia || this.showGraph) {
-                // Leaving content lands in the folder the item lives in, not the vault
-                // root: this tab is the only way out of a note on mobile, and dropping
-                // the user at the root loses their place. Root stays one tap away on
-                // the homepage breadcrumb.
-                const openPath = this.currentNote || this.currentMedia;
-                const parentFolder = openPath
-                    ? openPath.split('/').slice(0, -1).join('/')
-                    : this.selectedHomepageFolder;
-                this.goToHomepageFolder(parentFolder);
-                this.mobileSidebarOpen = false;
-            } else {
-                // On homepage → toggle files sidebar
-                this.activePanel = 'files';
-                this.mobileSidebarOpen = !this.mobileSidebarOpen;
-            }
-        },
+
     };
 }

@@ -663,7 +663,8 @@ function editorFeature() {
         // Each may run again on the same element when the item changes.
         
         _drawNode(name, element, attrs) {
-            if (name === 'linkCard') this._drawLinkCard(element, attrs.href);
+            if (name === 'frontmatter') this._drawFrontmatter(attrs);
+            else if (name === 'linkCard') this._drawLinkCard(element, attrs.href);
             else if (name === 'wikilink') this._drawWikilink(element, attrs);
             else if (name === 'mathInline') this._drawMath(element, attrs.source, false);
             else if (name === 'mathBlock') this._drawMath(element, attrs.source, true);

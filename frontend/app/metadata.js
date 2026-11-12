@@ -9,7 +9,6 @@ function metadataFeature() {
         
         // Note metadata (frontmatter) state
         noteMetadata: null,
-        metadataExpanded: false,
         _lastFrontmatter: null, // Cache to avoid re-parsing unchanged frontmatter
         
         // ========================================================================
@@ -343,6 +342,43 @@ function metadataFeature() {
         getMetadataTags() {
             if (!this.noteMetadata || !this.noteMetadata.tags) return [];
             return Array.isArray(this.noteMetadata.tags) ? this.noteMetadata.tags : [this.noteMetadata.tags];
+        },
+
+        // The properties box at the top of the editor: tags and a few fields, and when
+        // open in read-only mode every field (in edit mode the editor shows the YAML).
+        // Closed, a tap anywhere opens it; open, its tags filter by tag.
+        _drawFrontmatter({ summary, fields, open, editable }) {
+            const tag = (name) => (open
+                ? `<button type="button" class="metadata-tag" data-tag="${this.escapeHtml(name)}">#${this.escapeHtml(name)}</button>`
+                : `<span class="metadata-tag">#${this.escapeHtml(name)}</span>`);
+            const tags = this.getMetadataTags();
+            let html = '<span class="note-frontmatter-icon" aria-hidden="true">⚙️</span>';
+            if (this.getHasMetadata()) {
+                const shown = open ? tags : tags.slice(0, 5);
+                html += shown.map(tag).join('');
+                if (shown.length < tags.length) {
+                    html += `<span class="note-frontmatter-more">+${tags.length - shown.length}</span>`;
+                }
+                if (!(open && !editable)) {
+                    html += this.getPriorityMetadataFields().map((field) =>
+                        `<span class="note-frontmatter-field"><span>${this.escapeHtml(field.key)}:</span> ${field.valueHtml}</span>`).join('');
+                }
+            } else {
+                html += `<span class="note-frontmatter-label">${this.escapeHtml(this.t('editor.properties'))}</span>`;
+            }
+            html += `<span class="note-frontmatter-chevron" aria-hidden="true">${open ? '▲' : '▼'}</span>`;
+            summary.innerHTML = html;
+            summary.setAttribute('aria-label', this.t('editor.properties'));
+            summary.querySelectorAll('[data-tag]').forEach((button) => {
+                button.addEventListener('click', () => this.toggleTag(button.dataset.tag.toLowerCase()));
+            });
+
+            fields.innerHTML = open && !editable ? this.getAllMetadataFields().map((field) => {
+                const value = field.isArray
+                    ? this.noteMetadata[field.key].map((item) => `<span class="note-frontmatter-item">${this.escapeHtml(String(item))}</span>`).join('')
+                    : field.valueHtml;
+                return `<div class="note-frontmatter-row"><span>${this.escapeHtml(field.key)}</span><span>${value}</span></div>`;
+            }).join('') : '';
         },
     };
 }

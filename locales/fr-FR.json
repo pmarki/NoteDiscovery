@@ -69,6 +69,7 @@
     "filtered_notes": "Notes Filtrées"
   },
   "editor": {
+    "properties": "Propriétés",
     "attachments": "Pièces jointes",
     "attachments_toggle": "Afficher ou masquer les pièces jointes",
     "no_attachments": "Aucune pièce jointe",
@@ -121,6 +122,7 @@
     "empty": "vide"
   },
   "toolbar": {
+    "more": "Plus d’actions",
     "upload_attachments": "Téléverser des pièces jointes",
     "undo": "Annuler (Ctrl+Z)",
     "redo": "Rétablir (Ctrl+Y)",

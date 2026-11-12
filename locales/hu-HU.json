@@ -69,6 +69,7 @@
     "filtered_notes": "Szűrt jegyzetek"
   },
   "editor": {
+    "properties": "Tulajdonságok",
     "attachments": "Csatolmányok",
     "attachments_toggle": "Csatolmányok megjelenítése vagy elrejtése",
     "no_attachments": "Nincsenek csatolmányok",
@@ -121,6 +122,7 @@
     "empty": "üres"
   },
   "toolbar": {
+    "more": "További műveletek",
     "upload_attachments": "Csatolmányok feltöltése",
     "undo": "Visszavon (Ctrl+Z)",
     "redo": "Helyrehoz (Ctrl+Y)",
