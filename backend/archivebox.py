@@ -1,7 +1,7 @@
 """
 Offline copies of carded links, kept by an ArchiveBox server (https://archivebox.io).
 
-NoteDiscovery hands each new card's address to ArchiveBox and later asks how the
+Keep It hands each new card's address to ArchiveBox and later asks how the
 snapshot went. The copies stay in ArchiveBox; the app serves the few that make
 sense on their own (the single-file page, the PDF and the screenshot) through its
 own login, so ArchiveBox needn't be reachable from outside.
@@ -108,7 +108,7 @@ def snapshot_state(snapshot):
 
 
 class ArchiveBox:
-    def __init__(self, url: str, api_key: str, tag: str = "notediscovery"):
+    def __init__(self, url: str, api_key: str, tag: str = "keepit"):
         self.url = url.rstrip("/")
         self.api_key = api_key
         self.tag = tag

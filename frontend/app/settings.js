@@ -67,7 +67,7 @@ function settingsFeature() {
         // Initialize theme system
         async initTheme() {
             // A user's saved preference takes priority over the configured default.
-            const savedTheme = localStorage.getItem('noteDiscoveryTheme') || this.defaultTheme;
+            const savedTheme = localStorage.getItem('keepItTheme') || this.defaultTheme;
             this.currentTheme = savedTheme;
             await this.applyTheme(savedTheme);
         },
@@ -75,7 +75,7 @@ function settingsFeature() {
         // Set and apply theme
         async setTheme(themeId) {
             this.currentTheme = themeId;
-            localStorage.setItem('noteDiscoveryTheme', themeId);
+            localStorage.setItem('keepItTheme', themeId);
             await this.applyTheme(themeId);
         },
         

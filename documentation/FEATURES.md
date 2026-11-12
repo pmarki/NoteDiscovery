@@ -56,7 +56,7 @@
 
 ## ✏️ Drawing editor
 
-Sketch beside your notes without leaving NoteDiscovery. **+ New → New drawing** creates a **`drawing-{timestamp}.png`** next to your markdown files; those open in the drawing viewer, other images open as usual.
+Sketch beside your notes without leaving Keep It. **+ New → New drawing** creates a **`drawing-{timestamp}.png`** next to your markdown files; those open in the drawing viewer, other images open as usual.
 
 - **Tools** — Pencil, lines, rectangles, ellipses, eraser, eyedropper, paint bucket, text labels, clear; color and stroke width on the toolbar; undo/redo while you work.
 - **Saving** — Autosave and **Ctrl+S** / **Cmd+S** like the rest of the app.
@@ -415,13 +415,13 @@ Full immersive distraction-free writing experience:
 
 ## 📱 Progressive Web App (PWA)
 
-NoteDiscovery can be installed as a standalone app on your device:
+Keep It can be installed as a standalone app on your device:
 
 - **Install as app** - Add to home screen on mobile, or install via browser on desktop
 - **Standalone mode** - Runs without browser chrome for a native app feel
 
 ### How to Install
-- **Desktop (Chrome/Edge)**: Click the install icon in the address bar, or Menu → "Install NoteDiscovery"
+- **Desktop (Chrome/Edge)**: Click the install icon in the address bar, or Menu → "Install Keep It"
 - **Android**: Chrome Menu → "Add to Home Screen"
 - **iOS**: Safari Share → "Add to Home Screen"
 
@@ -458,10 +458,10 @@ Built-in **Model Context Protocol (MCP)** server for AI assistant integration:
 ```json
 {
   "mcpServers": {
-    "notediscovery": {
+    "keepit": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "ghcr.io/gamosoft/notediscovery:latest", "python", "-m", "mcp_server"],
-      "env": { "NOTEDISCOVERY_URL": "http://host.docker.internal:8000" }
+      "args": ["run", "--rm", "-i", "keepit:latest", "python", "-m", "mcp_server"],
+      "env": { "KEEPIT_URL": "http://host.docker.internal:8000" }
     }
   }
 }

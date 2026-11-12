@@ -1,7 +1,7 @@
 """
-HTTP client for NoteDiscovery API.
+HTTP client for Keep It API.
 
-Provides a clean interface to all NoteDiscovery API endpoints
+Provides a clean interface to all Keep It API endpoints
 with proper error handling, retries, and timeout management.
 """
 
@@ -25,9 +25,9 @@ class APIResponse:
     status_code: int = 200
 
 
-class NoteDiscoveryClient:
+class KeepItClient:
     """
-    HTTP client for NoteDiscovery API.
+    HTTP client for Keep It API.
     
     Uses only stdlib (urllib) for minimal dependencies.
     Handles authentication, retries, and error formatting.
@@ -443,7 +443,7 @@ class NoteDiscoveryClient:
     
     def health_check(self) -> APIResponse:
         """
-        Check if NoteDiscovery server is healthy.
+        Check if Keep It server is healthy.
         
         Returns:
             APIResponse with health status
@@ -452,7 +452,7 @@ class NoteDiscoveryClient:
     
     def get_config(self) -> APIResponse:
         """
-        Get NoteDiscovery configuration.
+        Get Keep It configuration.
         
         Returns:
             APIResponse with config data

@@ -2,7 +2,7 @@
 
 ## Built-in Themes
 
-NoteDiscovery ships with **several built-in themes** (light and dark styles). Open **Settings → Theme** to browse what is available; your choice is saved automatically.
+Keep It ships with **several built-in themes** (light and dark styles). Open **Settings → Theme** to browse what is available; your choice is saved automatically.
 
 To choose the theme shown to new browsers, set `ui.default_theme` in `config.yaml` to a theme ID (the CSS filename without `.css`). A theme previously selected in the browser is stored in `localStorage` and takes priority over this default.
 
@@ -17,7 +17,7 @@ The set can grow over time—see the `themes/` folder in the repository for the 
 The file name will become the theme ID (use lowercase with hyphens):
 
 ```bash
-cd notediscovery/themes
+cd keepit/themes
 touch my-awesome-theme.css
 ```
 
@@ -111,7 +111,7 @@ docker-compose restart
 
 # If running locally:
 # Stop the server (Ctrl+C) and run again:
-python -m notediscovery.backend.main
+python -m keepit.backend.main
 ```
 
 Your new theme will appear in the dropdown as **"🚀 My Awesome Theme"**!

@@ -146,56 +146,6 @@
                     <span class="mx-1">·</span>
                     <span x-text="'v' + appVersion"></span>
                                 </div>
-                    <a 
-                        href="https://www.notediscovery.com" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                                    class="text-xs hover:underline"
-                        style="color: var(--accent-primary);"
-                    >
-                                    notediscovery.com
-                    </a>
-                    <!-- Ko-fi support link (hidden if ALREADY_DONATED=true) -->
-                    <template x-if="!alreadyDonated">
-                        <div class="mt-3 flex flex-col gap-2 items-center">
-                            <a 
-                                href="https://ko-fi.com/gamosoft" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all hover:scale-105"
-                                style="background-color: #ff5e5b; color: white;"
-                            >
-                                <span>☕</span>
-                                <span x-text="t('support.enjoying_demo')"></span>
-                            </a>
-                            <!-- PikaPods deploy button -->
-                            <a 
-                                href="https://www.pikapods.com/pods?run=notediscovery" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                class="inline-flex items-center transition-all hover:scale-105"
-                            >
-                                <!-- Served locally so opening Settings makes no third-party request -->
-                                <img src="/static/pikapods-run-button.svg" alt="Run on PikaPods" style="height: 28px;">
-                            </a>
-                            <!-- Link to hide these buttons -->
-                            <a 
-                                href="https://github.com/gamosoft/NoteDiscovery/blob/main/documentation/ENVIRONMENT_VARIABLES.md#support" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                class="text-[10px] opacity-50 hover:opacity-100 transition-opacity"
-                                style="color: var(--text-tertiary);"
-                            >
-                                hide these buttons
-                            </a>
-                        </div>
-                    </template>
-                    <!-- Thank you message (shown when ALREADY_DONATED=true) -->
-                    <template x-if="alreadyDonated">
-                        <div class="mt-3 text-[10px] opacity-50 hover:opacity-100 transition-opacity text-center" style="color: var(--text-tertiary);">
-                            <span x-text="t('support.thank_you')"></span>
-                        </div>
-                    </template>
                 </div>
             </div>
                     </div>

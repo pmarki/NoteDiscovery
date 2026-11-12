@@ -1,19 +1,19 @@
 """
-NoteDiscovery MCP Server
+Keep It MCP Server
 
 A Model Context Protocol (MCP) server that enables AI assistants
-to interact with NoteDiscovery notes.
+to interact with Keep It notes.
 
 Usage:
     # As module
     python -m mcp_server
 
     # As installed CLI
-    notediscovery-mcp
+    keepit-mcp
 
 Environment Variables:
-    NOTEDISCOVERY_URL: NoteDiscovery server URL (default: http://localhost:8000)
-    NOTEDISCOVERY_API_KEY: API key for authentication (optional)
+    KEEPIT_URL: Keep It server URL (default: http://localhost:8000)
+    KEEPIT_API_KEY: API key for authentication (optional)
 """
 
 from pathlib import Path
@@ -30,7 +30,7 @@ def _read_version() -> str:
     """
     try:
         from importlib.metadata import version
-        return version("notediscovery")
+        return version("keepit")
     except Exception:
         pass
     try:
@@ -43,7 +43,7 @@ def _read_version() -> str:
 
 
 __version__ = _read_version()
-__author__ = "NoteDiscovery"
+__author__ = "Keep It"
 
 from .server import main
 

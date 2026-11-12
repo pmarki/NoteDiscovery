@@ -1,9 +1,9 @@
-# NoteDiscovery Configuration
+# Keep It Configuration
 
 app:
   # Name shown in the UI, the login page and the browser title.
   # Override via the APP_NAME env var.
-  name: "NoteDiscovery"
+  name: "Keep It"
   
 server:
   host: "0.0.0.0"
@@ -90,12 +90,12 @@ link_previews:
 archivebox:
   # Keep an offline copy of every link card in ArchiveBox (https://archivebox.io).
   # Cards then show whether the copy is ready, with buttons for the saved page, PDF
-  # and screenshot, served through NoteDiscovery's login. Off while url is empty.
+  # and screenshot, served through Keep It's login. Off while url is empty.
   # See documentation/ARCHIVEBOX.md. Override via ARCHIVEBOX_URL, ARCHIVEBOX_API_KEY
   # and ARCHIVEBOX_TAG.
   url: ""          # e.g. http://archivebox:5797
   api_key: ""      # an API token from ArchiveBox's admin
-  tag: "notediscovery"
+  tag: "keepit"
 
 mcp:
   # Serve MCP (Model Context Protocol) over Streamable HTTP at /mcp, so AI

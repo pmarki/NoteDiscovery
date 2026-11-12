@@ -1,4 +1,4 @@
-# 🔒 NoteDiscovery Authentication Guide
+# 🔒 Keep It Authentication Guide
 
 ## ⚠️ Default Password Warning
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-NoteDiscovery includes simple password protection for single-user deployments. When enabled, users must log in before accessing notes.
+Keep It includes simple password protection for single-user deployments. When enabled, users must log in before accessing notes.
 
 - ✅ Single user / self-hosted use
 - ✅ Passwords hashed with bcrypt
@@ -40,7 +40,7 @@ To set your own instead, for example when the notes folder is shared with others
 
 ```bash
 # Docker
-docker exec -it notediscovery python -c "import secrets; print(secrets.token_hex(32))"
+docker exec -it keepit python -c "import secrets; print(secrets.token_hex(32))"
 
 # Local
 python -c "import secrets; print(secrets.token_hex(32))"
@@ -80,7 +80,7 @@ authentication:
 docker-compose restart
 
 # Docker run
-docker restart notediscovery
+docker restart keepit
 
 # Local
 python run.py

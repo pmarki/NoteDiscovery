@@ -28,7 +28,7 @@ LOCK_PATH = Path(__file__).resolve().parent / "vendor_lock.json"
 MANIFEST_NAME = "MANIFEST.json"
 NOTICES_NAME = "THIRD_PARTY_NOTICES.md"
 
-USER_AGENT = "notediscovery-vendor/1.0 (+https://github.com/gamosoft/NoteDiscovery)"
+USER_AGENT = "keepit-vendor/1.0 (+https://github.com/pmarki/NoteDiscovery)"
 
 HLJS_VERSION = "11.9.0"
 HLJS_BASE = f"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/{HLJS_VERSION}"
@@ -286,8 +286,8 @@ def write_notices(dest, results):
         "# Third-party notices",
         "",
         "The browser libraries below are redistributed unmodified inside this",
-        "directory so that NoteDiscovery runs without contacting a CDN. Each one",
-        "keeps its own licence text alongside it. NoteDiscovery itself is MIT",
+        "directory so that Keep It runs without contacting a CDN. Each one",
+        "keeps its own licence text alongside it. Keep It itself is MIT",
         "licensed; these notices cover the vendored files only.",
         "",
         "| Library | Version | Licence | Licence text |",

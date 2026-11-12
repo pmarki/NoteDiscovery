@@ -306,7 +306,7 @@
     "section_notes": "Notatki",
     "section_files": "Pliki",
     "title": "Strona główna",
-    "welcome": "Witaj w NoteDiscovery",
+    "welcome": "Witaj w Keep It",
     "get_started": "Stwórz coś aby rozpocząć",
     "no_notes_title": "Brak notatek",
     "no_notes_desc": "Stwórz swoją pierwszą notatkę lub folder",
@@ -364,11 +364,6 @@
     "reserved_name": "Ta nazwa jest zarezerwowana przez system operacyjny.",
     "invalid_dot": "Nazwa nie może składać się z samej kropki.",
     "trailing_dot_space": "Nazwa nie może kończyć się kropką ani spacją."
-  },
-  "support": {
-    "enjoying_demo": "Wesprzyj ten projekt",
-    "deploy_own": "Uruchom własną instancję",
-    "thank_you": "Dziękujemy za wsparcie! 💚"
   },
   "demo": {
     "title": "TRYB DEMO",

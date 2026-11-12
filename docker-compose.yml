@@ -1,7 +1,8 @@
 services:
-  notediscovery:
+  keepit:
     build: .
-    container_name: notediscovery
+    image: keepit:latest
+    container_name: keepit
     ports:
       - "8000:8000"
     volumes:

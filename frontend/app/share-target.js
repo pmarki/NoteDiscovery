@@ -1,6 +1,6 @@
 // Text, links and files shared from another app (share_target in the manifest). The
 // service worker keeps the share in SHARE_CACHE; this asks where it goes and puts it there.
-const SHARE_CACHE = 'notediscovery-share';
+const SHARE_CACHE = 'keepit-share';
 
 function shareTargetFeature() {
     return {

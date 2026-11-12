@@ -3,13 +3,13 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "notediscovery"
+name = "keepit"
 dynamic = ["version"]
 description = "A beautiful, fast markdown notes discovery and browsing tool"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "NoteDiscovery"}
+    {name = "Keep It"}
 ]
 keywords = [
     "notes",
@@ -59,16 +59,15 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://notediscovery.com"
-Documentation = "https://github.com/gamosoft/NoteDiscovery#readme"
-Repository = "https://github.com/gamosoft/NoteDiscovery"
-Issues = "https://github.com/gamosoft/NoteDiscovery/issues"
+Documentation = "https://github.com/pmarki/NoteDiscovery#readme"
+Repository = "https://github.com/pmarki/NoteDiscovery"
+Issues = "https://github.com/pmarki/NoteDiscovery/issues"
 
 [project.scripts]
 # Main application
-notediscovery = "run:main"
+keepit = "run:main"
 # MCP server for AI assistants
-notediscovery-mcp = "mcp_server:main"
+keepit-mcp = "mcp_server:main"
 
 [tool.setuptools]
 packages = ["backend", "mcp_server", "plugins"]

@@ -1,6 +1,6 @@
 # Drawing editor
 
-NoteDiscovery includes a **built-in drawing editor** for sketching and annotating directly in the app. Drawings are stored as ordinary **PNG files** in your vault, so they work like any other image: previews, export, and backups behave the same.
+Keep It includes a **built-in drawing editor** for sketching and annotating directly in the app. Drawings are stored as ordinary **PNG files** in your vault, so they work like any other image: previews, export, and backups behave the same.
 
 ## Creating a drawing
 

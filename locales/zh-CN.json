@@ -306,7 +306,7 @@
     "section_notes": "笔记",
     "section_files": "文件",
     "title": "首页",
-    "welcome": "欢迎使用 NoteDiscovery",
+    "welcome": "欢迎使用 Keep It",
     "get_started": "创建一些内容以开始使用",
     "no_notes_title": "尚无笔记",
     "no_notes_desc": "创建您的第一篇笔记或文件夹",
@@ -364,11 +364,6 @@
     "reserved_name": "此名称被操作系统保留。",
     "invalid_dot": "名称不能只是一个点。",
     "trailing_dot_space": "名称不能以点或空格结尾。"
-  },
-  "support": {
-    "enjoying_demo": "支持此项目",
-    "deploy_own": "部署您自己的实例",
-    "thank_you": "感谢您的支持！💚"
   },
   "demo": {
     "title": "演示模式",

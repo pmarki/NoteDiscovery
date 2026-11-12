@@ -1,10 +1,10 @@
 # MCP Integration (AI Assistants)
 
-NoteDiscovery includes a built-in **Model Context Protocol (MCP)** server that enables AI assistants like **Cursor**, **Claude Desktop**, and other MCP-compatible clients to interact with your notes.
+Keep It includes a built-in **Model Context Protocol (MCP)** server that enables AI assistants like **Cursor**, **Claude Desktop**, and other MCP-compatible clients to interact with your notes.
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open standard that allows AI assistants to securely access external tools and data sources. With the NoteDiscovery MCP server, your AI assistant can:
+MCP (Model Context Protocol) is an open standard that allows AI assistants to securely access external tools and data sources. With the Keep It MCP server, your AI assistant can:
 
 - 🔍 **Search** through your notes
 - 📖 **Read** note contents
@@ -25,18 +25,18 @@ Add this to your `~/.cursor/mcp.json` (or Claude Desktop config):
 ```json
 {
   "mcpServers": {
-    "notediscovery": {
+    "keepit": {
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "NOTEDISCOVERY_URL",
-        "-e", "NOTEDISCOVERY_API_KEY",
-        "ghcr.io/gamosoft/notediscovery:latest",
+        "-e", "KEEPIT_URL",
+        "-e", "KEEPIT_API_KEY",
+        "keepit:latest",
         "python", "-m", "mcp_server"
       ],
       "env": {
-        "NOTEDISCOVERY_URL": "http://host.docker.internal:8000",
-        "NOTEDISCOVERY_API_KEY": ""
+        "KEEPIT_URL": "http://host.docker.internal:8000",
+        "KEEPIT_API_KEY": ""
       }
     }
   }
@@ -45,9 +45,9 @@ Add this to your `~/.cursor/mcp.json` (or Claude Desktop config):
 
 ### If You Use Python
 
-1. **Install NoteDiscovery** (if not already):
+1. **Install Keep It** (if not already):
    ```bash
-   pip install notediscovery
+   pip install keepit
    # or from source:
    pip install .
    ```
@@ -56,11 +56,11 @@ Add this to your `~/.cursor/mcp.json` (or Claude Desktop config):
    ```json
    {
      "mcpServers": {
-       "notediscovery": {
-         "command": "notediscovery-mcp",
+       "keepit": {
+         "command": "keepit-mcp",
          "env": {
-           "NOTEDISCOVERY_URL": "http://localhost:8000",
-           "NOTEDISCOVERY_API_KEY": ""
+           "KEEPIT_URL": "http://localhost:8000",
+           "KEEPIT_API_KEY": ""
          }
        }
      }
@@ -72,26 +72,26 @@ Add this to your `~/.cursor/mcp.json` (or Claude Desktop config):
 ```json
 {
   "mcpServers": {
-    "notediscovery": {
+    "keepit": {
       "command": "python",
       "args": ["-m", "mcp_server"],
-      "cwd": "/path/to/NoteDiscovery",
+      "cwd": "/path/to/Keep It",
       "env": {
-        "PYTHONPATH": "/path/to/NoteDiscovery",
-        "NOTEDISCOVERY_URL": "http://localhost:8000"
+        "PYTHONPATH": "/path/to/Keep It",
+        "KEEPIT_URL": "http://localhost:8000"
       }
     }
   }
 }
 ```
 
-> **Note:** The `PYTHONPATH` is required so Python can find the `mcp_server` module. On Windows, use backslashes: `"PYTHONPATH": "C:\\path\\to\\NoteDiscovery"`
+> **Note:** The `PYTHONPATH` is required so Python can find the `mcp_server` module. On Windows, use backslashes: `"PYTHONPATH": "C:\\path\\to\\Keep It"`
 
 ### Remote Access (Streamable HTTP)
 
 The setups above spawn the MCP server **per session**. Your AI client starts a fresh container or process every time you open a chat and tears it down when you close it. That's the recommended default: zero setup and no extra network exposure.
 
-If you'd rather connect by URL, so that several devices share one NoteDiscovery instance or the client runs on another machine, NoteDiscovery can serve MCP itself over **Streamable HTTP** at `/mcp`. It runs in the NoteDiscovery process, so there's no extra service or port to manage.
+If you'd rather connect by URL, so that several devices share one Keep It instance or the client runs on another machine, Keep It can serve MCP itself over **Streamable HTTP** at `/mcp`. It runs in the Keep It process, so there's no extra service or port to manage.
 
 **1. Enable it** (it is off by default):
 
@@ -110,7 +110,7 @@ or set `MCP_ENABLED=true` (Docker: `-e MCP_ENABLED=true`). The startup log confi
 ```json
 {
   "mcpServers": {
-    "notediscovery": {
+    "keepit": {
       "type": "http",
       "url": "https://notes.example.com/mcp",
       "headers": {
@@ -124,19 +124,19 @@ or set `MCP_ENABLED=true` (Docker: `-e MCP_ENABLED=true`). The startup log confi
 Claude Code:
 
 ```bash
-claude mcp add --transport http notediscovery https://notes.example.com/mcp \
+claude mcp add --transport http keepit https://notes.example.com/mcp \
   --header "Authorization: Bearer your-secure-api-key-here"
 ```
 
 The exact JSON shape varies a little between clients (some infer the transport from `url` and don't need `"type"`), so check your client's docs for remote/HTTP servers.
 
-> **Exposure:** this is an HTTP endpoint on your NoteDiscovery server, so anyone who can reach it and holds the API key can read and write your notes. Serve it over HTTPS (e.g. behind a reverse proxy) when it leaves your LAN. If `server.allowed_origins` lists specific origins instead of `"*"`, requests carrying any other `Origin` header are rejected.
+> **Exposure:** this is an HTTP endpoint on your Keep It server, so anyone who can reach it and holds the API key can read and write your notes. Serve it over HTTPS (e.g. behind a reverse proxy) when it leaves your LAN. If `server.allowed_origins` lists specific origins instead of `"*"`, requests carrying any other `Origin` header are rejected.
 
 The endpoint is stateless and returns plain JSON responses. It doesn't use SSE streams or session IDs, so it works through ordinary reverse proxies with no buffering or sticky-session configuration.
 
 #### Migrating from mcp-proxy / SSE
 
-Earlier versions of this guide used [mcp-proxy](https://github.com/sparfenyuk/mcp-proxy) to expose the stdio server over the now-deprecated SSE transport (`http://your-host:3000/sse`). The built-in endpoint replaces that: enable `mcp.enabled`, change your client config's URL to `https://<your NoteDiscovery URL>/mcp`, add the auth header, and retire the proxy.
+Earlier versions of this guide used [mcp-proxy](https://github.com/sparfenyuk/mcp-proxy) to expose the stdio server over the now-deprecated SSE transport (`http://your-host:3000/sse`). The built-in endpoint replaces that: enable `mcp.enabled`, change your client config's URL to `https://<your Keep It URL>/mcp`, add the auth header, and retire the proxy.
 
 #### Trade-offs vs. the default per-session setup
 
@@ -145,27 +145,27 @@ Earlier versions of this guide used [mcp-proxy](https://github.com/sparfenyuk/mc
 | Setup complexity | None. Add the JSON config and you're done | Flip `mcp.enabled`, set an API key |
 | Startup cost | ~1–2s container cold start per session | None. The server is already running |
 | Multi-device | Each device spawns its own | Every device uses the same URL |
-| Network exposure | None (local pipes only) | Same as NoteDiscovery itself. **You** own the TLS and firewalling |
+| Network exposure | None (local pipes only) | Same as Keep It itself. **You** own the TLS and firewalling |
 | Extra processes | One per session | None |
 
-**Per-session stdio is the right default** for single-user, single-machine setups. Use `/mcp` when you want shared or remote access and NoteDiscovery is already reachable from where your AI client runs.
+**Per-session stdio is the right default** for single-user, single-machine setups. Use `/mcp` when you want shared or remote access and Keep It is already reachable from where your AI client runs.
 
 ## Configuration
 
 ### Environment Variables
 
-These configure the stdio server (`python -m mcp_server` / `notediscovery-mcp`). The `/mcp` HTTP endpoint is configured on the NoteDiscovery server instead: see [Remote Access](#remote-access-streamable-http).
+These configure the stdio server (`python -m mcp_server` / `keepit-mcp`). The `/mcp` HTTP endpoint is configured on the Keep It server instead: see [Remote Access](#remote-access-streamable-http).
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `NOTEDISCOVERY_URL` | Yes | `http://localhost:8000` | URL where NoteDiscovery is running |
-| `NOTEDISCOVERY_API_KEY` | If auth enabled | - | API key from `config.yaml` |
-| `NOTEDISCOVERY_TIMEOUT` | No | `30` | Request timeout in seconds |
-| `NOTEDISCOVERY_MAX_RETRIES` | No | `3` | Max retry attempts for failed requests |
+| `KEEPIT_URL` | Yes | `http://localhost:8000` | URL where Keep It is running |
+| `KEEPIT_API_KEY` | If auth enabled | - | API key from `config.yaml` |
+| `KEEPIT_TIMEOUT` | No | `30` | Request timeout in seconds |
+| `KEEPIT_MAX_RETRIES` | No | `3` | Max retry attempts for failed requests |
 
 ### URL Configuration by Setup
 
-| Your Setup | `NOTEDISCOVERY_URL` |
+| Your Setup | `KEEPIT_URL` |
 |------------|---------------------|
 | Local Python (`run.py`) | `http://localhost:8000` |
 | Docker with `-p 8000:8000` | `http://host.docker.internal:8000` |
@@ -380,7 +380,7 @@ Once configured, you can interact with your notes naturally:
 
 ## Authentication
 
-If you have authentication enabled in NoteDiscovery:
+If you have authentication enabled in Keep It:
 
 1. Generate an API key in `config.yaml`:
    ```yaml
@@ -392,8 +392,8 @@ If you have authentication enabled in NoteDiscovery:
 2. Add the key to your MCP config:
    ```json
    "env": {
-     "NOTEDISCOVERY_URL": "http://localhost:8000",
-     "NOTEDISCOVERY_API_KEY": "your-secure-api-key-here"
+     "KEEPIT_URL": "http://localhost:8000",
+     "KEEPIT_API_KEY": "your-secure-api-key-here"
    }
    ```
 
@@ -403,8 +403,8 @@ If you have authentication enabled in NoteDiscovery:
 
 ### "Connection refused" error
 
-- Ensure NoteDiscovery is running
-- Check the `NOTEDISCOVERY_URL` is correct
+- Ensure Keep It is running
+- Check the `KEEPIT_URL` is correct
 - For Docker: use `host.docker.internal` instead of `localhost`
 
 ### "Not authenticated" error
@@ -427,8 +427,8 @@ If you have authentication enabled in NoteDiscovery:
 
 ```bash
 # Set environment variables
-export NOTEDISCOVERY_URL=http://localhost:8000
-export NOTEDISCOVERY_API_KEY=your-key
+export KEEPIT_URL=http://localhost:8000
+export KEEPIT_API_KEY=your-key
 
 # Run the MCP server (Ctrl+C to stop)
 python -m mcp_server
@@ -445,14 +445,14 @@ curl http://localhost:8000/health
 ```
 ┌─────────────────┐     stdio (JSON-RPC)     ┌─────────────────┐
 │   AI Assistant  │ ◄──────────────────────► │   MCP Server    │
-│ (Cursor/Claude) │                          │ (notediscovery- │
+│ (Cursor/Claude) │                          │ (keepit- │
 └─────────────────┘                          │      mcp)       │
                                              └────────┬────────┘
                                                       │
                                                       │ HTTP/REST
                                                       ▼
                                              ┌─────────────────┐
-                                             │  NoteDiscovery  │
+                                             │  Keep It  │
                                              │     Server      │
                                              │  (port 8000)    │
                                              └─────────────────┘
@@ -469,26 +469,26 @@ The MCP server is a **separate process** that:
 2. Translates MCP requests into HTTP API calls
 3. Returns results back to the AI assistant
 
-With [Streamable HTTP](#remote-access-streamable-http) enabled, the same MCP server code runs inside NoteDiscovery instead. AI assistants POST JSON-RPC to `/mcp`, and tool calls reach the REST API over loopback using the configured API key.
+With [Streamable HTTP](#remote-access-streamable-http) enabled, the same MCP server code runs inside Keep It instead. AI assistants POST JSON-RPC to `/mcp`, and tool calls reach the REST API over loopback using the configured API key.
 
 Your notes stay local. The MCP server just provides a bridge for AI access.
 
 ## Privacy & Security
 
-- **Notes stay local**: The MCP server only accesses notes through NoteDiscovery's API
+- **Notes stay local**: The MCP server only accesses notes through Keep It's API
 - **No external calls**: No data is sent to external services
 - **API key protected**: Use authentication to control access
-- **Read what you allow**: AI can only access notes NoteDiscovery serves
+- **Read what you allow**: AI can only access notes Keep It serves
 
 ## File Structure
 
 ```
-NoteDiscovery/
+Keep It/
 ├── mcp_server/
 │   ├── __init__.py      # Package entry point
 │   ├── __main__.py      # Module runner
 │   ├── server.py        # MCP protocol implementation
-│   ├── client.py        # HTTP client for NoteDiscovery API
+│   ├── client.py        # HTTP client for Keep It API
 │   ├── config.py        # Configuration management
 │   └── tools.py         # Tool definitions
 └── ...
@@ -496,4 +496,4 @@ NoteDiscovery/
 
 ## Try it with a local LLM
 
-For a batteries-included setup that runs NoteDiscovery alongside [Ollama](https://ollama.com) (local LLM runtime) and [Open WebUI](https://openwebui.com) (browser chat UI), see **[OLLAMA-STACK.md](../OLLAMA-STACK.md)** in the repo root. One `docker compose` command spins everything up, and you can point Cursor at both your notes (via this MCP server) and your local model.
+For a batteries-included setup that runs Keep It alongside [Ollama](https://ollama.com) (local LLM runtime) and [Open WebUI](https://openwebui.com) (browser chat UI), see **[OLLAMA-STACK.md](../OLLAMA-STACK.md)** in the repo root. One `docker compose` command spins everything up, and you can point Cursor at both your notes (via this MCP server) and your local model.

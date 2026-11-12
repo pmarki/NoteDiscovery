@@ -1,6 +1,6 @@
 # Third-Party Browser Libraries
 
-NoteDiscovery serves every JavaScript and CSS library from its own `/static/vendor/`
+Keep It serves every JavaScript and CSS library from its own `/static/vendor/`
 path instead of a public CDN. This means:
 
 - **The app works offline** — air-gapped networks, LAN-only installs and internet
@@ -37,7 +37,7 @@ per-diagram chunks.
 DOMPurify is dual-licensed Apache-2.0 OR MPL-2.0, and vis-network is
 dual-licensed Apache-2.0 OR MIT. Both are taken under Apache-2.0.
 
-All of these licences are permissive and compatible with NoteDiscovery's own MIT
+All of these licences are permissive and compatible with Keep It's own MIT
 licence. None of them is copyleft, and none places any requirement on your notes
 or on how you deploy the app.
 
@@ -45,11 +45,6 @@ Apache-2.0 additionally requires redistributing an upstream `NOTICE` file where
 one exists. None of the Apache-2.0 libraries above ships one (checked against the
 published packages for the exact pinned versions), so the licence texts we
 include are sufficient.
-
-One non-library asset is served locally for the same reason:
-`frontend/pikapods-run-button.svg` is PikaPods' own deploy button, kept here so
-that opening Settings does not fetch an image from them. It is their brand asset
-and is used only to link to them.
 
 ## How the files get there
 
@@ -100,7 +95,7 @@ before committing it, since it is the record of exactly what users will receive.
 
 A downloaded export is the one page that still loads from CDNs, deliberately: it
 is meant to be a portable single file that renders on a machine with no access to
-your NoteDiscovery server, so pointing it at `/static/vendor/` would make it
+your Keep It server, so pointing it at `/static/vendor/` would make it
 *less* portable, not more. The trade-off is that an exported file needs internet
 to render maths, diagrams and syntax highlighting. Inlining ~13 MB into every
 export is the only alternative that would be truly self-contained.

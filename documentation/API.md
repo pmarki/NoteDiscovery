@@ -720,13 +720,13 @@ Returns application statistics at a glance. Designed for dashboard widgets (e.g.
 
 **Example ([Homepage](https://gethomepage.dev/) dashboard widget):**
 ```yaml
-- NoteDiscovery:
-    href: https://notediscovery.homelab.local
-    icon: notediscovery
-    container: homelab-notediscovery
+- Keep It:
+    href: https://keepit.homelab.local
+    icon: keepit
+    container: homelab-keepit
     widget:
       type: customapi
-      url: http://notediscovery:8000/api/stats
+      url: http://keepit:8000/api/stats
       refreshInterval: 60000
       mappings:
         - field: notes_count

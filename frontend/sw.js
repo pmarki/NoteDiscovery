@@ -1,14 +1,14 @@
-// NoteDiscovery Service Worker
+// Keep It Service Worker
 // Minimal service worker for PWA install support
 
 // Cache version - the server fills in the app version plus a hash of our own scripts
 // Cache is invalidated whenever either changes, which forces users to download
 // fresh files without needing a release.
-const CACHE_NAME = 'notediscovery-__APP_VERSION__';
+const CACHE_NAME = 'keepit-__APP_VERSION__';
 
 // Something shared to the app from another one (see share_target in the manifest),
 // kept until the app has put it somewhere. Not versioned, so an update can't lose it.
-const SHARE_CACHE = 'notediscovery-share';
+const SHARE_CACHE = 'keepit-share';
 
 // Assets to cache for faster repeat visits. Our scripts carry the same ?v= as their
 // script tags in index.html, so this precaches the URL the page actually requests.

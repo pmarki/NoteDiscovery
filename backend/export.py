@@ -1,5 +1,5 @@
 """
-HTML Export Module for NoteDiscovery
+HTML Export Module for Keep It
 Generates standalone HTML files for notes with embedded images and styling.
 Used by both /api/export (download) and /share (public sharing) endpoints.
 

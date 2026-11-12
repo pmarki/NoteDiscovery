@@ -1,8 +1,8 @@
 """
-MCP Server implementation for NoteDiscovery.
+MCP Server implementation for Keep It.
 
 Implements the Model Context Protocol (MCP), enabling AI assistants to
-interact with NoteDiscovery notes. The dispatch logic is transport-agnostic:
+interact with Keep It notes. The dispatch logic is transport-agnostic:
 `run()` serves it over stdio, and the backend serves it over Streamable HTTP
 at /mcp (see backend/mcp_http.py).
 
@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 from . import __version__
 from .config import load_config, MCPConfig
-from .client import NoteDiscoveryClient, APIResponse
+from .client import KeepItClient, APIResponse
 from .tools import TOOLS, get_tool_names
 
 
@@ -34,14 +34,14 @@ SUPPORTED_PROTOCOL_VERSIONS = (
 # Server info: version comes from the package (resolved against the VERSION
 # file at repo root, or importlib.metadata when pip-installed).
 SERVER_INFO = {
-    "name": "notediscovery-mcp",
+    "name": "keepit-mcp",
     "version": __version__,
 }
 
 
 class MCPServer:
     """
-    MCP Server that bridges AI assistants with NoteDiscovery.
+    MCP Server that bridges AI assistants with Keep It.
     
     Implements the MCP protocol (JSON-RPC 2.0). `handle_message` is
     transport-agnostic; `run` serves it over stdio.
@@ -58,12 +58,12 @@ class MCPServer:
                 request, so they turn this off.
         """
         self.config = config
-        self.client = NoteDiscoveryClient(config)
+        self.client = KeepItClient(config)
         self._initialized = not require_initialize
 
     def _log(self, message: str) -> None:
         """Log message to stderr (not stdout which is for MCP protocol)."""
-        print(f"[notediscovery-mcp] {message}", file=sys.stderr)
+        print(f"[keepit-mcp] {message}", file=sys.stderr)
 
     def _response(self, id: Any, result: Any = None, error: Optional[dict] = None) -> dict:
         """
@@ -119,7 +119,7 @@ class MCPServer:
     
     def handle_initialized(self, params: dict) -> None:
         """Handle initialized notification."""
-        self._log(f"Connected to NoteDiscovery at {self.config.base_url}")
+        self._log(f"Connected to Keep It at {self.config.base_url}")
     
     def handle_list_tools(self, params: dict) -> dict:
         """Handle tools/list request."""
@@ -700,12 +700,12 @@ class MCPServer:
         response = self.client.health_check()
         
         if not response.success:
-            return f"❌ NoteDiscovery is not reachable: {response.error}"
+            return f"❌ Keep It is not reachable: {response.error}"
         
-        return f"✅ NoteDiscovery is healthy at {self.config.base_url}"
+        return f"✅ Keep It is healthy at {self.config.base_url}"
 
     def _tool_get_config(self, args: dict) -> str:
-        """Get NoteDiscovery server configuration."""
+        """Get Keep It server configuration."""
         response = self.client.get_config()
 
         if not response.success:
@@ -715,7 +715,7 @@ class MCPServer:
         if not data:
             return "Server returned empty configuration."
 
-        output = ["NoteDiscovery Server Configuration:\n"]
+        output = ["Keep It Server Configuration:\n"]
         for key in sorted(data.keys()):
             value = data[key]
             if isinstance(value, (dict, list)):
@@ -799,7 +799,7 @@ class MCPServer:
         This is the main event loop that processes JSON-RPC messages.
         """
         self._log("Starting MCP server...")
-        self._log(f"NoteDiscovery URL: {self.config.base_url}")
+        self._log(f"Keep It URL: {self.config.base_url}")
         
         for line in sys.stdin:
             line = line.strip()
@@ -838,10 +838,10 @@ def main() -> None:
     try:
         server.run()
     except KeyboardInterrupt:
-        print("\n[notediscovery-mcp] Interrupted", file=sys.stderr)
+        print("\n[keepit-mcp] Interrupted", file=sys.stderr)
         sys.exit(0)
     except Exception as e:
-        print(f"[notediscovery-mcp] Fatal error: {e}", file=sys.stderr)
+        print(f"[keepit-mcp] Fatal error: {e}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
         sys.exit(1)
 

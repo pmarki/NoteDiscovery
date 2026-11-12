@@ -16,7 +16,7 @@ The recipient can view the note in their browser - no account needed.
 By default the link ends in a random string, like `/share/LRFEo86oSVeJ3Gju`. To pick
 the ending yourself, untick **Use a random link** before creating the link. The field
 starts from the note's first few words, and the full URL is shown underneath as you
-type. NoteDiscovery checks the name while you type and refuses one that another link
+type. Keep It checks the name while you type and refuses one that another link
 already uses.
 
 Names may contain letters, numbers, hyphens and underscores, between 3 and 64
@@ -32,7 +32,7 @@ name; those notes fall back to a suggestion based on the filename.
 
 ## Public Share Origin
 
-Share links normally use the host you are browsing on. If you open NoteDiscovery on
+Share links normally use the host you are browsing on. If you open Keep It on
 your LAN (`http://192.168.x.x:8000`) but want copied / QR links to point at a public
 hostname, set an optional public origin:
 

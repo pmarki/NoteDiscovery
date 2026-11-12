@@ -25,14 +25,14 @@ image. So fetch the one file you want straight into your mounted folder:
 
 ```bash
 curl -o plugins/<plugin>.py \
-  https://raw.githubusercontent.com/gamosoft/NoteDiscovery/main/plugins/contrib/<plugin>.py
+  https://raw.githubusercontent.com/pmarki/NoteDiscovery/main/plugins/contrib/<plugin>.py
 docker-compose restart
 ```
 
 Or lift the whole bundled folder out of the image once, and mount that:
 
 ```bash
-docker cp notediscovery:/app/plugins ./plugins
+docker cp keepit:/app/plugins ./plugins
 # uncomment the plugins volume in docker-compose.yml
 cp plugins/contrib/<plugin>.py plugins/
 docker-compose up -d

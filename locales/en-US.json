@@ -306,7 +306,7 @@
     "section_notes": "Notes",
     "section_files": "Files",
     "title": "Home",
-    "welcome": "Welcome to NoteDiscovery",
+    "welcome": "Welcome to Keep It",
     "get_started": "Create something to get started",
     "no_notes_title": "No notes yet",
     "no_notes_desc": "Create your first note or folder",
@@ -364,11 +364,6 @@
     "reserved_name": "This name is reserved by the operating system.",
     "invalid_dot": "Name cannot be just a dot.",
     "trailing_dot_space": "Name cannot end with a dot or space."
-  },
-  "support": {
-    "enjoying_demo": "Support this project",
-    "deploy_own": "Deploy your own instance",
-    "thank_you": "Thank you for your support! 💚"
   },
   "demo": {
     "title": "DEMO MODE",

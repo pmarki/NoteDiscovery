@@ -1,6 +1,6 @@
 # 🔧 Environment Variables
 
-NoteDiscovery supports environment variables to override configuration settings, allowing different behavior in different deployment environments (local, staging, production).
+Keep It supports environment variables to override configuration settings, allowing different behavior in different deployment environments (local, staging, production).
 
 ## 📋 Available Environment Variables
 
@@ -9,9 +9,9 @@ NoteDiscovery supports environment variables to override configuration settings,
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `PORT` | integer | `8000` | HTTP port for the application (Docker, run.py) |
-| `APP_NAME` | string | `NoteDiscovery` | Name shown in the UI, the login page, the browser title and the API docs. Overrides `app.name` in `config.yaml`. |
+| `APP_NAME` | string | `Keep It` | Name shown in the UI, the login page, the browser title and the API docs. Overrides `app.name` in `config.yaml`. |
 | `SHARE_PUBLIC_ORIGIN` | string | _(empty)_ | Optional. When set, share links in the dialog / QR / clipboard (and API `url` fields) use this origin instead of the browser or request host. Example: `https://notes.example.com`. Overrides `server.share_public_origin` in `config.yaml`. |
-| `FORWARDED_ALLOW_IPS` | string | `127.0.0.1` | Reverse proxy deployments only. Set to `*` so `X-Forwarded-Proto` and `X-Forwarded-For` are trusted and the app sees the real scheme and client IP. Read by uvicorn, not by NoteDiscovery. |
+| `FORWARDED_ALLOW_IPS` | string | `127.0.0.1` | Reverse proxy deployments only. Set to `*` so `X-Forwarded-Proto` and `X-Forwarded-For` are trusted and the app sees the real scheme and client IP. Read by uvicorn, not by Keep It. |
 | `PUID` / `PGID` | integer | `1000` | Docker only. The user and group the app runs as. At start, the notes folder and `plugins/` are handed to them, since older images ran as root. Set them to your own IDs (`id -u`, `id -g`) to keep the files yours on the host. Alternatively run the container with `--user`, which skips that step. |
 
 > **Note**: Advanced server settings (CORS origins, debug mode) are configured via `config.yaml` only, not via environment variables. See [config.yaml](#advanced-server-configuration) for details.
@@ -102,7 +102,7 @@ AUTHENTICATION_PASSWORD=mysecretpassword
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `MCP_ENABLED` | boolean | `false` | Serve MCP over Streamable HTTP at `/mcp`. Requires `AUTHENTICATION_API_KEY` when authentication is enabled. See [MCP.md](MCP.md#remote-access-streamable-http) |
-| `MCP_LOOPBACK_URL` | string | `http://127.0.0.1:<listening port>` | URL the `/mcp` endpoint uses to call back into NoteDiscovery for tool calls. Only needed for unusual setups (e.g. listening on a unix socket) |
+| `MCP_LOOPBACK_URL` | string | `http://127.0.0.1:<listening port>` | URL the `/mcp` endpoint uses to call back into Keep It for tool calls. Only needed for unusual setups (e.g. listening on a unix socket) |
 
 ### Link cards
 
@@ -112,23 +112,13 @@ AUTHENTICATION_PASSWORD=mysecretpassword
 | `LINK_PREVIEWS_ALLOW_PRIVATE_NETWORKS` | boolean | `false` | Also make cards for addresses on the server's own network (`localhost`, `192.168.x.x`, ...). Off, so a note can't make the server probe that network |
 | `ARCHIVEBOX_URL` | string | *(empty)* | ArchiveBox server that keeps an offline copy of every link card, e.g. `http://archivebox:5797`. Off while empty. See [ARCHIVEBOX.md](ARCHIVEBOX.md) |
 | `ARCHIVEBOX_API_KEY` | string | *(empty)* | API token from ArchiveBox's admin. Required with `ARCHIVEBOX_URL` |
-| `ARCHIVEBOX_TAG` | string | `notediscovery` | Tag ArchiveBox puts on the pages NoteDiscovery sends |
+| `ARCHIVEBOX_TAG` | string | `keepit` | Tag ArchiveBox puts on the pages Keep It sends |
 
 ### Demo Mode
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `DEMO_MODE` | boolean | `false` | Enable demo mode (enables rate limiting and other demo restrictions) |
-
-### Support
-
-| Variable | Type | Default | Description |
-|----------|------|---------|-------------|
-| `ALREADY_DONATED` | boolean | `false` | Hides the support buttons in the Settings pane |
-
-> ⚠️ **Disclaimer:** No verification exists. But legend says that setting this to `true` without donating causes your next `git push` to fail silently. Just once. When it matters most.
->
-> Haven't donated yet? [☕ Buy me a coffee](https://ko-fi.com/gamosoft) - it takes 30 seconds and makes my day!
 
 ### Upload Limits
 

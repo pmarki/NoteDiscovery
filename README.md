@@ -1,29 +1,16 @@
 <p align="center">
-  <img alt="GitHub Stars" src="https://img.shields.io/github/stars/gamosoft/notediscovery?style=flat">
-  <img alt="Build" src="https://img.shields.io/github/actions/workflow/status/gamosoft/notediscovery/docker-publish.yml">
-  <img alt="Latest Version" src="https://img.shields.io/github/v/tag/gamosoft/notediscovery">
-  <a href="https://github.com/gamosoft/NoteDiscovery/pkgs/container/notediscovery"><img alt="GHCR Pulls" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgamosoft%2FNoteDiscovery%2Fstats%2Fghcr.json&style=flat"></a>
-  <img alt="License" src="https://img.shields.io/github/license/gamosoft/notediscovery">
+  <img src="frontend/logo.svg" alt="Keep It" width="120">
 </p>
 
-<p align="center">
-  <img src="docs/logo.svg" alt="NoteDiscovery" width="120">
-</p>
+<h1 align="center">Keep It</h1>
 
-<h1 align="center">NoteDiscovery</h1>
+<p align="center"><i>Notes, links and the pages they point to, kept on your own server</i></p>
 
-<p align="center"><i>Your Self-Hosted Knowledge Base</i></p>
+## What is Keep It?
 
-## What is NoteDiscovery?
+Keep It is a **lightweight, self-hosted note-taking application** that puts you in complete control of your knowledge base. Write and organize notes, turn web addresses into link cards, and keep an offline copy of every linked page with [ArchiveBox](documentation/ARCHIVEBOX.md), all running on your own server.
 
-NoteDiscovery is a **lightweight, self-hosted note-taking application** that puts you in complete control of your knowledge base. Write, organize, and discover your notes with a beautiful, modern interface—all running on your own server.
-
-<p align="center">
-  <img src="docs/carousel-1.jpg" alt="Editor and sidebar" width="32%">
-  <img src="docs/carousel-2.jpg" alt="Full-text search" width="32%">
-  <img src="docs/carousel-6.jpg" alt="Graph view of linked notes" width="32%">
-</p>
-<p align="center"><sub><i>Write · Find · Discover</i></sub></p>
+Keep It is based on [NoteDiscovery](https://github.com/gamosoft/NoteDiscovery) by Gamosoft.
 
 ## 🎯 Who is it for?
 
@@ -33,26 +20,11 @@ NoteDiscovery is a **lightweight, self-hosted note-taking application** that put
 - **Teams** looking for a self-hosted alternative to commercial apps
 - **Anyone** who values simplicity, speed, and ownership
 
----
-
-<p align="center">
-  <a href="https://www.notediscovery.com"><img src="docs/website-button.svg" alt="Official Website"></a>
-  &nbsp;&nbsp;
-  <a href="https://gamosoft-notediscovery-demo.hf.space"><img src="docs/demo-button.svg" alt="Try Live Demo"></a>
-</p>
-<p align="center">
-  <a href="https://www.pikapods.com/pods?run=notediscovery"><img src="https://www.pikapods.com/static/run-button.svg" alt="Run on PikaPods"></a>
-  &nbsp;&nbsp;
-  <a href="https://ko-fi.com/gamosoft"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy Me a Coffee at ko-fi.com"></a>
-</p>
-
----
-
-## ✨ Why NoteDiscovery?
+## ✨ Why Keep It?
 
 ### vs. Commercial Apps (Notion, Evernote, Obsidian Sync)
 
-| Feature | NoteDiscovery | Commercial Apps |
+| Feature | Keep It | Commercial Apps |
 |---------|---------------|-----------------|
 | **Cost** | 100% Free | $xxx/month/year |
 | **Privacy** | Your server, your data | Their servers, their terms |
@@ -88,7 +60,7 @@ NoteDiscovery is a **lightweight, self-hosted note-taking application** that put
   <img src="https://img.shields.io/badge/Works%20with-Cursor-blue?style=for-the-badge" alt="Works with Cursor">
 </p>
 
-NoteDiscovery includes a built-in **Model Context Protocol (MCP)** server, letting AI assistants directly interact with your notes:
+Keep It includes a built-in **Model Context Protocol (MCP)** server, letting AI assistants directly interact with your notes:
 
 | What AI Can Do | Example |
 |----------------|---------|
@@ -104,9 +76,9 @@ NoteDiscovery includes a built-in **Model Context Protocol (MCP)** server, letti
 ```json
 {
   "mcpServers": {
-    "notediscovery": {
+    "keepit": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "-e", "NOTEDISCOVERY_URL=http://host.docker.internal:8000", "ghcr.io/gamosoft/notediscovery:latest", "python", "-m", "mcp_server"]
+      "args": ["run", "--rm", "-i", "-e", "KEEPIT_URL=http://host.docker.internal:8000", "keepit:latest", "python", "-m", "mcp_server"]
     }
   }
 }
@@ -116,74 +88,26 @@ NoteDiscovery includes a built-in **Model Context Protocol (MCP)** server, letti
 >
 > 💡 **See [MCP.md](documentation/MCP.md)** for complete setup instructions and all available tools.
 >
-> 🧪 **Want a fully local setup with a bundled LLM?** [OLLAMA-STACK.md](OLLAMA-STACK.md) spins up NoteDiscovery + Ollama + Open WebUI with one command.
-
-## 📺 Watch the tour
-
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=qur5uemWeJA">
-    <img src="https://img.youtube.com/vi/qur5uemWeJA/maxresdefault.jpg" alt="Watch a short tour" width="720">
-  </a>
-</p>
-<p align="center"><i>▶ Small walkthrough — sharing, favorites, search, backlinks, and more</i></p>
+> 🧪 **Want a fully local setup with a bundled LLM?** [OLLAMA-STACK.md](OLLAMA-STACK.md) spins up Keep It + Ollama + Open WebUI with one command.
 
 ## 🚀 Quick Start
 
-### Quick Setup
+### With Docker Compose
 
-**Linux/macOS:**
 ```bash
-mkdir -p notediscovery/data && cd notediscovery
-docker run -d --name notediscovery -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  ghcr.io/gamosoft/notediscovery:latest
+git clone https://github.com/pmarki/NoteDiscovery.git
+cd NoteDiscovery
+mkdir -p data
+docker compose up -d
 ```
 
-**Windows (PowerShell):**
-```powershell
-mkdir notediscovery\data; cd notediscovery
-docker run -d --name notediscovery -p 8000:8000 `
-  -v ${PWD}/data:/app/data `
-  ghcr.io/gamosoft/notediscovery:latest
-```
-
-Open **http://localhost:8000** — done! 🎉  
-
-
-> 💡 Your notes are saved in `./data/`. Themes, plugins, locales and default configuration values are included in the image.
-
-### Using Docker Compose
-
-Two docker-compose files are provided:
+Open **http://localhost:8000**. The compose file builds the image as `keepit:latest`; your notes are saved in `./data/`, and themes, plugins, locales and default configuration values are included in the image.
 
 | File | Use Case |
 |------|----------|
-| `docker-compose.ghcr.yml` | **Recommended** - Uses pre-built image from GitHub Container Registry |
-| `docker-compose.yml` | For development - Builds from local source |
-| `docker-compose.ollama-stack.yml` | Bundled local AI stack (NoteDiscovery + Ollama + Open WebUI) — see [OLLAMA-STACK.md](OLLAMA-STACK.md) |
-
-**Option 1: Pre-built image (fastest)**
-
-Linux/macOS:
-```bash
-mkdir -p notediscovery/data && cd notediscovery
-curl -O https://raw.githubusercontent.com/gamosoft/notediscovery/main/docker-compose.ghcr.yml
-docker-compose -f docker-compose.ghcr.yml up -d
-```
-
-Windows (PowerShell):
-```powershell
-mkdir notediscovery\data; cd notediscovery
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/gamosoft/notediscovery/main/docker-compose.ghcr.yml -OutFile docker-compose.ghcr.yml
-docker-compose -f docker-compose.ghcr.yml up -d
-```
-
-**Option 2: Build from source (for development)**
-```bash
-git clone https://github.com/gamosoft/notediscovery.git
-cd notediscovery
-docker-compose up -d
-```
+| `docker-compose.yml` | Builds from local source |
+| `docker-compose.archivebox.yml` | With ArchiveBox for offline copies of linked pages — see [ARCHIVEBOX.md](documentation/ARCHIVEBOX.md) |
+| `docker-compose.ollama-stack.yml` | Bundled local AI stack (Keep It + Ollama + Open WebUI) — see [OLLAMA-STACK.md](OLLAMA-STACK.md) |
 
 See [Advanced Docker Setup](#advanced-docker-setup) for volume details.
 
@@ -194,8 +118,8 @@ For development or if you prefer running directly:
 
 ```bash
 # Clone the repository
-git clone https://github.com/gamosoft/notediscovery.git
-cd notediscovery
+git clone https://github.com/pmarki/NoteDiscovery.git
+cd NoteDiscovery
 
 # Install dependencies
 pip install -r requirements.txt
@@ -216,8 +140,8 @@ Modern Linux distributions enforce [PEP 668](https://peps.python.org/pep-0668/),
 
 ```bash
 # Clone the repository
-git clone https://github.com/gamosoft/notediscovery.git
-cd notediscovery
+git clone https://github.com/pmarki/NoteDiscovery.git
+cd NoteDiscovery
 
 # Create a virtual environment
 python -m venv venv
@@ -251,15 +175,6 @@ The image includes bundled config, themes, plugins, and locales. To customize, y
 | `plugins/` | Custom plugins | ✅ Yes |
 | `locales/` | Translations | ✅ Yes |
 
-### Dashboard Integration
-
-<a href="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@master/svg/notediscovery.svg" target="_blank">
-  <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@master/svg/notediscovery.svg" alt="NoteDiscovery Icon" width="64" height="64">
-</a>
-
-An official icon for NoteDiscovery is now available on [Dashboard Icons](https://dashboardicons.com/icons/notediscovery)!  
-Use it in your self-hosted dashboards like Homepage, Homarr, Dashy, Heimdall, etc...
-
 ## 📚 Documentation
 
 Want to learn more?
@@ -281,7 +196,7 @@ Want to learn more?
 
 ## 🌍 Multiple Languages
 
-NoteDiscovery supports multiple interface languages via JSON locale files in `locales/`. Open **Settings** (gear icon) → **Language** to choose one; the list reflects whatever locales are installed (bundled files, mounts, or your own additions).
+Keep It supports multiple interface languages via JSON locale files in `locales/`. Open **Settings** (gear icon) → **Language** to choose one; the list reflects whatever locales are installed (bundled files, mounts, or your own additions).
 
 **To add your own language:** See the [Contributing Guidelines](CONTRIBUTING.md#-contributing-translations) for instructions on creating translation files.
 
@@ -313,7 +228,7 @@ Then access them at `http://localhost:8000` - the docs will appear as a `docs/` 
 
 ## 🔒 Security Considerations
 
-NoteDiscovery is designed for **self-hosted, private use**. Please keep these security considerations in mind:
+Keep It is designed for **self-hosted, private use**. Please keep these security considerations in mind:
 
 ### Network Security
 - ⚠️ **Do NOT expose directly to the internet** without additional security measures
@@ -345,7 +260,9 @@ NoteDiscovery is designed for **self-hosted, private use**. Please keep these se
 
 ## 📄 License
 
-MIT License - Free to use, modify, and distribute.
+MIT License - Free to use, modify, and distribute. See [LICENSE](LICENSE).
+
+Keep It is a fork of [NoteDiscovery](https://github.com/gamosoft/NoteDiscovery), Copyright (c) 2025 Gamosoft, used under the MIT License. Keep It is not affiliated with or endorsed by Gamosoft.
 
 ---
 

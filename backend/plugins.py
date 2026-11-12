@@ -1,5 +1,5 @@
 """
-Simple plugin system for NoteDiscovery
+Simple plugin system for Keep It
 Plugins can hook into events like note save, delete, etc.
 
 Each hook declares its calling convention once, in HOOK_SPECS. A hook either
@@ -272,7 +272,7 @@ class PluginManager:
     def _create_example_plugin(self):
         """Create an example plugin to show developers how to build plugins"""
         example_plugin = '''"""
-Example Plugin for NoteDiscovery
+Example Plugin for Keep It
 This plugin demonstrates how to create custom plugins.
 """
 

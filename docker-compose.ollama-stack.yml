@@ -1,7 +1,8 @@
 services:
-  notediscovery:
-    image: ghcr.io/gamosoft/notediscovery:latest
-    container_name: notediscovery
+  keepit:
+    build: .
+    image: keepit:latest
+    container_name: keepit
     restart: unless-stopped
     ports:
       - "8000:8000"

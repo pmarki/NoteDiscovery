@@ -1,5 +1,5 @@
 """
-NoteDiscovery - Self-Hosted Markdown Knowledge Base
+Keep It - Self-Hosted Markdown Knowledge Base
 Main FastAPI application
 """
 
@@ -220,7 +220,7 @@ if LINK_PREVIEWS_ENABLED and _archivebox_url:
         logger.warning("archivebox.url is set but archivebox.api_key is empty; offline copies are off")
     else:
         ARCHIVEBOX = ArchiveBox(_archivebox_url, config['archivebox']['api_key'].strip(),
-                                (config['archivebox'].get('tag') or 'notediscovery').strip())
+                                (config['archivebox'].get('tag') or 'keepit').strip())
         logger.info("Offline copies of link cards: ArchiveBox at %s", _archivebox_url)
 
 # Storage paths: env vars override config.yaml. Logged either way so the
@@ -362,7 +362,6 @@ app.add_middleware(
 # When DEMO_MODE=true, enables rate limiting and other demo protections
 # Add additional demo restrictions here as needed (e.g., disable certain features)
 DEMO_MODE = os.getenv('DEMO_MODE', 'false').lower() in ('true', '1', 'yes')
-ALREADY_DONATED = os.getenv('ALREADY_DONATED', 'false').lower() in ('true', '1', 'yes')
 
 # Upload size limits (in MB) - configurable via environment variables
 UPLOAD_MAX_IMAGE_MB = int(os.getenv('UPLOAD_MAX_IMAGE_MB', '10'))
@@ -917,7 +916,6 @@ async def get_config():
         "version": config['app']['version'],
         "searchEnabled": config['search']['enabled'],
         "demoMode": DEMO_MODE,  # Expose demo mode flag to frontend
-        "alreadyDonated": ALREADY_DONATED,  # Hide support buttons if true
         "autosaveDelayMs": AUTOSAVE_DELAY_MS,  # Debounce for note/drawing autosave
         "defaultTheme": DEFAULT_THEME,  # Used when the browser has no saved preference
         "uploadMaxNoteMb": UPLOAD_MAX_NOTE_MB,  # Client-side size cap for .md drops
@@ -2116,7 +2114,7 @@ async def remove_note(request: Request, note_path: str):
 
 
 # Shared by the archive route and the startup sweep that clears its leftovers.
-ARCHIVE_TEMP_PREFIX = 'notediscovery-archive-'
+ARCHIVE_TEMP_PREFIX = 'keepit-archive-'
 
 # Already-compressed formats. Deflating these again costs six times the CPU and
 # saves nothing: on a 110 MB test vault, storing them instead took the zip from

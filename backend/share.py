@@ -1,5 +1,5 @@
 """
-Share Token Management for NoteDiscovery
+Share Token Management for Keep It
 Handles creating, storing, and revoking share tokens for public note access.
 """
 

@@ -1,4 +1,4 @@
-// NoteDiscovery Frontend Application
+// Keep It Frontend Application
 
 // The live Tiptap editor. Kept out of noteApp()'s data: Alpine's reactive proxies break ProseMirror.
 let noteEditor = null;
@@ -152,13 +152,13 @@ const ErrorHandler = {
      * Handle errors consistently across the app
      * @param {string} operation - The operation that failed (e.g., "load notes", "save note")
      * @param {Error} error - The error object
-     * @param {boolean} notify - Whether to show a toast (listens on notediscovery:toast)
+     * @param {boolean} notify - Whether to show a toast (listens on keepit:toast)
      */
     handle(operation, error, notify = true) {
         console.error(`Failed to ${operation}:`, error);
         if (notify) {
             const message = `Failed to ${operation}. Please try again.`;
-            window.dispatchEvent(new CustomEvent('notediscovery:toast', {
+            window.dispatchEvent(new CustomEvent('keepit:toast', {
                 detail: { message, type: 'error' }
             }));
         }

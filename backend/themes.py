@@ -1,5 +1,5 @@
 """
-Theme management for NoteDiscovery
+Theme management for Keep It
 """
 
 import logging

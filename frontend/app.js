@@ -1,4 +1,4 @@
-// NoteDiscovery Frontend Application
+// Keep It Frontend Application
 // Each feature in app/ returns its part of the one object Alpine runs.
 
 // Descriptors, not a spread: a spread would run each getter once and keep the value.

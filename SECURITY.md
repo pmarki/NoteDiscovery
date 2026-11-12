@@ -1,25 +1,25 @@
 # Security Policy
 
-NoteDiscovery is a self-hosted app. Please report vulnerabilities privately so they can be fixed before they are discussed in public.
+Keep It is a self-hosted app. Please report vulnerabilities privately so they can be fixed before they are discussed in public.
 
 ## How to report
 
 Use GitHub's private vulnerability reporting on this repository. That creates a **private** draft advisory — a private conversation with me, not a public disclosure.
 
-**[Report a vulnerability](https://github.com/gamosoft/NoteDiscovery/security/advisories/new)**
+**[Report a vulnerability](https://github.com/pmarki/NoteDiscovery/security/advisories/new)**
 
 Do not open a public issue with technical details, proof-of-concept code, or payloads.
 
 Include:
 
-- NoteDiscovery version (or commit) you tested
+- Keep It version (or commit) you tested
 - A short description of the issue
 - Steps to reproduce on a local instance
 - What an attacker could do with it
 
 ## Scope
 
-In scope: security bugs in NoteDiscovery itself (latest release).
+In scope: security bugs in Keep It itself (latest release).
 
 Out of scope: deployment/configuration issues (for example exposing an instance to the internet without auth), social engineering, and findings that only affect third-party plugins or unmodified upstream dependencies.
 

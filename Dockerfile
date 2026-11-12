@@ -91,10 +91,10 @@ COPY locales ./locales
 
 # The app runs as this user (see docker-entrypoint.sh). It can write to the notes
 # and the plugin settings, not to its own code.
-RUN groupadd --gid 1000 notediscovery && \
-    useradd --uid 1000 --gid 1000 --no-create-home --home-dir /app --shell /usr/sbin/nologin notediscovery && \
+RUN groupadd --gid 1000 keepit && \
+    useradd --uid 1000 --gid 1000 --no-create-home --home-dir /app --shell /usr/sbin/nologin keepit && \
     mkdir -p data && \
-    chown -R notediscovery:notediscovery data plugins
+    chown -R keepit:keepit data plugins
 COPY docker-entrypoint.sh /usr/local/bin/
 
 # Expose port (default, can be overridden)

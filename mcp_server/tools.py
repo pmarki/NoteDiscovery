@@ -1,5 +1,5 @@
 """
-MCP Tool definitions for NoteDiscovery.
+MCP Tool definitions for Keep It.
 
 Defines all available tools, their schemas, and descriptions.
 Following MCP specification for tool definitions.
@@ -333,7 +333,7 @@ TOOLS: list[dict[str, Any]] = [
     # =========================================================================
     {
         "name": "health_check",
-        "description": "Check if NoteDiscovery server is running and healthy. Use this to verify connectivity.",
+        "description": "Check if Keep It server is running and healthy. Use this to verify connectivity.",
         "inputSchema": {
             "type": "object",
             "properties": {},
@@ -343,7 +343,7 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "get_config",
         "description": (
-            "Get NoteDiscovery server configuration: app name, version, "
+            "Get Keep It server configuration: app name, version, "
             "whether search is enabled, authentication mode, autosave delay. "
             "Useful for confirming what server you're connected to and what "
             "features are available before calling other tools."

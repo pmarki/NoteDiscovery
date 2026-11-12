@@ -306,7 +306,7 @@
     "section_notes": "ノート",
     "section_files": "ファイル",
     "title": "ホーム",
-    "welcome": "NoteDiscoveryへようこそ",
+    "welcome": "Keep Itへようこそ",
     "get_started": "何かを作成して始めましょう",
     "no_notes_title": "ノートがありません",
     "no_notes_desc": "最初のノートまたはフォルダを作成",
@@ -364,11 +364,6 @@
     "reserved_name": "この名前はオペレーティングシステムで予約されています。",
     "invalid_dot": "名前をドットだけにすることはできません。",
     "trailing_dot_space": "名前の末尾にドットやスペースは使用できません。"
-  },
-  "support": {
-    "enjoying_demo": "このプロジェクトを支援",
-    "deploy_own": "自分のインスタンスをデプロイ",
-    "thank_you": "ご支援ありがとうございます！💚"
   },
   "demo": {
     "title": "デモモード",

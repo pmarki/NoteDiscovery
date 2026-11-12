@@ -1,5 +1,5 @@
 {
-  "name": "notediscovery-minify",
+  "name": "keepit-minify",
   "private": true,
   "description": "Minifiers for the Docker build, pinned with package-lock.json",
   "devDependencies": {

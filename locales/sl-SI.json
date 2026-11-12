@@ -306,7 +306,7 @@
     "section_notes": "Zapiski",
     "section_files": "Datoteke",
     "title": "Domov",
-    "welcome": "Dobrodošli v NoteDiscovery",
+    "welcome": "Dobrodošli v Keep It",
     "get_started": "Za začetek nekaj ustvarite",
     "no_notes_title": "Ni še zapiskov",
     "no_notes_desc": "Ustvarite svoj prvi zapis ali mapo",
@@ -364,11 +364,6 @@
     "reserved_name": "To ime je rezervirano s strani operacijskega sistema.",
     "invalid_dot": "Ime ne more biti le pika.",
     "trailing_dot_space": "Ime se ne more končati s piko ali presledkom."
-  },
-  "support": {
-    "enjoying_demo": "Podprite ta projekt",
-    "deploy_own": "Namestite svojo instanco",
-    "thank_you": "Hvala za podporo! 💚"
   },
   "demo": {
     "title": "DEMO NAČIN",

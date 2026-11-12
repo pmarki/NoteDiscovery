@@ -1,12 +1,12 @@
-# Contributing to NoteDiscovery
+# Contributing to Keep It
 
-Thank you for your interest in contributing to NoteDiscovery! 🎉
+Thank you for your interest in contributing to Keep It! 🎉
 
 This document provides guidelines and expectations for contributing to the project. Please read through this before submitting pull requests or opening issues.
 
 ## 🤝 Our Philosophy
 
-NoteDiscovery is designed to be:
+Keep It is designed to be:
 - **Lightweight** - Fast, minimal dependencies, quick to deploy
 - **Simple** - Easy to understand, maintain, and customize
 - **Self-hosted** - Complete control over your data, no external dependencies
@@ -45,7 +45,7 @@ This helps ensure that:
 
 ### AI-Assisted Contributions
 
-AI tools are welcome here — parts of NoteDiscovery are written with them. What matters is that a human has understood and verified the change before it arrives:
+AI tools are welcome here — parts of Keep It are written with them. What matters is that a human has understood and verified the change before it arrives:
 
 - **Describe what the code actually does** - The title and description should match the diff. A mismatch is the quickest way to stall a review.
 - **Run it** - Generated changes should be tested locally, not just read.
@@ -59,8 +59,8 @@ Small, well-scoped fixes are genuinely appreciated. Volume of generated patches 
 ### 1. Fork and Clone
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/notediscovery.git
-cd notediscovery
+git clone https://github.com/YOUR_USERNAME/NoteDiscovery.git
+cd NoteDiscovery
 ```
 
 ### 2. Create a Branch
@@ -167,7 +167,7 @@ discretion.
 
 ## 🌍 Contributing Translations
 
-NoteDiscovery supports multiple languages through JSON locale files. Adding a new language is easy!
+Keep It supports multiple languages through JSON locale files. Adding a new language is easy!
 
 ### How to Add a New Language
 
@@ -204,7 +204,7 @@ NoteDiscovery supports multiple languages through JSON locale files. Adding a ne
 ### Translation Guidelines
 
 - **Be consistent** - Use the same terminology throughout
-- **Match the tone** - NoteDiscovery uses friendly, concise language
+- **Match the tone** - Keep It uses friendly, concise language
 - **Preserve formatting** - Keep `\n` for newlines in multi-line strings
 - **Handle plurals simply** - It uses `{{count}}` placeholders (e.g., "hace {{count}}m")
 - **Test date formats** - Dates are formatted using the browser's `Intl` API with your locale code
@@ -236,7 +236,7 @@ Documentation improvements are always welcome! Please:
 
 Even if your idea is great, a PR might not be accepted if:
 
-1. **It doesn't align with project goals** - We aim to keep NoteDiscovery lightweight and simple. Features that add significant complexity or dependencies may not fit.
+1. **It doesn't align with project goals** - We aim to keep Keep It lightweight and simple. Features that add significant complexity or dependencies may not fit.
 
 2. **It wasn't discussed first** - Major changes should be discussed in an issue before implementation.
 
@@ -296,7 +296,7 @@ No additional license sections or attribution files are required - the project's
 
 ## 🙏 Thank You!
 
-Your contributions, whether code, documentation, bug reports, or feature suggestions, are greatly appreciated. Even if a specific PR isn't merged, your ideas and feedback help make NoteDiscovery better.
+Your contributions, whether code, documentation, bug reports, or feature suggestions, are greatly appreciated. Even if a specific PR isn't merged, your ideas and feedback help make Keep It better.
 
 ---
 

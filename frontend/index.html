@@ -64,7 +64,7 @@
     <script>
         (function() {
             try {
-                const themeId = localStorage.getItem('noteDiscoveryTheme') || '__DEFAULT_THEME__';
+                const themeId = localStorage.getItem('keepItTheme') || '__DEFAULT_THEME__';
                 if (!themeId) return;
                 const xhr = new XMLHttpRequest();
                 xhr.open('GET', '/api/themes/' + encodeURIComponent(themeId), false);

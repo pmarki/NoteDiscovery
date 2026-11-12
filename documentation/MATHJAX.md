@@ -1,6 +1,6 @@
 # 🧮 LaTeX/MathJax Reference
 
-NoteDiscovery supports **LaTeX mathematical notation** powered by MathJax 3. Write beautiful equations in your notes using familiar LaTeX syntax.
+Keep It supports **LaTeX mathematical notation** powered by MathJax 3. Write beautiful equations in your notes using familiar LaTeX syntax.
 
 ## Syntax Overview
 

@@ -1,6 +1,6 @@
 # Mermaid Diagrams
 
-NoteDiscovery supports **Mermaid** diagrams directly in your markdown notes! Mermaid lets you create diagrams and visualizations using text-based definitions, making it easy to version control and collaborate.
+Keep It supports **Mermaid** diagrams directly in your markdown notes! Mermaid lets you create diagrams and visualizations using text-based definitions, making it easy to version control and collaborate.
 
 ## How to Use
 
@@ -313,7 +313,7 @@ journey
 ````markdown
 ```mermaid
 mindmap
-  root((NoteDiscovery))
+  root((Keep It))
     Features
       Markdown
       Themes
@@ -334,7 +334,7 @@ mindmap
 
 ```mermaid
 mindmap
-  root((NoteDiscovery))
+  root((Keep It))
     Features
       Markdown
       Themes
@@ -354,7 +354,7 @@ mindmap
 
 ## Theme Support
 
-Mermaid diagrams automatically adapt to your current NoteDiscovery theme:
+Mermaid diagrams automatically adapt to your current Keep It theme:
 - **Light themes** use the default Mermaid color scheme
 - **Dark themes** use dark-optimized colors with proper contrast
 - Theme changes automatically re-render all diagrams

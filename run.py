@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick start script for NoteDiscovery
+Quick start script for Keep It
 Run this to start the application without Docker
 """
 
@@ -66,7 +66,7 @@ def main():
     ensure_frontend_assets()
 
     port = get_port()
-    print(f"📝 NoteDiscovery → http://localhost:{port}  (Ctrl+C to stop)")
+    print(f"📝 Keep It → http://localhost:{port}  (Ctrl+C to stop)")
     print()
 
     subprocess.call([

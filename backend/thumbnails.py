@@ -17,7 +17,7 @@ from PIL import Image, ImageOps
 # Enough for a card about 200 px wide on a 2x screen
 THUMBNAIL_SIZE = (480, 480)
 THUMBNAIL_QUALITY = 80
-THUMBNAIL_DIR = Path(tempfile.gettempdir()) / "notediscovery-thumbnails"
+THUMBNAIL_DIR = Path(tempfile.gettempdir()) / "keepit-thumbnails"
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 
 

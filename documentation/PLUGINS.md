@@ -1,6 +1,6 @@
 # 🔌 Plugin System
 
-NoteDiscovery includes a powerful plugin system that lets you extend functionality without modifying core code.
+Keep It includes a powerful plugin system that lets you extend functionality without modifying core code.
 
 ## How Plugins Work
 
@@ -47,7 +47,7 @@ see [plugins/contrib/README.md](../plugins/contrib/README.md).
 ### 1. Create a Python file
 
 ```bash
-cd notediscovery/plugins
+cd keepit/plugins
 touch my_plugin.py
 ```
 
@@ -157,7 +157,7 @@ class Plugin:
 docker-compose logs -f
 
 # View logs for specific service
-docker-compose logs -f notediscovery
+docker-compose logs -f keepit
 ```
 
 ## Activating Your Plugin

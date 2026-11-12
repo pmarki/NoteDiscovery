@@ -1,10 +1,10 @@
-# NoteDiscovery + Ollama + Open WebUI
+# Keep It + Ollama + Open WebUI
 
 A one-command local AI stack. Runs three services, downloads a small model, no cloud, no API keys.
 
 | Service | URL | What it is |
 |---|---|---|
-| NoteDiscovery | http://localhost:8000 | Markdown notes app |
+| Keep It | http://localhost:8000 | Markdown notes app |
 | Open WebUI | http://localhost:3000 | ChatGPT-style browser UI |
 | Ollama | http://localhost:11434 | Local LLM runtime (OpenAI-compatible at `/v1`) |
 
@@ -53,12 +53,12 @@ Add to `~/.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "notediscovery": {
+    "keepit": {
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "NOTEDISCOVERY_URL=http://host.docker.internal:8000",
-        "ghcr.io/gamosoft/notediscovery:latest",
+        "-e", "KEEPIT_URL=http://host.docker.internal:8000",
+        "keepit:latest",
         "python", "-m", "mcp_server"
       ]
     }
@@ -109,6 +109,6 @@ Any model tag from https://ollama.com/library works. Rough RAM rule: 1B ≈ 1 GB
 
 ## Links
 
-- NoteDiscovery: https://github.com/gamosoft/NoteDiscovery
+- Keep It: https://github.com/pmarki/NoteDiscovery
 - MCP tools reference: [`documentation/MCP.md`](documentation/MCP.md)
 - Ollama library: https://ollama.com/library

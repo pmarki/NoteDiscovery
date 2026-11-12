@@ -94,7 +94,7 @@ def test_a_new_card_is_queued_in_archivebox(previews):
     entry = previews.get("https://example.com/a")
 
     assert entry["archive"]["status"] == "pending"
-    assert FakeArchiveBox.added == [{"urls": ["https://example.com/a"], "tag": "notediscovery", "depth": 0, "update": False}]
+    assert FakeArchiveBox.added == [{"urls": ["https://example.com/a"], "tag": "keepit", "depth": 0, "update": False}]
     # Not queued again on the next view
     previews.get("https://example.com/a")
     assert len(FakeArchiveBox.added) == 1

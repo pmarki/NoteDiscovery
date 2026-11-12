@@ -306,7 +306,7 @@
     "section_notes": "Jegyzetek",
     "section_files": "Fájlok",
     "title": "Főoldal",
-    "welcome": "Üdvözöllek a NoteDiscovery-ben",
+    "welcome": "Üdvözöllek a Keep It-ben",
     "get_started": "Hozz létre valamit a kezdéshez",
     "no_notes_title": "Még nincsenek jegyzetek",
     "no_notes_desc": "Hozd létre az első jegyzeted vagy mappád",
@@ -364,11 +364,6 @@
     "reserved_name": "Ezt a nevet az operációs rendszer tartja fenn.",
     "invalid_dot": "A név nem állhat csak egy pontból.",
     "trailing_dot_space": "A név nem végződhet ponttal vagy szóközzel."
-  },
-  "support": {
-    "enjoying_demo": "Támogasd ezt a projektet",
-    "deploy_own": "Saját példány telepítése",
-    "thank_you": "Köszönjük a támogatásodat! 💚"
   },
   "demo": {
     "title": "DEMÓ MÓD",

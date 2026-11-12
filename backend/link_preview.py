@@ -42,7 +42,7 @@ from PIL import Image, ImageOps
 from .archivebox import ArchiveBoxError, snapshot_state
 
 LINKS_DIR = ".links"
-USER_AGENT = "Mozilla/5.0 (compatible; NoteDiscovery link preview)"
+USER_AGENT = "Mozilla/5.0 (compatible; Keep It link preview)"
 MAX_URL_LENGTH = 2048
 MAX_PAGE_BYTES = 1024 * 1024  # Metadata is in the head; this is plenty
 MAX_IMAGE_BYTES = 8 * 1024 * 1024

@@ -2,12 +2,11 @@
 function coreFeature() {
     return {
         // App state
-        appName: 'NoteDiscovery',
+        appName: 'Keep It',
         appVersion: '0.0.0',
         mediaUploadTypes: MEDIA_UPLOAD_TYPES.join(','),
         authEnabled: false,
         demoMode: false,
-        alreadyDonated: false,
         autosaveDelayMs: CONFIG.AUTOSAVE_DELAY,  // hydrated from /api/config in loadConfig()
         defaultTheme: CONFIG.DEFAULT_THEME,      // hydrated from /api/config in loadConfig()
         uploadMaxNoteMb: CONFIG.UPLOAD_MAX_NOTE_MB, // hydrated from /api/config in loadConfig()
@@ -340,7 +339,7 @@ function coreFeature() {
             // Toasts from ErrorHandler and code paths without Alpine `this`
             if (!window.__noteapp_toast_listener) {
                 window.__noteapp_toast_listener = true;
-                window.addEventListener('notediscovery:toast', (e) => {
+                window.addEventListener('keepit:toast', (e) => {
                     const d = e.detail || {};
                     if (typeof d.message !== 'string' || !d.message) return;
                     this.toast(d.message, {
@@ -360,7 +359,6 @@ function coreFeature() {
                 this.appVersion = config.version || '0.0.0';
                 this.authEnabled = config.authentication?.enabled || false;
                 this.demoMode = config.demoMode || false;
-                this.alreadyDonated = config.alreadyDonated || false;
                 // Server already clamps autosaveDelayMs to a sane range; we just sanity-check the type.
                 if (Number.isFinite(config.autosaveDelayMs) && config.autosaveDelayMs > 0) {
                     this.autosaveDelayMs = config.autosaveDelayMs;

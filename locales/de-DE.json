@@ -306,7 +306,7 @@
     "section_notes": "Notizen",
     "section_files": "Dateien",
     "title": "Startseite",
-    "welcome": "Willkommen bei NoteDiscovery",
+    "welcome": "Willkommen bei Keep It",
     "get_started": "Erstelle etwas, um loszulegen",
     "no_notes_title": "Noch keine Notizen",
     "no_notes_desc": "Erstelle deine erste Notiz oder Ordner",
@@ -364,11 +364,6 @@
     "reserved_name": "Dieser Name ist vom Betriebssystem reserviert.",
     "invalid_dot": "Der Name darf nicht nur ein Punkt sein.",
     "trailing_dot_space": "Der Name darf nicht mit einem Punkt oder Leerzeichen enden."
-  },
-  "support": {
-    "enjoying_demo": "Unterstütze dieses Projekt",
-    "deploy_own": "Eigene Instanz bereitstellen",
-    "thank_you": "Danke für deine Unterstützung! 💚"
   },
   "demo": {
     "title": "DEMO-MODUS",

@@ -306,7 +306,7 @@
     "section_notes": "Notas",
     "section_files": "Archivos",
     "title": "Inicio",
-    "welcome": "Bienvenido a NoteDiscovery",
+    "welcome": "Bienvenido a Keep It",
     "get_started": "Crea algo para empezar",
     "no_notes_title": "Aún no hay notas",
     "no_notes_desc": "Crea tu primera nota o carpeta",
@@ -364,11 +364,6 @@
     "reserved_name": "Este nombre está reservado por el sistema operativo.",
     "invalid_dot": "El nombre no puede ser solo un punto.",
     "trailing_dot_space": "El nombre no puede terminar con un punto o espacio."
-  },
-  "support": {
-    "enjoying_demo": "Apoya este proyecto",
-    "deploy_own": "Despliega tu propia instancia",
-    "thank_you": "¡Gracias por tu apoyo! 💚"
   },
   "demo": {
     "title": "MODO DEMO",
