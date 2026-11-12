@@ -69,6 +69,10 @@ const EXACT = {
     'plain brackets': 'An [aside] without a link\n',
     'bold and italic': '**bold** *it* ~~gone~~ `code`\n',
     link: '[text](https://example.com) and [note](folder/My%20Note.md)\n',
+    'bare address': 'https://example.com/a?b=1&c=d_e\n',
+    ampersands: 'Tom & Jerry and a&b\n',
+    'text spelling an entity': 'Write &amp;copy; for ©\n',
+    'bare address in text': 'See https://example.com/x here\n',
     image: '![alt](folder/a.png)\n',
     'hard break': 'line one  \nline two\n',
     quote: '> quoted\n',
@@ -297,6 +301,116 @@ test('the selection report covers text only', () => {
     editor.setMarkdown('some **bold** text\n\n```\ncode\n```\n', { resetHistory: true });
     editor.focus();
     assert.equal(editor.textSelection(), null);
+});
+
+test('a link showing its own address is written bare', () => {
+    assert.equal(roundTrip('[https://example.com/](https://example.com/) and <https://e.com>\n'), 'https://example.com/ and https://e.com\n');
+});
+
+test('an address the bare form would cut keeps the link form', () => {
+    for (const markdown of ['[https://example.com/a.](https://example.com/a.)\n', '[https://e.com/_x](https://e.com/_x)\n',
+        '[https://e.com/?a&amp;b](https://e.com/?a&amp;b)\n']) {
+        const once = roundTrip(markdown);
+        assert.match(once, /^\[/);
+        assert.equal(roundTrip(once), once);
+    }
+});
+
+// A second editor, with cards on
+const cardRoot = document.createElement('div');
+document.body.append(cardRoot);
+const drawnCards = [];
+const cardEditor = create({
+    element: cardRoot,
+    debounceMs: 0,
+    linkCards: true,
+    drawNode: (name, element, attrs) => {
+        if (name === 'linkCard') drawnCards.push(attrs.href);
+    },
+});
+const cardCount = () => cardRoot.querySelectorAll('.link-card').length;
+
+test('only an address alone in its paragraph gets a card', () => {
+    drawnCards.length = 0;
+    cardEditor.setMarkdown([
+        'https://example.com/a',
+        'See https://example.com/b here',
+        '[Named](https://example.com/c)',
+        '- https://example.com/d',
+        '| x |\n|---|\n| https://example.com/e |',
+    ].join('\n\n') + '\n', { resetHistory: true });
+    assert.equal(cardCount(), 2);
+    assert.equal(drawnCards.join(' '), 'https://example.com/a https://example.com/d');
+    assert.equal(cardRoot.querySelectorAll('.link-card-source').length, 2);
+});
+
+test('typing elsewhere keeps the drawn cards', () => {
+    cardEditor.setMarkdown('Intro\n\nhttps://example.com/a\n', { resetHistory: true });
+    drawnCards.length = 0;
+    cardEditor.insertMarkdown('more ', 1);
+    assert.equal(cardCount(), 1);
+    assert.equal(drawnCards.length, 0);
+});
+
+// The cursor at the end of the first paragraph, as after a click on its card
+const cardTiptap = () => cardRoot.querySelector('.ProseMirror').editor;
+const toEndOfAddress = () => {
+    const tiptap = cardTiptap();
+    tiptap.commands.setTextSelection(tiptap.state.doc.firstChild.nodeSize - 1);
+};
+
+test('typing in a bare address changes where it points', () => {
+    cardEditor.setMarkdown('https://example.com/a\n', { resetHistory: true });
+    toEndOfAddress();
+    const { view } = cardTiptap();
+    view.dispatch(view.state.tr.insertText('b'));
+    assert.equal(cardEditor.getMarkdown(), 'https://example.com/ab\n');
+    assert.equal(cardCount(), 1);
+});
+
+test('a named link keeps its text when typed in', () => {
+    cardEditor.setMarkdown('[Named](https://example.com/a)\n', { resetHistory: true });
+    toEndOfAddress();
+    const { view } = cardTiptap();
+    view.dispatch(view.state.tr.insertText('x', view.state.selection.from - 1));
+    assert.equal(cardEditor.getMarkdown(), '[Namexd](https://example.com/a)\n');
+});
+
+test('a new address for a bare one replaces its text too', () => {
+    cardEditor.setMarkdown('https://example.com/a\n', { resetHistory: true });
+    toEndOfAddress();
+    assert.ok(cardEditor.setLink('https://example.org/b'));
+    assert.equal(cardEditor.getMarkdown(), 'https://example.org/b\n');
+    assert.equal(cardCount(), 1);
+});
+
+test('a new address for a named link keeps its text', () => {
+    cardEditor.setMarkdown('[Named](https://example.com/a)\n', { resetHistory: true });
+    toEndOfAddress();
+    cardTiptap().commands.setTextSelection(3);
+    assert.ok(cardEditor.setLink('https://example.org/b'));
+    assert.equal(cardEditor.getMarkdown(), '[Named](https://example.org/b)\n');
+});
+
+test('a www. address is written as typed and gets a card', () => {
+    drawnCards.length = 0;
+    cardEditor.setMarkdown('www.example.com\n\nSee www.example.com/a here\n', { resetHistory: true });
+    assert.equal(cardEditor.getMarkdown(), 'www.example.com\n\nSee www.example.com/a here\n');
+    assert.equal(drawnCards.join(' '), 'http://www.example.com');
+    toEndOfAddress();
+    const { view } = cardTiptap();
+    view.dispatch(view.state.tr.insertText('/b'));
+    assert.equal(cardEditor.getMarkdown(), 'www.example.com/b\n\nSee www.example.com/a here\n');
+    assert.equal(drawnCards.at(-1), 'http://www.example.com/b');
+});
+
+test('a www. text pointing elsewhere keeps the link form', () => {
+    assert.equal(roundTrip('[www.example.com](https://other.example/)\n'), '[www.example.com](https://other.example/)\n');
+});
+
+test('the editor without cards draws none', () => {
+    roundTrip('https://example.com/a\n');
+    assert.equal(document.getElementById('root').querySelectorAll('.link-card').length, 0);
 });
 
 console.log(results.join('\n'));

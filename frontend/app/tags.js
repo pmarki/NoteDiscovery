@@ -162,6 +162,7 @@ function tagsFeature() {
             if (!hasTextSearch && !hasTagFilter) {
                 this.isSearching = false;
                 this.searchResults = [];
+                this.searchPages = [];
                 this.currentSearchHighlight = '';
                 this.clearSearchHighlights();
                 this.buildFolderTree();
@@ -171,6 +172,7 @@ function tagsFeature() {
             // Case 2: Only tag filter → convert to flat list of matching notes
             if (hasTagFilter && !hasTextSearch) {
                 this.isSearching = false;
+                this.searchPages = [];
                 this.searchResults = this.notes.filter(note => 
                     note.type === 'note' && this.noteMatchesTags(note)
                 );
@@ -196,6 +198,8 @@ function tagsFeature() {
                     }
                     
                     this.searchResults = results;
+                    // Tags belong to notes, so a tag filter leaves saved pages out
+                    this.searchPages = hasTagFilter ? [] : (data.pages || []);
                     
                     // Highlight search term in current note if open
                     if (this.currentNote && this.noteContent) {
@@ -207,6 +211,7 @@ function tagsFeature() {
                 } catch (error) {
                     console.error('Search failed:', error);
                     this.searchResults = [];
+                    this.searchPages = [];
                 } finally {
                     this.isSearching = false;
                 }

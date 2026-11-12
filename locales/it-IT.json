@@ -269,6 +269,7 @@
     "failed_media": "Impossibile spostare il file multimediale."
   },
   "search": {
+    "saved_pages": "Pagine salvate",
     "previous": "Precedente (Shift+F3)",
     "next": "Successivo (F3)",
     "matches": "{{current}} di {{total}}",
@@ -388,5 +389,18 @@
     "saved_into": "Aggiunto a «{{name}}»",
     "saved_files": "{{count}} file salvati",
     "some_failed": "{{count}} file non salvati, riprova"
+  },
+  "link_card": {
+    "refresh": "Aggiorna anteprima",
+    "refresh_failed": "Impossibile aggiornare l'anteprima: {{error}}",
+    "archiving": "Salvataggio copia offline…",
+    "archived": "Offline",
+    "archive_failed": "Copia offline non riuscita",
+    "archive_unavailable": "Archivio non raggiungibile",
+    "copy_page": "Pagina",
+    "copy_article": "Articolo",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Screenshot",
+    "archive_retry": "Riprova"
   }
 }

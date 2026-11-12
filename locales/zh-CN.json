@@ -269,6 +269,7 @@
     "failed_media": "移动媒体文件失败。"
   },
   "search": {
+    "saved_pages": "已保存的页面",
     "previous": "上一个 (Shift+F3)",
     "next": "下一个 (F3)",
     "matches": "{{current}} / {{total}}",
@@ -388,5 +389,18 @@
     "saved_into": "已添加到“{{name}}”",
     "saved_files": "已保存 {{count}} 个文件",
     "some_failed": "{{count}} 个文件未保存，请重试"
+  },
+  "link_card": {
+    "refresh": "刷新预览",
+    "refresh_failed": "无法刷新预览：{{error}}",
+    "archiving": "正在保存离线副本…",
+    "archived": "离线",
+    "archive_failed": "离线副本保存失败",
+    "archive_unavailable": "无法连接存档",
+    "copy_page": "页面",
+    "copy_article": "文章",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "截图",
+    "archive_retry": "重试"
   }
 }

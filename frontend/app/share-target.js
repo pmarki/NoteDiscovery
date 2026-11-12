@@ -56,7 +56,8 @@ function shareTargetFeature() {
             const { title, text, url } = this.shareTarget;
             const parts = [];
             if (text) parts.push(text);
-            if (url && !text.includes(url)) parts.push(title ? `[${title}](${url})` : url);
+            // On a line of its own a bare address shows as a card with the page's title
+            if (url && !text.includes(url)) parts.push(title && !this.linkPreviews ? `[${title}](${url})` : url);
             return parts.join('\n\n');
         },
 

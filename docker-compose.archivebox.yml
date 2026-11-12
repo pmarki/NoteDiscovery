@@ -1,0 +1,55 @@
+# NoteDiscovery with ArchiveBox, which keeps an offline copy of every link card.
+# See documentation/ARCHIVEBOX.md for the first start (admin account, API key).
+#
+#   docker compose -f docker-compose.archivebox.yml up -d
+#
+# ArchiveBox is large (Chromium and friends, over 1 GB). Its copies live in
+# ./archivebox, not in the notes folder, so back that up as well.
+
+services:
+  # notediscovery:
+  #   build: .
+  #   container_name: notediscovery
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - TZ=UTC
+  #     - ARCHIVEBOX_URL=http://archivebox:5797
+  #     # Created in ArchiveBox's admin, see documentation/ARCHIVEBOX.md
+  #     - ARCHIVEBOX_API_KEY=${ARCHIVEBOX_API_KEY:-}
+  #   volumes:
+  #     - ./data:/app/data
+  #   depends_on:
+  #     - archivebox
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+  #     interval: 60s
+  #     timeout: 3s
+  #     retries: 3
+  #     start_period: 5s
+
+  archivebox:
+    # The version NoteDiscovery was tested with: its REST API still changes between
+    # releases, so try a newer one before setting ARCHIVEBOX_VERSION to it
+    image: archivebox/archivebox:${ARCHIVEBOX_VERSION:-0.9.77}
+    container_name: archivebox
+    restart: unless-stopped
+    # Only on this machine, for its admin pages. NoteDiscovery reaches it inside the
+    # compose network and serves the copies behind its own login.
+    ports:
+      - "127.0.0.1:5797:5797"  # ArchiveBox 0.9 serves on 5797
+    environment:
+      - ADMIN_USERNAME=${ARCHIVEBOX_ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ARCHIVEBOX_ADMIN_PASSWORD:?set ARCHIVEBOX_ADMIN_PASSWORD}
+      - ALLOWED_HOSTS=*
+      - CSRF_TRUSTED_ORIGINS=http://localhost:5797,http://127.0.0.1:5797
+      # Its list of pages stays private, but NoteDiscovery reads the copies
+      # themselves without a login, so they must be public inside this network
+      - PUBLIC_INDEX=False
+      - PUBLIC_SNAPSHOTS=True
+      - PUBLIC_ADD_VIEW=False
+      # Don't also send every link to the Wayback Machine
+      - ARCHIVEDOTORG_ENABLED=False
+    volumes:
+      - ./archivebox:/data

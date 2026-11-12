@@ -5,7 +5,7 @@ Main FastAPI application
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Form, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -13,6 +13,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHea
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.background import BackgroundTask
 import os
+import html
 import re
 import mimetypes
 import tempfile
@@ -76,6 +77,8 @@ from .plugins import PluginManager
 from .themes import get_available_themes, get_theme_css
 from .trash import delete_entry, empty_trash, list_trash, restore_entry
 from .thumbnails import IMAGE_EXTENSIONS, ThumbnailError, thumbnail_for
+from .link_preview import LinkPreviews, PreviewError, public_entry
+from .archivebox import KINDS as ARCHIVE_KINDS, ArchiveBox, ArchiveBoxError
 from .share import (
     create_share_token,
     get_share_token,
@@ -192,6 +195,33 @@ if config.get('authentication', {}).get('enabled', False):
 config['mcp'] = config.get('mcp') or {}
 if 'MCP_ENABLED' in os.environ:
     config['mcp']['enabled'] = os.getenv('MCP_ENABLED', 'false').lower() in ('true', '1', 'yes')
+
+# Cards for links on a line of their own (backend/link_preview.py)
+# Priority: LINK_PREVIEWS_* env vars > link_previews in config.yaml
+config['link_previews'] = config.get('link_previews') or {}
+for _name, _env in (('enabled', 'LINK_PREVIEWS_ENABLED'), ('allow_private_networks', 'LINK_PREVIEWS_ALLOW_PRIVATE_NETWORKS')):
+    if _env in os.environ:
+        config['link_previews'][_name] = os.getenv(_env, '').lower() in ('true', '1', 'yes')
+LINK_PREVIEWS_ENABLED = config['link_previews'].get('enabled', True) is not False
+LINK_PREVIEWS_ALLOW_PRIVATE = config['link_previews'].get('allow_private_networks', False) is True
+
+# Offline copies of carded links in ArchiveBox (backend/archivebox.py), on when a URL is set
+# Priority: ARCHIVEBOX_* env vars > archivebox in config.yaml
+config['archivebox'] = config.get('archivebox') or {}
+for _name, _env in (('url', 'ARCHIVEBOX_URL'), ('api_key', 'ARCHIVEBOX_API_KEY'), ('tag', 'ARCHIVEBOX_TAG')):
+    if _env in os.environ:
+        config['archivebox'][_name] = os.getenv(_env, '')
+_archivebox_url = (config['archivebox'].get('url') or '').strip()
+ARCHIVEBOX = None
+if LINK_PREVIEWS_ENABLED and _archivebox_url:
+    if urlparse(_archivebox_url).scheme not in ('http', 'https'):
+        logger.warning("archivebox.url %r is not an http(s) URL; offline copies are off", _archivebox_url)
+    elif not (config['archivebox'].get('api_key') or '').strip():
+        logger.warning("archivebox.url is set but archivebox.api_key is empty; offline copies are off")
+    else:
+        ARCHIVEBOX = ArchiveBox(_archivebox_url, config['archivebox']['api_key'].strip(),
+                                (config['archivebox'].get('tag') or 'notediscovery').strip())
+        logger.info("Offline copies of link cards: ArchiveBox at %s", _archivebox_url)
 
 # Storage paths: env vars override config.yaml. Logged either way so the
 # resolved location is visible at startup.
@@ -893,6 +923,8 @@ async def get_config():
         "uploadMaxNoteMb": UPLOAD_MAX_NOTE_MB,  # Client-side size cap for .md drops
         # Empty string when unset; frontend falls back to window.location.origin
         "sharePublicOrigin": SHARE_PUBLIC_ORIGIN,
+        "linkPreviews": LINK_PREVIEWS_ENABLED,
+        "linkArchive": ARCHIVEBOX is not None,  # Cards show their ArchiveBox copies
         "authentication": {
             "enabled": config.get('authentication', {}).get('enabled', False)
         }
@@ -1025,6 +1057,137 @@ def get_thumbnail(media_path: str):
     except ThumbnailError:
         raise HTTPException(status_code=422, detail="Image can't be previewed")
     return FileResponse(preview, headers={"Cache-Control": "private, max-age=31536000, immutable"})
+
+
+def link_previews() -> LinkPreviews:
+    notes_dir = config['storage']['notes_dir']
+    if LINK_PREVIEWS_ALLOW_PRIVATE:
+        return LinkPreviews(notes_dir, allowed=lambda address: True, archive=ARCHIVEBOX)
+    return LinkPreviews(notes_dir, archive=ARCHIVEBOX)
+
+
+@api_router.get("/link-previews", tags=["Link previews"])
+@limiter.limit("60/minute")
+def get_link_preview(request: Request, url: str, refresh: bool = False):
+    """
+    Title, description and images of a web page, for the card of a link on its own line.
+
+    Fetched once and kept in .links/ in the vault; refresh=true fetches it again.
+    A plain def, so fetching runs in the threadpool. A page that can't be read
+    still answers 200, with `error` set, so the card can show the bare link.
+    """
+    if not LINK_PREVIEWS_ENABLED:
+        raise HTTPException(status_code=404, detail="Link previews are turned off")
+    try:
+        return public_entry(link_previews().get(url, refresh=refresh), with_archive=ARCHIVEBOX is not None)
+    except PreviewError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@api_router.post("/link-previews/archive", tags=["Link previews"])
+@limiter.limit("30/minute")
+def archive_link_again(request: Request, url: str):
+    """Asks ArchiveBox for a new offline copy of a carded link, after one failed."""
+    if ARCHIVEBOX is None:
+        raise HTTPException(status_code=404, detail="Offline copies are turned off")
+    try:
+        return public_entry(link_previews().archive_again(url), with_archive=True)
+    except PreviewError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@api_router.get("/link-previews/text", tags=["Link previews"])
+def get_link_text(url: str):
+    """The text of a carded link's saved page, as ArchiveBox extracted it. For MCP."""
+    if ARCHIVEBOX is None:
+        raise HTTPException(status_code=404, detail="Offline copies are turned off")
+    try:
+        page = link_previews().text(url)
+    except PreviewError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    if page is None:
+        raise HTTPException(status_code=404, detail="No saved text for this address")
+    return page
+
+
+# Archived pages are someone else's HTML: served without scripts, and in an origin of
+# their own, so they can't reach the app or its cookies, nor load from the web.
+ARCHIVED_PAGE_POLICY = (
+    "sandbox; default-src 'none'; img-src data: blob:; media-src data: blob:; "
+    "style-src 'unsafe-inline' data:; font-src data:"
+)
+ARCHIVE_MEDIA_TYPES = {
+    'page': 'text/html; charset=utf-8',
+    'article': 'text/html; charset=utf-8',
+    'pdf': 'application/pdf',
+    'text': 'text/plain; charset=utf-8',
+}
+# The reader view in the app's colours when the system is dark, under the card's title
+ARTICLE_DARK_STYLE = (
+    "<style>@media (prefers-color-scheme: dark) {"
+    " html, body, main { background: #111827 !important; color: #e5e7eb !important }"
+    " a { color: #60a5fa !important } blockquote { color: #9ca3af !important; border-color: #374151 !important }"
+    " }</style>"
+)
+MAX_ARTICLE_BYTES = 8 * 1024 * 1024
+
+
+def _article_page(body: bytes, title: str) -> bytes:
+    """The reader view with the card's title, and a dark scheme for dark systems."""
+    page = body.decode('utf-8', 'replace')
+    extra = ARTICLE_DARK_STYLE
+    if title:
+        named = f"<title>{html.escape(title)}</title>"
+        # Readability leaves the title empty
+        page, filled = re.subn(r"<title>\s*</title>", lambda _: named, page, count=1, flags=re.IGNORECASE)
+        if not filled and not re.search(r"<title[\s>]", page, re.IGNORECASE):
+            extra += named
+    head = re.search(r"</head\s*>", page, re.IGNORECASE)
+    at = head.start() if head else 0
+    return (page[:at] + extra + page[at:]).encode('utf-8')
+
+
+@api_router.get("/link-previews/archive/{key}/{kind}", tags=["Link previews"])
+def get_link_archive(key: str, kind: str):
+    """An offline copy of a carded link (page, pdf or screenshot), read from ArchiveBox."""
+    if ARCHIVEBOX is None or kind not in ARCHIVE_KINDS:
+        raise HTTPException(status_code=404, detail="Not found")
+    entry = link_previews().by_key(key)
+    state = (entry or {}).get('archive') or {}
+    path = (state.get('outputs') or {}).get(kind)
+    if not path:
+        raise HTTPException(status_code=404, detail="No such copy")
+    try:
+        upstream = ARCHIVEBOX.open_file(state.get('snapshot_id', ''), state.get('timestamp', ''), path)
+    except ArchiveBoxError as error:
+        raise HTTPException(status_code=502, detail=str(error))
+    media_type = ARCHIVE_MEDIA_TYPES.get(kind)
+    if media_type is None:
+        upstream_type = (upstream.headers.get('Content-Type') or '').split(';')[0].strip().lower()
+        media_type = upstream_type if upstream_type in ('image/png', 'image/jpeg', 'image/webp') else 'image/png'
+    headers = {"X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600"}
+    if kind in ('page', 'article', 'text'):
+        headers["Content-Security-Policy"] = ARCHIVED_PAGE_POLICY
+    if kind == 'article':
+        with upstream:
+            body = upstream.read(MAX_ARTICLE_BYTES)
+        return Response(_article_page(body, entry.get('title') or ''), media_type=media_type, headers=headers)
+
+    def chunks():
+        with upstream:
+            while chunk := upstream.read(64 * 1024):
+                yield chunk
+
+    return StreamingResponse(chunks(), media_type=media_type, headers=headers)
+
+
+@api_router.get("/link-previews/files/{name}", tags=["Link previews"])
+def get_link_preview_file(name: str):
+    """A preview image or icon stored for a link. Addresses carry ?v=, so they never change."""
+    path = link_previews().file(name)
+    if path is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path, headers={"Cache-Control": "private, max-age=31536000, immutable"})
 
 
 @api_router.get("/media/{media_path:path}", tags=["Media"])
@@ -2218,6 +2381,12 @@ async def search(
             "results": paginated.items,
             "query": q
         }
+        # Saved copies of carded links, a list of their own, given with the first page
+        if ARCHIVEBOX is not None and offset == 0 and len(q.strip()) >= SEARCH_MIN_QUERY_LENGTH:
+            response["pages"] = [
+                {name: page[name] for name in ("url", "title", "site_name", "article", "matches")}
+                for page in link_previews().search(q)
+            ]
         
         # Include pagination metadata only when limit is specified
         if limit is not None:

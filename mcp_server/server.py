@@ -9,6 +9,7 @@ at /mcp (see backend/mcp_http.py).
 This implementation uses only Python stdlib for minimal dependencies.
 """
 
+import html
 import json
 import re
 import sys
@@ -226,12 +227,15 @@ class MCPServer:
         data = response.data or {}
         results = data.get("results", [])
         pagination = data.get("pagination")
+        pages = data.get("pages") or []
         
-        if not results:
+        if not results and not pages:
             return f"No notes found matching '{query}'"
         
         # Build header with pagination info if available
-        if pagination:
+        if not results:
+            output = [f"No notes found matching '{query}'\n"]
+        elif pagination:
             total = pagination.get("total", len(results))
             output = [f"Found {total} result(s) for '{query}' (showing {len(results)}):\n"]
         else:
@@ -256,6 +260,17 @@ class MCPServer:
         # Add pagination hint if there are more results
         if pagination and pagination.get("has_more"):
             output.append(f"... more results available (use limit and offset to paginate)")
+
+        # Pages linked from notes and kept offline, readable with get_saved_page
+        if pages:
+            output.append(f"Saved web pages ({len(pages)}):\n")
+            for i, page in enumerate(pages, 1):
+                output.append(f"{i}. **{page.get('title') or page.get('url')}** {page.get('url')}")
+                for match in (page.get("matches") or [])[:2]:
+                    clean_context = re.sub(r'<[^>]+>', '', match.get("context", ""))
+                    if clean_context:
+                        output.append(f"   {html.unescape(clean_context)[:200]}")
+                output.append("")
 
         return "\n".join(output)
 
@@ -328,6 +343,22 @@ class MCPServer:
         output.append("---\n")
         output.append(content)
         
+        return "\n".join(output)
+    
+    def _tool_get_saved_page(self, args: dict) -> str:
+        """Get the saved text of a carded web page."""
+        url = str(args.get("url", "")).strip()
+        if not url:
+            return "Error: url is required"
+        
+        response = self.client.get_saved_page(url)
+        
+        if not response.success:
+            return f"Failed to get saved page: {response.error}"
+        
+        data = response.data or {}
+        output = [f"# {data.get('title') or data.get('url', url)}\n", f"Address: {data.get('url', url)}", "---\n"]
+        output.append(data.get("text", ""))
         return "\n".join(output)
     
     def _tool_list_tags(self, args: dict) -> str:

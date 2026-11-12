@@ -269,6 +269,7 @@
     "failed_media": "Nie udało się przenieść pliku multimedialnego."
   },
   "search": {
+    "saved_pages": "Zapisane strony",
     "previous": "Poprzedni (Shift+F3)",
     "next": "Następny (F3)",
     "matches": "{{current}} z {{total}}",
@@ -388,5 +389,18 @@
     "saved_into": "Dodano do „{{name}}”",
     "saved_files": "Zapisano pliki: {{count}}",
     "some_failed": "Nie zapisano plików: {{count}}, spróbuj ponownie"
+  },
+  "link_card": {
+    "refresh": "Odśwież podgląd",
+    "refresh_failed": "Nie udało się odświeżyć podglądu: {{error}}",
+    "archiving": "Zapisywanie kopii offline…",
+    "archived": "Offline",
+    "archive_failed": "Nie udało się zapisać kopii offline",
+    "archive_unavailable": "Archiwum niedostępne",
+    "copy_page": "Strona",
+    "copy_article": "Artykuł",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Zrzut ekranu",
+    "archive_retry": "Spróbuj ponownie"
   }
 }

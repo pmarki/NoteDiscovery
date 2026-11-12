@@ -269,6 +269,7 @@
     "failed_media": "Не удалось переместить медиафайл."
   },
   "search": {
+    "saved_pages": "Сохранённые страницы",
     "previous": "Предыдущий (Shift+F3)",
     "next": "Следующий (F3)",
     "matches": "{{current}} из {{total}}",
@@ -388,5 +389,18 @@
     "saved_into": "Добавлено в «{{name}}»",
     "saved_files": "Сохранено файлов: {{count}}",
     "some_failed": "Не сохранено файлов: {{count}}, попробуйте снова"
+  },
+  "link_card": {
+    "refresh": "Обновить превью",
+    "refresh_failed": "Не удалось обновить превью: {{error}}",
+    "archiving": "Сохранение офлайн-копии…",
+    "archived": "Офлайн",
+    "archive_failed": "Не удалось сохранить офлайн-копию",
+    "archive_unavailable": "Архив недоступен",
+    "copy_page": "Страница",
+    "copy_article": "Статья",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Скриншот",
+    "archive_retry": "Повторить"
   }
 }

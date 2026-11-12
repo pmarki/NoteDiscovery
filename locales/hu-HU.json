@@ -269,6 +269,7 @@
     "failed_media": "Hiba a médiafájl mozgatásánál."
   },
   "search": {
+    "saved_pages": "Mentett oldalak",
     "previous": "Előző (Shift+F3)",
     "next": "Következő (F3)",
     "matches": "{{current}} / {{total}}",
@@ -388,5 +389,18 @@
     "saved_into": "Hozzáadva ehhez: „{{name}}”",
     "saved_files": "{{count}} fájl mentve",
     "some_failed": "{{count}} fájl nem lett mentve, próbáld újra"
+  },
+  "link_card": {
+    "refresh": "Előnézet frissítése",
+    "refresh_failed": "Nem sikerült frissíteni az előnézetet: {{error}}",
+    "archiving": "Offline másolat mentése…",
+    "archived": "Offline",
+    "archive_failed": "Az offline másolat sikertelen",
+    "archive_unavailable": "Az archívum nem érhető el",
+    "copy_page": "Oldal",
+    "copy_article": "Cikk",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Képernyőkép",
+    "archive_retry": "Újra"
   }
 }

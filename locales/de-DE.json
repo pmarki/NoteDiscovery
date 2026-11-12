@@ -269,6 +269,7 @@
     "failed_media": "Verschieben der Mediendatei fehlgeschlagen."
   },
   "search": {
+    "saved_pages": "Gespeicherte Seiten",
     "previous": "Vorheriger (Umschalt+F3)",
     "next": "Nächster (F3)",
     "matches": "{{current}} von {{total}}",
@@ -388,5 +389,18 @@
     "saved_into": "Zu „{{name}}“ hinzugefügt",
     "saved_files": "{{count}} Datei(en) gespeichert",
     "some_failed": "{{count}} Datei(en) nicht gespeichert, bitte erneut versuchen"
+  },
+  "link_card": {
+    "refresh": "Vorschau aktualisieren",
+    "refresh_failed": "Vorschau konnte nicht aktualisiert werden: {{error}}",
+    "archiving": "Offline-Kopie wird gespeichert…",
+    "archived": "Offline",
+    "archive_failed": "Offline-Kopie fehlgeschlagen",
+    "archive_unavailable": "Archiv nicht erreichbar",
+    "copy_page": "Seite",
+    "copy_article": "Artikel",
+    "copy_pdf": "PDF",
+    "copy_screenshot": "Screenshot",
+    "archive_retry": "Erneut versuchen"
   }
 }
