@@ -69,6 +69,7 @@
     "filtered_notes": "Отфильтрованные заметки"
   },
   "editor": {
+    "properties": "Свойства",
     "attachments": "Вложения",
     "attachments_toggle": "Показать или скрыть вложения",
     "no_attachments": "Нет вложений",
@@ -121,6 +122,7 @@
     "empty": "пусто"
   },
   "toolbar": {
+    "more": "Другие действия",
     "upload_attachments": "Загрузить вложения",
     "undo": "Отменить (Ctrl+Z)",
     "redo": "Повторить (Ctrl+Y)",

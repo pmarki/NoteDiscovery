@@ -127,17 +127,74 @@ function buildExtensions({ placeholder, resolveImageSrc, suggestion, slash, draw
     ];
 }
 
-function buildFrontmatterField(label, onInput) {
-    const details = document.createElement('details');
-    details.className = 'note-frontmatter';
-    const summary = document.createElement('summary');
-    summary.textContent = label;
+/**
+ * The note's properties, at the top of the text so they scroll with it. The app draws
+ * the summary (and, when open in read-only mode, every field) with
+ * `draw('frontmatter', box, { summary, fields, open, editable })`; open in edit mode,
+ * it shows the YAML to edit.
+ */
+function buildFrontmatterField(draw, onInput) {
+    const box = document.createElement('div');
+    box.className = 'note-frontmatter';
+    const summary = document.createElement('div');
+    summary.className = 'note-frontmatter-summary';
+    summary.tabIndex = 0;
+    summary.setAttribute('role', 'button');
+    const fields = document.createElement('div');
+    fields.className = 'note-frontmatter-fields';
     const field = document.createElement('textarea');
     field.spellcheck = false;
-    field.rows = 4;
-    field.addEventListener('input', onInput);
-    details.append(summary, field);
-    return { details, field };
+    field.rows = 3;
+    // As tall as the YAML, so it scrolls with the note rather than on its own
+    const fit = () => {
+        field.style.height = 'auto';
+        field.style.height = `${field.scrollHeight + field.offsetHeight - field.clientHeight}px`;
+    };
+    field.addEventListener('input', (event) => {
+        fit();
+        onInput(event);
+    });
+    box.append(summary, fields, field);
+
+    let open = false;
+    let editable = true;
+    const view = {
+        name: 'frontmatter',
+        redraw() {
+            box.classList.toggle('is-open', open);
+            box.hidden = !editable && !field.value.trim();
+            summary.setAttribute('aria-expanded', String(open));
+            if (draw) draw('frontmatter', box, { summary, fields, open, editable });
+            else summary.textContent = 'Frontmatter';
+        },
+    };
+    const toggle = () => {
+        open = !open;
+        view.redraw();
+        if (open && editable) {
+            fit();
+            field.focus();
+        }
+    };
+    // Tags and links in the summary do their own thing
+    summary.addEventListener('click', (event) => {
+        if (!event.target.closest('a, button')) toggle();
+    });
+    summary.addEventListener('keydown', (event) => {
+        if (event.target !== summary || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        toggle();
+    });
+    return {
+        box,
+        field,
+        view,
+        set(state) {
+            ({ open = open, editable = editable } = state);
+            box.classList.toggle('is-editable', editable);
+            view.redraw();
+        },
+    };
 }
 
 // Atoms that show the app's popup when selected.
@@ -187,7 +244,6 @@ export function create({
     element,
     markdown = '',
     placeholder = '',
-    frontmatterLabel = 'Frontmatter',
     debounceMs = 150,
     resolveImageSrc = (src) => src,
     drawNode = null,
@@ -343,9 +399,10 @@ export function create({
         onItemKey(item, action);
         return true;
     };
-    const frontmatter = buildFrontmatterField(frontmatterLabel, schedule);
+    const frontmatter = buildFrontmatterField(drawNode, schedule);
+    drawing.views.add(frontmatter.view);
     const content = document.createElement('div');
-    element.replaceChildren(frontmatter.details, content);
+    element.replaceChildren(frontmatter.box, content);
 
     const editor = new Editor({
         element: content,
@@ -432,7 +489,7 @@ export function create({
         cancel();
         const { yaml, body } = splitFrontmatter(value);
         frontmatter.field.value = yaml;
-        frontmatter.details.open = false;
+        frontmatter.set({ open: false });
         const json = editor.markdown.parse(body);
         if (!resetHistory) {
             editor.commands.setContent(json, { emitUpdate: false });
@@ -559,7 +616,7 @@ export function create({
         },
         setEditable(editable) {
             readOnlyItem = null;
-            frontmatter.details.hidden = !editable;
+            frontmatter.set({ editable });
             editor.setEditable(editable, false);
             reportState(editor, { showItem: false });
         },

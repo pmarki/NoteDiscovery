@@ -3,7 +3,7 @@
                 <div class="flex-1 flex flex-col overflow-hidden" :class="{'zen-editor-container': zenMode}" style="background-color: var(--bg-primary);">
                     <!-- Toolbar -->
                     <div class="px-4 py-3 flex items-center justify-between mobile-toolbar zen-hide" style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2 mobile-toolbar-main">
                             <!-- Mobile Menu Button -->
                             <button 
                                 @click="mobileSidebarOpen = !mobileSidebarOpen"
@@ -56,10 +56,68 @@
                                 </svg>
                             </button>
                             
+                            <!-- On a phone, everything else is in this menu -->
+                            <div class="relative md:hidden" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+                                <button
+                                    @click="open = !open"
+                                    class="p-2 rounded-lg"
+                                    style="color: var(--text-secondary);"
+                                    :aria-expanded="open"
+                                    :title="t('toolbar.more')"
+                                    :aria-label="t('toolbar.more')"
+                                >
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle>
+                                    </svg>
+                                </button>
+                                <div x-show="open" x-cloak x-transition.opacity.duration.100ms class="note-menu" role="menu">
+                                    <template x-if="currentNote">
+                                        <div>
+                                            <div class="note-menu-modes">
+                                                <button @click="viewMode = 'edit'; open = false" :class="{ 'is-active': viewMode === 'edit' }" x-text="t('editor.mode_edit')"></button>
+                                                <button @click="viewMode = 'read'; open = false" :class="{ 'is-active': viewMode === 'read' }" x-text="t('editor.mode_read')"></button>
+                                            </div>
+                                            <button role="menuitem" @click="toggleFavorite(); open = false">
+                                                <svg viewBox="0 0 24 24" :fill="isFavorite(currentNote) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linejoin="round" :style="isFavorite(currentNote) ? 'color: var(--warning, #eab308);' : ''" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                                <span x-text="isFavorite(currentNote) ? t('toolbar.remove_favorite') : t('toolbar.add_favorite')"></span>
+                                            </button>
+                                            <button role="menuitem" @click="exportToHTML(); open = false">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                <span x-text="t('toolbar.export_html')"></span>
+                                            </button>
+                                            <button role="menuitem" @click="printPreview(); open = false">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                                <span x-text="t('toolbar.print_preview')"></span>
+                                            </button>
+                                            <button role="menuitem" @click="copyNoteLink()">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                                <span x-text="linkCopied ? t('common.copied') : t('toolbar.copy_link')"></span>
+                                            </button>
+                                            <button role="menuitem" @click="openShareModal(); open = false">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                                                <span x-text="t('share.button_tooltip')"></span>
+                                            </button>
+                                            <button role="menuitem" @click="openUploadPicker(); open = false">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                                <span x-text="t('toolbar.upload_attachments')"></span>
+                                            </button>
+                                            <button role="menuitem" @click="toggleZenMode(); open = false">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                                                <span x-text="t('zen_mode.title')"></span>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <button role="menuitem" class="is-danger" @click="open = false; currentMedia ? deleteMedia(currentMedia) : deleteCurrentNote()">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        <span x-text="currentMedia ? (currentMediaType === 'drawing' ? t('toolbar.delete_drawing') : t('toolbar.delete_image')) : t('toolbar.delete_note')"></span>
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Delete Button -->
                             <button 
                                 @click="currentMedia ? deleteMedia(currentMedia) : deleteCurrentNote()"
-                                class="p-2 rounded-lg"
+                                class="p-2 rounded-lg hidden md:block"
                                 style="color: var(--error);"
                                 onmouseover="this.style.backgroundColor='var(--bg-hover)'"
                                 onmouseout="this.style.backgroundColor='transparent'"
@@ -69,20 +127,20 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
                             </button>
-                            <span x-show="isSaving" class="text-xs" style="color: var(--text-secondary);" x-text="t('common.saving')"></span>
-                            <span x-show="!isSaving && lastSaved" class="text-xs" style="color: var(--success);" x-text="t('common.saved')"></span>
+                            <span x-show="isSaving" class="text-xs hidden md:inline" style="color: var(--text-secondary);" x-text="t('common.saving')"></span>
+                            <span x-show="!isSaving && lastSaved" class="text-xs hidden md:inline" style="color: var(--success);" x-text="t('common.saved')"></span>
                             <span x-show="!isSaving && !lastSaved && lastEditedText" class="text-xs hidden md:inline" style="color: var(--text-tertiary);" x-text="t('editor.edited', {time: lastEditedText})"></span>
                         </div>
                         
                         <!-- Demo Mode Warning Banner -->
-                        <div x-show="demoMode" class="flex items-center px-3 py-1.5 text-xs rounded-lg" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%); color: white; font-weight: 500;">
+                        <div x-show="demoMode" class="hidden md:flex items-center px-3 py-1.5 text-xs rounded-lg" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%); color: white; font-weight: 500;">
                             <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                             </svg>
                             <span><strong x-text="t('demo.title') + ':'"></strong> <span x-text="t('demo.warning')"></span></span>
                         </div>
                         
-                        <div class="flex items-center space-x-2" x-show="currentNote">
+                        <div class="hidden md:flex items-center space-x-2" x-show="currentNote">
                             <!-- View Toggle (only for notes) -->
                             <div class="flex rounded-lg p-1" style="background-color: var(--bg-tertiary);">
                                 <button 
@@ -376,115 +434,6 @@
                             style="min-height: 0;"
                         >
                             <input type="file" multiple class="hidden" x-ref="attachInput" :accept="mediaUploadTypes" @change="onAttachPicked($event)">
-                            <!-- Note Properties/Metadata Panel -->
-                            <div 
-                                x-show="getHasMetadata() && currentNote"
-                                class="note-properties mx-6 mt-4 mb-2 flex-shrink-0"
-                            >
-                                <!-- Collapsed View -->
-                                <div 
-                                    x-show="!metadataExpanded"
-                                    @click="metadataExpanded = true"
-                                    class="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
-                                    style="background-color: var(--bg-tertiary); border: 1px solid var(--border-primary);"
-                                    onmouseover="this.style.borderColor='var(--accent-primary)'"
-                                    onmouseout="this.style.borderColor='var(--border-primary)'"
-                                >
-                                    <!-- Property icon -->
-                                    <span class="text-xs opacity-60">⚙️</span>
-                                    
-                                    <!-- Tags as pills -->
-                                    <template x-for="tag in getMetadataTags().slice(0, 5)" :key="tag">
-                                        <span 
-                                            @click.stop="toggleTag(tag.toLowerCase())"
-                                            class="metadata-tag px-2 py-0.5 text-xs rounded-full cursor-pointer transition-colors"
-                                            style="background-color: var(--accent-light, rgba(124, 58, 237, 0.15)); color: var(--accent-primary);"
-                                            onmouseover="this.style.backgroundColor='var(--accent-primary)'; this.style.color='white'"
-                                            onmouseout="this.style.backgroundColor='var(--accent-light, rgba(124, 58, 237, 0.15))'; this.style.color='var(--accent-primary)'"
-                                            x-text="'#' + tag"
-                                        ></span>
-                                    </template>
-                                    <template x-if="getMetadataTags().length > 5">
-                                        <span class="text-xs" style="color: var(--text-tertiary);">+<span x-text="getMetadataTags().length - 5"></span> more</span>
-                                    </template>
-                                    
-                                    <!-- Priority fields (date, author, status) -->
-                                    <template x-for="field in getPriorityMetadataFields()" :key="field.key">
-                                        <span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
-                                            <span class="opacity-50">·</span>
-                                            <span class="capitalize" x-text="field.key + ':'"></span>
-                                            <span style="color: var(--text-primary);" x-html="field.valueHtml" @click="field.isUrl && $event.stopPropagation()"></span>
-                                        </span>
-                                    </template>
-                                    
-                                    <!-- Expand hint -->
-                                    <span class="ml-auto text-xs opacity-40">▼</span>
-                                </div>
-                                
-                                <!-- Expanded View -->
-                                <div 
-                                    x-show="metadataExpanded"
-                                    class="rounded-lg overflow-hidden"
-                                    style="background-color: var(--bg-tertiary); border: 1px solid var(--border-primary);"
-                                >
-                                    <!-- Header -->
-                                    <div 
-                                        @click="metadataExpanded = false"
-                                        class="flex items-center justify-between px-3 py-2 cursor-pointer"
-                                        style="border-bottom: 1px solid var(--border-primary);"
-                                    >
-                                        <span class="text-xs font-medium flex-1 min-w-0" style="color: var(--text-secondary);">
-                                            ⚙️ Properties
-                                        </span>
-                                        <span class="text-xs opacity-40">▲ Collapse</span>
-                                    </div>
-                                    
-                                    <!-- Properties Grid -->
-                                    <div class="px-3 py-2 space-y-2">
-                                        <!-- Tags row -->
-                                        <template x-if="getMetadataTags().length > 0">
-                                            <div class="flex flex-wrap gap-1.5 items-start">
-                                                <span class="text-xs w-16 shrink-0 pt-0.5" style="color: var(--text-tertiary);">tags</span>
-                                                <div class="flex flex-wrap gap-1">
-                                                    <template x-for="tag in getMetadataTags()" :key="tag">
-                                                        <span 
-                                                            @click="toggleTag(tag.toLowerCase())"
-                                                            class="metadata-tag px-2 py-0.5 text-xs rounded-full cursor-pointer transition-colors"
-                                                            style="background-color: var(--accent-light, rgba(124, 58, 237, 0.15)); color: var(--accent-primary);"
-                                                            onmouseover="this.style.backgroundColor='var(--accent-primary)'; this.style.color='white'"
-                                                            onmouseout="this.style.backgroundColor='var(--accent-light, rgba(124, 58, 237, 0.15))'; this.style.color='var(--accent-primary)'"
-                                                            x-text="'#' + tag"
-                                                        ></span>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                        
-                                        <!-- Other fields -->
-                                        <template x-for="field in getAllMetadataFields()" :key="field.key">
-                                            <div class="flex gap-1.5 items-start text-xs">
-                                                <span class="w-16 shrink-0 pt-0.5" style="color: var(--text-tertiary);" x-text="field.key"></span>
-                                                <!-- Array values -->
-                                                <template x-if="field.isArray">
-                                                    <div class="flex flex-wrap gap-1">
-                                                        <template x-for="item in field.value" :key="item">
-                                                            <span 
-                                                                class="px-1.5 py-0.5 rounded text-xs"
-                                                                style="background-color: var(--bg-hover); color: var(--text-primary);"
-                                                                x-text="item"
-                                                            ></span>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                                <!-- Single values -->
-                                                <template x-if="!field.isArray">
-                                                    <span style="color: var(--text-primary);" x-html="field.valueHtml"></span>
-                                                </template>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-                            </div>
                             <div 
                                 class="editor-wrapper"
                                 :class="{ 'readable-lines': readableLineLength, 'link-drop-target': (draggedItem || externalDragActive) && dropTarget === 'editor' }"

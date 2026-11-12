@@ -69,6 +69,7 @@
     "filtered_notes": "Filtrowane notatki"
   },
   "editor": {
+    "properties": "Właściwości",
     "attachments": "Załączniki",
     "attachments_toggle": "Pokaż lub ukryj załączniki",
     "no_attachments": "Brak załączników",
@@ -121,6 +122,7 @@
     "empty": "pusty"
   },
   "toolbar": {
+    "more": "Więcej działań",
     "upload_attachments": "Prześlij załączniki",
     "undo": "Cofnij (Ctrl+Z)",
     "redo": "Ponów (Ctrl+Y)",

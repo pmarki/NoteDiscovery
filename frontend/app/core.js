@@ -155,6 +155,7 @@ function coreFeature() {
                 this.saveViewMode();
                 noteEditor?.setEditable(newValue === 'edit');
             });
+            this.$watch('noteMetadata', () => noteEditor?.refreshRendered(['frontmatter']));
             
             // Watch for changes in note content to re-apply search highlights
             this.$watch('noteContent', () => {

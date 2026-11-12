@@ -69,6 +69,7 @@
     "filtered_notes": "筛选的笔记"
   },
   "editor": {
+    "properties": "属性",
     "attachments": "附件",
     "attachments_toggle": "显示或隐藏附件",
     "no_attachments": "没有附件",
@@ -121,6 +122,7 @@
     "empty": "空"
   },
   "toolbar": {
+    "more": "更多操作",
     "upload_attachments": "上传附件",
     "undo": "撤销 (Ctrl+Z)",
     "redo": "重做 (Ctrl+Y)",

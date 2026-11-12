@@ -69,6 +69,7 @@
     "filtered_notes": "フィルター済みノート"
   },
   "editor": {
+    "properties": "プロパティ",
     "attachments": "添付ファイル",
     "attachments_toggle": "添付ファイルの表示/非表示",
     "no_attachments": "添付ファイルはありません",
@@ -121,6 +122,7 @@
     "empty": "空"
   },
   "toolbar": {
+    "more": "その他の操作",
     "upload_attachments": "添付ファイルをアップロード",
     "undo": "元に戻す (Ctrl+Z)",
     "redo": "やり直す (Ctrl+Y)",

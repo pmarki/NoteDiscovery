@@ -69,6 +69,7 @@
     "filtered_notes": "Filtrirani zapiski"
   },
   "editor": {
+    "properties": "Lastnosti",
     "attachments": "Priloge",
     "attachments_toggle": "Pokaži ali skrij priloge",
     "no_attachments": "Ni prilog",
@@ -121,6 +122,7 @@
     "empty": "prazno"
   },
   "toolbar": {
+    "more": "Več dejanj",
     "upload_attachments": "Naloži priloge",
     "undo": "Razveljavi (Ctrl+Z)",
     "redo": "Ponovi (Ctrl+Y)",
