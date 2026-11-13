@@ -96,10 +96,19 @@
     "no_content": "Nincs exportálható jegyzettartalom",
     "open_first": "Kérlek előbb nyiss meg egy jegyzetet, mielőtt képeket töltenél fel.",
     "save_conflict_title": "A jegyzet máshol módosult",
-    "save_conflict_message": "A(z) \"{{name}}\" jegyzet megváltozott a lemezen, mióta megnyitottad: egy másik lap, egy szinkronizáló eszköz vagy egy MI-ügynök írt bele.\n\nAz Újratöltés a lemezen lévő verziót mutatja; a nem mentett módosításaid elvesznek.\nA Felülírás a te verziódat menti az övék helyett.",
-    "save_conflict_overwrite": "Felülírás",
-    "save_conflict_reload": "Újratöltés",
-    "save_conflict_unsaved": "\"{{name}}\": a legutóbbi módosításaid nem lettek mentve, a jegyzet máshol módosult."
+    "save_conflict_message": "A(z) „{{name}}\" megváltozott a lemezen szerkesztés közben: egy másik lap, egy szinkronizáló eszköz vagy egy MI-ügynök írt bele. Melyik verziót szeretnéd?",
+    "save_conflict_overwrite": "Az enyém marad",
+    "save_conflict_reload": "A lemezen lévő verzió",
+    "save_conflict_unsaved": "A(z) „{{name}}\" máshol megváltozott, ezért a legutóbbi módosításaid „{{copy}}\" néven lettek mentve.",
+    "save_conflict_compare": "Verziók összehasonlítása",
+    "save_conflict_hide_compare": "Összehasonlítás elrejtése",
+    "save_conflict_keep_both": "Mindkettő marad",
+    "save_conflict_keep_both_hint": "A „Mindkettő marad\" a verziódat mellé menti „{{name}} ({{suffix}} …)\" néven, és megnyitja; a jegyzet a lemezen lévő verziót tartja meg.",
+    "save_conflict_copy_saved": "A verziód „{{copy}}\" néven lett mentve; a jegyzet a lemezen lévő verziót tartja meg.",
+    "save_conflict_legend_disk": "Csak a lemezen",
+    "save_conflict_legend_mine": "Csak a tiédben",
+    "save_conflict_unchanged": "⋯ {{count}} változatlan sor",
+    "save_conflict_suffix": "ütközés"
   },
   "folders": {
     "expand": "Mappa kibontása",

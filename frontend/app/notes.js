@@ -6,6 +6,9 @@ function notesFeature() {
         noteBaseHash: null,        // Fingerprint of the current note as last read or written on disk
         _saveQueued: false,        // A save was requested while another was in flight
         _saveConflictOpen: false,  // The "changed elsewhere" prompt is showing; saves wait
+        // That prompt: { name, mine, theirs, rows, showDiff }, or null
+        saveConflict: null,
+        _saveConflictResolve: null,
         saveTimeout: null,
 
         // Scroll sync state
@@ -553,27 +556,44 @@ function notesFeature() {
 
                 if (response.status === 409) {
                     const detail = await response.json();
+                    const mine = JSON.parse(body).content;
                     if (notePath !== this.currentNote) {
-                        // The user already moved to another note: its base hash is not ours to touch.
-                        const name = notePath.split('/').pop().replace('.md', '');
-                        this.toast(this.t('notes.save_conflict_unsaved', { name }), { type: 'warning' });
+                        // The user already moved to another note, so there's no one to ask:
+                        // keep their text as a copy beside the note.
+                        const copy = await this._saveConflictCopy(notePath, mine);
+                        if (copy) this.toast(this.t('notes.save_conflict_unsaved', { name: this._noteStem(notePath), copy: this._noteStem(copy) }), { type: 'warning' });
                         return;
                     }
                     // Nothing is in flight while the user decides.
                     this.isSaving = false;
-                    if (await this._askSaveConflict(notePath)) {
+                    const choice = await this._askSaveConflict(notePath, mine, detail.hash);
+                    if (choice.action === 'mine') {
                         // Overwrite: take the disk version as the base, re-send ours.
-                        this.noteBaseHash = detail.hash || null;
+                        this.noteBaseHash = choice.hash || detail.hash || null;
                         this._saveQueued = true;
-                    } else {
-                        // Reload: drop the pending autosave and show the version on disk.
-                        if (this.saveTimeout) {
-                            clearTimeout(this.saveTimeout);
-                            this.saveTimeout = null;
-                        }
-                        this._saveQueued = false;
-                        await this.loadNote(notePath, false);
+                        return;
                     }
+                    // Reload or keep both: drop the pending autosave either way.
+                    if (this.saveTimeout) {
+                        clearTimeout(this.saveTimeout);
+                        this.saveTimeout = null;
+                    }
+                    this._saveQueued = false;
+                    if (choice.action === 'both') {
+                        // Ours goes to a copy and opens; the note keeps what's on disk.
+                        this.noteBaseHash = choice.hash || detail.hash || null;
+                        const copy = await this._saveConflictCopy(notePath, this.noteContent);
+                        if (copy) {
+                            // No autosave is pending (cleared above), so leaving the note writes nothing to it
+                            await this.loadNote(copy);
+                            this.toast(this.t('notes.save_conflict_copy_saved', { copy: this._noteStem(copy) }), { type: 'success' });
+                            return;
+                        }
+                        // The copy failed: ask again rather than lose anything.
+                        this._saveQueued = true;
+                        return;
+                    }
+                    await this.loadNote(notePath, false);
                     return;
                 }
 
@@ -621,21 +641,79 @@ function notesFeature() {
         },
 
         // Ask what to do when the server refused a save because the file changed on disk.
-        // Resolves true to overwrite. Escape, a click outside or "Reload" keep the disk version.
-        async _askSaveConflict(notePath) {
+        // Resolves { action: 'mine' | 'disk' | 'both', theirs, hash }; the dialog can't be
+        // dismissed without a choice, so nothing is thrown away by accident.
+        async _askSaveConflict(notePath, mine, hash) {
             this._saveConflictOpen = true;
             try {
-                const name = notePath.split('/').pop().replace('.md', '');
-                return await this.confirmModalAsk({
-                    title: this.t('notes.save_conflict_title'),
-                    message: this.t('notes.save_conflict_message', { name }),
-                    danger: true,
-                    confirmLabel: this.t('notes.save_conflict_overwrite'),
-                    cancelLabel: this.t('notes.save_conflict_reload')
+                // The version on disk, read as loadNote reads it
+                let theirs = null;
+                try {
+                    const response = await fetch(`/api/notes/${encodeVaultPath(notePath)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        theirs = data.content;
+                        hash = data.hash || hash;
+                    }
+                } catch {}
+                // Same text after all: nothing to choose
+                if (theirs !== null && theirs === mine) return { action: 'mine', theirs, hash };
+                return await new Promise((resolve) => {
+                    this._saveConflictResolve = (action) => resolve({ action, theirs, hash });
+                    this.saveConflict = { name: this._noteStem(notePath), mine, theirs, rows: null, showDiff: false };
                 });
             } finally {
                 this._saveConflictOpen = false;
             }
+        },
+
+        saveConflictChoose(action) {
+            const resolve = this._saveConflictResolve;
+            this._saveConflictResolve = null;
+            this.saveConflict = null;
+            resolve?.(action);
+        },
+
+        // Shows or hides the line diff, worked out the first time it's asked for
+        saveConflictToggleDiff() {
+            const conflict = this.saveConflict;
+            if (!conflict) return;
+            if (!conflict.rows) conflict.rows = foldDiff(diffLines(conflict.theirs ?? '', conflict.mine));
+            conflict.showDiff = !conflict.showDiff;
+        },
+
+        // Saves `content` beside notePath as "<name> (conflict 2026-11-13 10-42)", or
+        // "… 2", "… 3" when taken. Returns the new path, or null if it failed.
+        async _saveConflictCopy(notePath, content) {
+            const slash = notePath.lastIndexOf('/');
+            const folder = slash >= 0 ? notePath.slice(0, slash + 1) : '';
+            const stem = this._noteStem(notePath);
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}`;
+            const base = `${folder}${stem} (${this.t('notes.save_conflict_suffix')} ${stamp})`;
+            let copy = `${base}.md`;
+            for (let n = 2; this.notePathTaken(copy); n++) copy = `${base} ${n}.md`;
+
+            this._optimisticAddNote(copy, { content });
+            this._rebuildTreeAfterMutation();
+            try {
+                const response = await fetch(`/api/notes/${encodeVaultPath(copy)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                if (!response.ok) throw new Error('Server returned error');
+                return copy;
+            } catch (error) {
+                ErrorHandler.handle('save note', error);
+                await this.loadNotes({ silent: true });
+                return null;
+            }
+        },
+
+        _noteStem(notePath) {
+            return notePath.split('/').pop().replace(/\.md$/i, '');
         },
 
         // Rename current note

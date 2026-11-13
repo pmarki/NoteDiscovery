@@ -23,6 +23,7 @@ const PRECACHE_ASSETS = [
   '/static/app/media.js?v=__APP_VERSION__',
   '/static/app/drawing.js?v=__APP_VERSION__',
   '/static/app/editor.js?v=__APP_VERSION__',
+  '/static/app/diff.js?v=__APP_VERSION__',
   '/static/app/notes.js?v=__APP_VERSION__',
   '/static/app/create.js?v=__APP_VERSION__',
   '/static/app/search.js?v=__APP_VERSION__',

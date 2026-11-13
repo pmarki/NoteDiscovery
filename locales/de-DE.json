@@ -96,10 +96,19 @@
     "no_content": "Kein Inhalt zum Exportieren",
     "open_first": "Bitte öffne zuerst eine Notiz, bevor du Bilder hochlädst.",
     "save_conflict_title": "Notiz anderswo geändert",
-    "save_conflict_message": "\"{{name}}\" wurde seit dem Öffnen auf der Festplatte geändert: Ein anderer Tab, ein Sync-Tool oder ein KI-Agent hat hineingeschrieben.\n\nNeu laden zeigt die Version auf der Festplatte; deine ungespeicherten Änderungen gehen verloren.\nÜberschreiben speichert deine Version anstelle der anderen.",
-    "save_conflict_overwrite": "Überschreiben",
-    "save_conflict_reload": "Neu laden",
-    "save_conflict_unsaved": "\"{{name}}\": Deine letzten Änderungen wurden nicht gespeichert, die Notiz wurde anderswo geändert."
+    "save_conflict_message": "„{{name}}\" wurde auf der Festplatte geändert, während du es bearbeitet hast: von einem anderen Tab, einem Sync-Tool oder einem KI-Agenten. Welche Version möchtest du?",
+    "save_conflict_overwrite": "Meine behalten",
+    "save_conflict_reload": "Version auf der Festplatte",
+    "save_conflict_unsaved": "„{{name}}\" wurde anderswo geändert, deine letzten Änderungen wurden daher als „{{copy}}\" gespeichert.",
+    "save_conflict_compare": "Versionen vergleichen",
+    "save_conflict_hide_compare": "Vergleich ausblenden",
+    "save_conflict_keep_both": "Beide behalten",
+    "save_conflict_keep_both_hint": "„Beide behalten\" speichert deine Version daneben als „{{name}} ({{suffix}} …)\" und öffnet sie; die Notiz behält die Version auf der Festplatte.",
+    "save_conflict_copy_saved": "Deine Version wurde als „{{copy}}\" gespeichert; die Notiz behält die Version auf der Festplatte.",
+    "save_conflict_legend_disk": "Nur auf der Festplatte",
+    "save_conflict_legend_mine": "Nur in deiner",
+    "save_conflict_unchanged": "⋯ {{count}} unveränderte Zeilen",
+    "save_conflict_suffix": "Konflikt"
   },
   "folders": {
     "expand": "Ordner aufklappen",

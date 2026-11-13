@@ -96,10 +96,19 @@
     "no_content": "Nessun contenuto da esportare",
     "open_first": "Apri prima una nota per caricare immagini.",
     "save_conflict_title": "Nota modificata altrove",
-    "save_conflict_message": "\"{{name}}\" è cambiata sul disco da quando l'hai aperta: un'altra scheda, uno strumento di sincronizzazione o un agente IA ci ha scritto.\n\nRicarica mostra la versione sul disco; le modifiche non salvate vengono scartate.\nSovrascrivi salva la tua versione al posto della loro.",
-    "save_conflict_overwrite": "Sovrascrivi",
-    "save_conflict_reload": "Ricarica",
-    "save_conflict_unsaved": "\"{{name}}\": le ultime modifiche non sono state salvate, la nota è cambiata altrove."
+    "save_conflict_message": "\"{{name}}\" è cambiata sul disco mentre la modificavi: un'altra scheda, uno strumento di sincronizzazione o un agente IA l'ha modificata. Quale versione vuoi?",
+    "save_conflict_overwrite": "Tieni la mia",
+    "save_conflict_reload": "Usa quella sul disco",
+    "save_conflict_unsaved": "\"{{name}}\" è cambiata altrove, quindi le tue ultime modifiche sono state salvate come \"{{copy}}\".",
+    "save_conflict_compare": "Confronta le versioni",
+    "save_conflict_hide_compare": "Nascondi il confronto",
+    "save_conflict_keep_both": "Tienile entrambe",
+    "save_conflict_keep_both_hint": "Tienile entrambe salva la tua versione accanto come \"{{name}} ({{suffix}} …)\" e la apre; la nota mantiene la versione sul disco.",
+    "save_conflict_copy_saved": "La tua versione è stata salvata come \"{{copy}}\"; la nota mantiene la versione sul disco.",
+    "save_conflict_legend_disk": "Solo sul disco",
+    "save_conflict_legend_mine": "Solo nella tua",
+    "save_conflict_unchanged": "⋯ {{count}} righe invariate",
+    "save_conflict_suffix": "conflitto"
   },
   "folders": {
     "expand": "Espandi cartella",
