@@ -235,9 +235,13 @@
     "title": "Login",
     "tagline": "Your Self-Hosted Knowledge Base",
     "password_placeholder": "Enter your password",
+    "pin_placeholder": "Enter your PIN",
+    "remember_device": "Remember this device",
     "unlock_button": "🔓 Unlock",
     "footer": "🔒 Secure & Self-Hosted",
-    "error_incorrect_password": "Incorrect password. Please try again."
+    "error_incorrect_password": "Incorrect password. Please try again.",
+    "error_incorrect_pin": "Incorrect PIN. Please try again.",
+    "error_locked": "Too many attempts. Try again in {{time}}."
   },
   "drawing": {
     "tool_freehand": "Pencil — freehand drawing",

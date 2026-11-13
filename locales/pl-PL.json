@@ -235,9 +235,13 @@
     "title": "Logowanie",
     "tagline": "Twoja baza wiedzy na własnym serwerze",
     "password_placeholder": "Wprowadź hasło",
+    "pin_placeholder": "Wpisz PIN",
+    "remember_device": "Zapamiętaj to urządzenie",
     "unlock_button": "🔓 Odblokuj",
     "footer": "🔒 Bezpieczne i na własnym serwerze",
-    "error_incorrect_password": "Niepoprawne hasło. Spróbuj ponownie."
+    "error_incorrect_password": "Niepoprawne hasło. Spróbuj ponownie.",
+    "error_incorrect_pin": "Niepoprawny PIN. Spróbuj ponownie.",
+    "error_locked": "Zbyt wiele prób. Spróbuj ponownie za {{time}}."
   },
   "drawing": {
     "tool_freehand": "Ołówek — rysowanie odręczne",

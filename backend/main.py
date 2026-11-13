@@ -101,6 +101,8 @@ from .export import (
     attachment_content_disposition,
 )
 from .mcp_http import build_mcp_router
+from .login_guard import LoginGuard, client_key, parse_trusted_proxies
+from .cloudflare_access import AccessVerifier, TOKEN_HEADER as CF_ACCESS_TOKEN_HEADER
 
 # Load configuration: your config.yaml, else the defaults in config.example.yaml
 config_path = Path(__file__).parent.parent / "config.yaml"
@@ -158,6 +160,30 @@ elif config.get('authentication', {}).get('password', '').strip():
     del config['authentication']['password']
     logger.info("Password loaded from config.yaml")
 
+# A PIN of 4-6 digits replaces the password on the login page.
+# Priority: AUTHENTICATION_PIN env var > authentication.pin in config.yaml
+PIN_PATTERN = re.compile(r'[0-9]{4,6}')  # not \d, which takes any script's digits
+
+
+def hash_pin(plain: str) -> str:
+    """bcrypt hash of a valid PIN; '' for no PIN or one that isn't 4-6 digits."""
+    plain = str(plain or '').strip()
+    if not PIN_PATTERN.fullmatch(plain):
+        return ''
+    return bcrypt.hashpw(plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+
+_pin_source = "AUTHENTICATION_PIN env var" if 'AUTHENTICATION_PIN' in os.environ else "config.yaml"
+_plain_pin = str(config['authentication'].pop('pin', None) or '').strip()
+if 'AUTHENTICATION_PIN' in os.environ:
+    _plain_pin = os.getenv('AUTHENTICATION_PIN', '').strip()
+config['authentication']['pin_hash'] = hash_pin(_plain_pin)
+if config['authentication']['pin_hash']:
+    logger.info("PIN loaded from %s - the login page asks for the PIN, not the password", _pin_source)
+elif _plain_pin:
+    logger.error("PIN from %s must be 4 to 6 digits - ignoring it", _pin_source)
+del _plain_pin
+
 # Allow secret key to be set via environment variable (for session security)
 if 'AUTHENTICATION_SECRET_KEY' in os.environ:
     config['authentication']['secret_key'] = os.getenv('AUTHENTICATION_SECRET_KEY')
@@ -177,9 +203,28 @@ elif config.get('authentication', {}).get('api_key', '').strip():
 else:
     config['authentication']['api_key'] = ''
 
+# Cloudflare Access: a request it vouches for needs no PIN or password
+# Priority: CLOUDFLARE_ACCESS_* env vars > authentication.cloudflare_access in config.yaml
+_cf = config['authentication'].get('cloudflare_access') or {}
+for _name, _env in (('team_domain', 'CLOUDFLARE_ACCESS_TEAM_DOMAIN'), ('aud', 'CLOUDFLARE_ACCESS_AUD'),
+                    ('allowed_emails', 'CLOUDFLARE_ACCESS_ALLOWED_EMAILS')):
+    if _env in os.environ:
+        _cf[_name] = os.getenv(_env, '')
+if isinstance(_cf.get('allowed_emails'), str):
+    _cf['allowed_emails'] = _cf['allowed_emails'].split(',')
+CLOUDFLARE_ACCESS = None
+if str(_cf.get('team_domain') or '').strip() and str(_cf.get('aud') or '').strip():
+    CLOUDFLARE_ACCESS = AccessVerifier(str(_cf['team_domain']), str(_cf['aud']), _cf.get('allowed_emails') or [])
+    logger.info("Cloudflare Access logins accepted from %s%s", CLOUDFLARE_ACCESS.team_domain,
+                f" for {len(CLOUDFLARE_ACCESS.allowed_emails)} listed email(s)" if CLOUDFLARE_ACCESS.allowed_emails else "")
+elif _cf.get('team_domain') or _cf.get('aud'):
+    logger.error("cloudflare_access needs both team_domain and aud - Cloudflare Access logins are off")
+
 # Warnings for missing authentication methods (only when auth is enabled)
 if config.get('authentication', {}).get('enabled', False):
-    _has_password = bool(config.get('authentication', {}).get('password_hash', ''))
+    _has_password = bool(config.get('authentication', {}).get('password_hash', '')
+                         or config.get('authentication', {}).get('pin_hash', '')
+                         or CLOUDFLARE_ACCESS)
     _has_api_key = bool(config.get('authentication', {}).get('api_key', '').strip())
 
     if not _has_password and not _has_api_key:
@@ -806,11 +851,56 @@ async def require_auth(
         return  # Valid API key header - authenticated
     
     # Method 3: Check session-based authentication (web UI)
-    if request.session.get('authenticated'):
+    if session_authenticated(request):
         return  # Valid session - authenticated
+
+    # Method 4: A login Cloudflare Access vouches for
+    if await cloudflare_access_user(request):
+        return
     
     # No valid authentication method - deny access
     raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+def session_authenticated(request: Request) -> bool:
+    """A logged-in session; one not remembered on its device ends at auth_expires."""
+    if not request.session.get('authenticated'):
+        return False
+    expires = request.session.get('auth_expires')
+    return expires is None or time.time() < expires
+
+
+async def cloudflare_access_user(request: Request):
+    """Claims of a valid Cloudflare Access token on this request, else None."""
+    if CLOUDFLARE_ACCESS is None:
+        return None
+    if not hasattr(request.state, 'cloudflare_access'):
+        token = request.headers.get(CF_ACCESS_TOKEN_HEADER, '')
+        # Off the event loop: the first check, and key rotation, fetch Cloudflare's keys
+        request.state.cloudflare_access = await run_in_threadpool(CLOUDFLARE_ACCESS.verify, token) if token else None
+    return request.state.cloudflare_access
+
+
+def pin_enabled() -> bool:
+    return bool(config.get('authentication', {}).get('pin_hash', ''))
+
+
+def verify_pin(pin: str) -> bool:
+    """Verify a PIN against its stored hash"""
+    pin_hash = config.get('authentication', {}).get('pin_hash', '')
+    if not pin_hash or not PIN_PATTERN.fullmatch(pin or ''):
+        return False
+    try:
+        return bcrypt.checkpw(pin.encode('utf-8'), pin_hash.encode('utf-8'))
+    except Exception as e:
+        logger.error("PIN verification error: %s", e)
+        return False
+
+
+login_guard = LoginGuard()
+TRUSTED_PROXIES = parse_trusted_proxies(config.get('authentication', {}).get('trusted_proxies'))
+# A login without "Remember this device" lasts this long, however much it's used
+SHORT_SESSION_SECONDS = float(config.get('authentication', {}).get('short_session_hours', 12)) * 3600
 
 
 def verify_password(password: str) -> bool:
@@ -837,7 +927,7 @@ async def login_page(request: Request, error: str = None):
         return RedirectResponse(url="/", status_code=303)
     
     # If already authenticated, redirect to home
-    if request.session.get('authenticated'):
+    if session_authenticated(request) or await cloudflare_access_user(request):
         return RedirectResponse(url="/", status_code=303)
     
     # Serve login page
@@ -848,28 +938,45 @@ async def login_page(request: Request, error: str = None):
     # Inject app name throughout the login page
     content = _render_app_name_html(content)
     content = content.replace('__DEFAULT_THEME__', DEFAULT_THEME)
+    content = content.replace('__LOGIN_MODE__', 'pin' if pin_enabled() else 'password')
     
     return _html_page_response(content, request)
 
 
 @app.post("/login", include_in_schema=False)
-async def login(request: Request, password: str = Form(...)):
-    """Handle login form submission"""
+async def login(request: Request, password: str = Form(...), remember: str = Form('')):
+    """Handle login form submission. The field is called password for the PIN too,
+    so password managers fill it either way."""
     if not auth_enabled():
         return RedirectResponse(url="/", status_code=303)
-    
-    # Verify password
-    if verify_password(password):
+
+    # Refused before checking, so guesses during a wait tell nothing
+    key = client_key(request, TRUSTED_PROXIES)
+    wait = login_guard.wait_seconds(key)
+    if wait:
+        return RedirectResponse(url=f"/login?error=locked&wait={wait}", status_code=303)
+
+    use_pin = pin_enabled()
+    if verify_pin(password) if use_pin else verify_password(password):
+        login_guard.record_success(key)
         # Session regeneration: Clear old session to prevent session fixation attacks
         # This forces the creation of a new session ID after successful authentication
         request.session.clear()
         
         # Set authenticated flag in the NEW session
         request.session['authenticated'] = True
+        if not remember:
+            request.session['auth_expires'] = time.time() + SHORT_SESSION_SECONDS
         return RedirectResponse(url="/", status_code=303)
-    else:
-        # Redirect back to login with error code (frontend will translate)
-        return RedirectResponse(url="/login?error=incorrect_password", status_code=303)
+
+    if login_guard.record_failure(key):
+        logger.warning("Too many failed logins in the last hour - login is paused for everyone")
+    # Redirect back to login with error code (frontend will translate)
+    error = "incorrect_pin" if use_pin else "incorrect_password"
+    wait = login_guard.wait_seconds(key)
+    if wait:
+        return RedirectResponse(url=f"/login?error=locked&wait={wait}", status_code=303)
+    return RedirectResponse(url=f"/login?error={error}", status_code=303)
 
 
 @app.get("/logout", include_in_schema=False)
@@ -886,6 +993,9 @@ async def logout(request: Request):
     POST-only so a third-party page cannot force logout via a GET (e.g. <img src>).
     """
     request.session.clear()
+    # Cloudflare would log them straight back in; its own logout ends that too
+    if await cloudflare_access_user(request):
+        return RedirectResponse(url="/cdn-cgi/access/logout", status_code=303)
     return RedirectResponse(url="/login", status_code=303)
 
 # ============================================================================

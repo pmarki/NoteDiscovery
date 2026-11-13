@@ -235,9 +235,13 @@
     "title": "Bejelentkezés",
     "tagline": "A Saját, Önálló Tudásbázisod",
     "password_placeholder": "Add meg a jelszavad",
+    "pin_placeholder": "Add meg a PIN-kódot",
+    "remember_device": "Eszköz megjegyzése",
     "unlock_button": "🔓 Kinyit",
     "footer": "🔒 Biztonságos & Saját Kiszolgálású",
-    "error_incorrect_password": "Helytelen jelszó. Próbáld újra."
+    "error_incorrect_password": "Helytelen jelszó. Próbáld újra.",
+    "error_incorrect_pin": "Helytelen PIN-kód. Próbáld újra.",
+    "error_locked": "Túl sok próbálkozás. Próbáld újra {{time}} múlva."
   },
   "drawing": {
     "tool_freehand": "Ceruza — szabadkézi",

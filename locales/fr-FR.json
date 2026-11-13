@@ -235,9 +235,13 @@
     "title": "Connexion",
     "tagline": "Votre Base de Connaissances Auto-Hébergée",
     "password_placeholder": "Entrez votre mot de passe",
+    "pin_placeholder": "Saisissez votre code PIN",
+    "remember_device": "Se souvenir de cet appareil",
     "unlock_button": "🔓 Déverrouiller",
     "footer": "🔒 Sécurisé et Auto-Hébergé",
-    "error_incorrect_password": "Mot de passe incorrect. Veuillez réessayer."
+    "error_incorrect_password": "Mot de passe incorrect. Veuillez réessayer.",
+    "error_incorrect_pin": "Code PIN incorrect. Veuillez réessayer.",
+    "error_locked": "Trop de tentatives. Réessayez dans {{time}}."
   },
   "drawing": {
     "tool_freehand": "Crayon — main levée",

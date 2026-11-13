@@ -84,8 +84,12 @@ docker run -e NOTES_DIR=/vault -v /home/me/MyVault:/vault ...
 |----------|------|---------|-------------|
 | `AUTHENTICATION_ENABLED` | boolean | `config.yaml` | Enable/disable authentication |
 | `AUTHENTICATION_PASSWORD` | string | `admin` | Password (hashed automatically at startup) |
+| `AUTHENTICATION_PIN` | string | - | PIN of 4 to 6 digits, asked for instead of the password. See [AUTHENTICATION.md](AUTHENTICATION.md#pin-instead-of-a-password) |
 | `AUTHENTICATION_SECRET_KEY` | string | `config.yaml`, else generated | Session secret key. Without one, a random key is generated and kept in the notes folder as `.secret-key` |
 | `AUTHENTICATION_API_KEY` | string | - | API key for external integrations (MCP, scripts) |
+| `CLOUDFLARE_ACCESS_TEAM_DOMAIN` | string | - | Zero Trust team domain, e.g. `myteam.cloudflareaccess.com`. With `CLOUDFLARE_ACCESS_AUD`, requests Cloudflare Access lets through skip the login. See [AUTHENTICATION.md](AUTHENTICATION.md#cloudflare-access) |
+| `CLOUDFLARE_ACCESS_AUD` | string | - | The Access application's Application Audience (AUD) tag |
+| `CLOUDFLARE_ACCESS_ALLOWED_EMAILS` | string | - | Comma-separated emails allowed in through Access; empty lets in anyone Access does |
 
 #### Example: Setting password via environment variable
 

@@ -235,9 +235,13 @@
     "title": "Prijava",
     "tagline": "Vaša lastna baza znanja",
     "password_placeholder": "Vnesite geslo",
+    "pin_placeholder": "Vnesite PIN",
+    "remember_device": "Zapomni si to napravo",
     "unlock_button": "🔓 Odkleni",
     "footer": "🔒 Varno in samostojno gostovano",
-    "error_incorrect_password": "Napačno geslo. Prosimo, poskusite znova."
+    "error_incorrect_password": "Napačno geslo. Prosimo, poskusite znova.",
+    "error_incorrect_pin": "Napačen PIN. Prosimo, poskusite znova.",
+    "error_locked": "Preveč poskusov. Poskusite znova čez {{time}}."
   },
   "drawing": {
     "tool_freehand": "Svinčnik — prostoročno",
