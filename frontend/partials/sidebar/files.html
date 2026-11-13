@@ -71,68 +71,93 @@
                             </div>
                         </div>
                         
-                        <div class="text-xs px-2 py-1 mb-2" style="color: var(--text-tertiary);">
-                            <div class="flex items-center justify-between mb-1">
-                                <span x-text="t('sidebar.folders_and_notes')"></span>
-                                <div class="flex gap-0.5">
-                                    <button
-                                        @click="cycleSortMode()"
-                                        class="text-xs px-1.5 py-0.5 rounded transition-all hover:scale-110"
-                                        :title="t('sidebar.sort_' + sortMode)"
-                                        style="opacity: 0.7;"
-                                        onmouseover="this.style.opacity='1'"
-                                        onmouseout="this.style.opacity='0.7'"
-                                    ><span x-text="getSortIcon()"></span></button>
-                                    <button
-                                        @click="expandAllFolders()"
-                                        class="text-xs px-1.5 py-0.5 rounded transition-all hover:scale-110"
-                                        :title="t('sidebar.expand_all')"
-                                        style="opacity: 0.7;"
-                                        onmouseover="this.style.opacity='1'"
-                                        onmouseout="this.style.opacity='0.7'"
-                                    >📂</button>
-                                    <button 
-                                        @click="collapseAllFolders()"
-                                        class="text-xs px-1.5 py-0.5 rounded transition-all hover:scale-110"
-                                        :title="t('sidebar.collapse_all')"
-                                        style="opacity: 0.7;"
-                                        onmouseover="this.style.opacity='1'"
-                                        onmouseout="this.style.opacity='0.7'"
-                                    >📁</button>
-                                </div>
-                            </div>
-                            <!-- Dual-purpose: hint text OR root drop zone when dragging -->
+                        <div class="flex items-center gap-1 text-xs px-2 py-1 mb-2" style="color: var(--text-tertiary);">
+                            <!-- Dual-purpose: a quiet hint, or the root drop zone while dragging -->
                             <div 
-                                class="text-xs px-2 py-1 mb-2 rounded transition-all font-medium text-center"
+                                class="flex-1 min-w-0 text-xs px-2 py-1 rounded transition-all"
                                 :class="{
                                     'border-2 border-dashed bg-accent-light': draggedItem && dragOverFolder === '',
                                     'border-2 border-dashed': draggedItem && dragOverFolder !== '',
-                                    'border-2 border-transparent': !draggedItem
+                                    'border-2 border-transparent': !draggedItem,
+                                    'font-medium': draggedItem
                                 }"
                                 :style="{
                                     'color': draggedItem ? (dragOverFolder === '' ? 'var(--accent-primary)' : 'var(--text-secondary)') : 'var(--text-tertiary)',
-                                    'opacity': draggedItem ? '1' : '0.8',
-                                    'border-color': draggedItem && dragOverFolder === '' ? 'var(--accent-primary)' : 'var(--border-secondary)',
+                                    'opacity': draggedItem ? '1' : '0.7',
+                                    'justify-content': draggedItem ? 'center' : 'flex-start',
+                                    'padding-left': draggedItem ? '' : '0',
+                                    'border-color': !draggedItem ? 'transparent' : dragOverFolder === '' ? 'var(--accent-primary)' : 'var(--border-secondary)',
                                     'background-color': dragOverFolder === '' ? 'var(--accent-light)' : ''
                                 }"
                                 @dragover.prevent="if(draggedItem) dragOverFolder = '';"
                                 @dragenter.prevent="if(draggedItem) dragOverFolder = '';"
                                 @dragleave="if(draggedItem) dragOverFolder = null;"
                                 @drop="if(draggedItem) onFolderDrop('')"
-                                style="height: 28px; line-height: 20px; display: flex; align-items: center; justify-content: center;"
+                                style="height: 28px; line-height: 20px; display: flex; align-items: center;"
                             >
                                 <span x-show="!draggedItem" x-text="t('sidebar.drag_hint')"></span>
-                                <span x-show="draggedItem" x-text="t('sidebar.root_folder')"></span>
+                                <span x-show="draggedItem" x-text="'📂 ' + t('homepage.title')"></span>
                             </div>
+                            <button
+                                @click="cycleSortMode()"
+                                class="flex-shrink-0 text-sm px-2 py-1 rounded transition-all hover:scale-110"
+                                :title="t('sidebar.sort_' + sortMode)"
+                                style="opacity: 0.7;"
+                                onmouseover="this.style.opacity='1'"
+                                onmouseout="this.style.opacity='0.7'"
+                            ><span x-text="getSortIcon()"></span></button>
                         </div>
                         
-                        <!-- Folders (rendered recursively for unlimited nesting) -->
-                        <template x-for="[folderKey, folder] in Object.entries(folderTree).filter(([k, v]) => k !== '__root__' && (!hideUnderscoreFolders || !v.name.startsWith('_'))).sort((a, b) => getFolderSortComparator()(a[1], b[1]))" :key="folderKey">
-                            <div x-html="renderFolderRecursive(folder, 0, true)"></div>
-                        </template>
-                        
-                        <!-- Root notes and images (no folder) -->
-                        <div x-html="renderRootItems()"></div>
+                        <!-- Home: the notes folder itself, holding everything below. Behaves like
+                             any folder row (arrow folds it, name opens it, drop moves to it),
+                             but can't be renamed or deleted. -->
+                        <div x-show="!notesLoading || notes.length > 0 || allFolders.length > 0">
+                            <div
+                                data-path=""
+                                ondragover="window.$root.handleFolderDragOver(this, event)"
+                                ondragenter="window.$root.handleFolderDragOver(this, event)"
+                                ondragleave="window.$root.handleFolderDragLeave(this)"
+                                ondrop="window.$root.handleFolderDrop(this, event)"
+                                @click="if (!currentNote && !currentMedia && !showGraph && selectedHomepageFolder === '') { homeExpanded = !homeExpanded } else { homeExpanded = true; goHome() } mobileSidebarOpen = false"
+                                class="folder-item hover-accent px-2 py-1 text-sm relative"
+                                style="color: var(--text-primary); cursor: pointer;"
+                            >
+                                <div class="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        @click.stop="homeExpanded = !homeExpanded"
+                                        class="folder-arrow flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
+                                        style="color: var(--text-tertiary); cursor: pointer; transition: transform 0.2s; margin: -4px -4px -4px -9px;"
+                                        :style="homeExpanded ? 'transform: rotate(90deg)' : ''"
+                                        :aria-expanded="homeExpanded"
+                                        :aria-label="t(homeExpanded ? 'folders.collapse' : 'folders.expand')"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M6 4l4 4-4 4V4z"/>
+                                        </svg>
+                                    </button>
+                                    <span class="flex-1 truncate" style="font-weight: 500; pointer-events: none;" x-text="t('homepage.title')"></span>
+                                </div>
+                                <div class="hover-buttons flex gap-1 transition-opacity absolute right-2 top-1/2 transform -translate-y-1/2" style="opacity: 0; pointer-events: none; background: linear-gradient(to right, transparent, var(--bg-hover) 20%, var(--bg-hover)); padding-left: 20px;" @click.stop>
+                                    <button
+                                        data-path=""
+                                        onclick="window.$root.handleNewItemClick(this, event)"
+                                        class="px-1.5 py-0.5 text-xs rounded hover:brightness-110"
+                                        style="background-color: var(--bg-tertiary); color: var(--text-secondary);"
+                                        :title="t('sidebar.new_note')"
+                                    >+</button>
+                                </div>
+                            </div>
+                            <div x-show="homeExpanded" class="folder-contents" style="padding-left: 10px;">
+                                <!-- Folders (rendered recursively for unlimited nesting) -->
+                                <template x-for="[folderKey, folder] in Object.entries(folderTree).filter(([k, v]) => k !== '__root__' && (!hideUnderscoreFolders || !v.name.startsWith('_'))).sort((a, b) => getFolderSortComparator()(a[1], b[1]))" :key="folderKey">
+                                    <div x-html="renderFolderRecursive(folder, 0, true)"></div>
+                                </template>
+
+                                <!-- Root notes and images (no folder) -->
+                                <div x-html="renderRootItems()"></div>
+                            </div>
+                        </div>
                         
                         <!-- Loading state (initial /api/notes still in flight).
                              Static shimmer skeleton — pure CSS, no state. Folder

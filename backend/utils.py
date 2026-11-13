@@ -406,7 +406,7 @@ def scan_notes_fast_walk(notes_dir: str, use_cache: bool = True, include_media: 
             folder = relative_path.parent.as_posix()
             rel_str = relative_path.as_posix()
             notes.append({
-                "name": full_path.stem,
+                "name": full_path.stem if is_markdown else full_path.name,  # Notes without .md, files whole
                 "path": rel_str,
                 "folder": "" if folder == "." else folder,
                 "modified": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),

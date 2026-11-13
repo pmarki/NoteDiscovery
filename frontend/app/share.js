@@ -3,7 +3,6 @@ function shareFeature() {
     return {
         // Optional public origin for share links; empty keeps window.location.origin.
         sharePublicOrigin: '',
-        linkCopied: false,
         
         // Share state
         showShareModal: false,
@@ -82,34 +81,6 @@ function shareFeature() {
             
             // Open in new window/tab
             window.open(url, '_blank');
-        },
-        
-        // Copy current note link to clipboard
-        async copyNoteLink() {
-            if (!this.currentNote) return;
-            
-            // Build the full URL
-            const pathWithoutExtension = this.currentNote.replace('.md', '');
-            const encodedPath = pathWithoutExtension.split('/').map(segment => encodeURIComponent(segment)).join('/');
-            const url = `${window.location.origin}/${encodedPath}`;
-            
-            try {
-                await navigator.clipboard.writeText(url);
-            } catch (error) {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = url;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-            }
-            
-            // Show brief "Copied!" feedback
-            this.linkCopied = true;
-            setTimeout(() => {
-                this.linkCopied = false;
-            }, 1500);
         },
         
         // ============================================================================

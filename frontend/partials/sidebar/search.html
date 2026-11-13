@@ -65,7 +65,7 @@
                                         :style="currentNote === note.path ? 'background-color: var(--accent-light); color: var(--accent-primary);' : 'color: var(--text-primary);'"
                                         :title="note.path"
                                     >
-                                        <div class="font-medium truncate" x-text="note.name"></div>
+                                        <div class="font-medium truncate"><span class="contents" x-html="itemIconHtml(note.type || 'note')"></span><span x-text="note.name"></span></div>
                                         <div class="text-xs truncate" style="color: var(--text-tertiary);" x-html="(note.matches && note.matches.length > 0) ? note.matches[0].context : (note.folder || 'Root')"></div>
                     </div>
                 </template>

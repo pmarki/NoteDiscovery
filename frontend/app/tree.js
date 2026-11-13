@@ -24,6 +24,7 @@ function treeFeature() {
         folderTree: [],
         allFolders: [],
         expandedFolders: new Set(),
+        homeExpanded: true, // the Home row at the top of the tree
         dragOverFolder: null,  // Track which folder is being hovered during drag
         _noteNameCounts: new Map(), // lower note stem -> count, for name-vs-path insertion
         
@@ -251,9 +252,10 @@ function treeFeature() {
                 }
             });
             
-            // Calculate and cache note counts recursively (for performance)
+            // Calculate and cache note counts recursively (for performance).
+            // `notes` holds files too; only notes are counted.
             const calculateNoteCounts = (folderNode) => {
-                const directNotes = folderNode.notes ? folderNode.notes.length : 0;
+                const directNotes = folderNode.notes ? folderNode.notes.filter(item => (item.type || 'note') === 'note').length : 0;
                 
                 if (!folderNode.children || Object.keys(folderNode.children).length === 0) {
                     folderNode.noteCount = directNotes;
@@ -429,7 +431,8 @@ function treeFeature() {
         
         // Folder handlers - read from dataset
         // Opens the folder in the main area, as Home does for the vault, and expands
-        // it. Clicking the folder already shown collapses it instead.
+        // it. Clicking the folder already shown collapses it instead. The arrow only
+        // expands or collapses it.
         handleFolderClick(el) {
             const path = el.dataset.path;
             const shown = !this.currentNote && !this.currentMedia && !this.showGraph
@@ -519,8 +522,13 @@ function treeFeature() {
                     >
                         <div class="flex items-center gap-1">
                             <button 
-                                class="flex-shrink-0 w-4 h-4 flex items-center justify-center"
-                                style="color: var(--text-tertiary); cursor: pointer; transition: transform 0.2s; pointer-events: none; margin-left: -5px; ${isExpanded ? 'transform: rotate(90deg);' : ''}"
+                                type="button"
+                                data-path="${esc(folder.path)}"
+                                onclick="event.stopPropagation(); window.$root.toggleFolder(this.dataset.path)"
+                                class="folder-arrow flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
+                                style="color: var(--text-tertiary); cursor: pointer; transition: transform 0.2s; margin: -4px -4px -4px -9px; ${isExpanded ? 'transform: rotate(90deg);' : ''}"
+                                aria-expanded="${isExpanded}"
+                                aria-label="${esc(this.t(isExpanded ? 'folders.collapse' : 'folders.expand'))}"
                             >
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                                     <path d="M6 4l4 4-4 4V4z"/>
@@ -578,12 +586,8 @@ function treeFeature() {
                     });
                 }
                 
-                // Then, render notes and images in this folder (after subfolders)
-                if (folder.notes && folder.notes.length > 0) {
-                    folder.notes.forEach(note => {
-                        html += this.renderNoteItem(note);
-                    });
-                }
+                // Then the notes in this folder, and after them its other files
+                html += this.renderTreeItems(folder.notes);
                 
                 html += `</div>`; // Close folder-contents
             }
@@ -603,7 +607,7 @@ function treeFeature() {
             // Share icon for shared notes
             const isShared = !isMediaFile && this.isNoteShared(note.path);
             const shareIcon = isShared ? `<svg aria-hidden="true" style="display: inline-block; width: 12px; height: 12px; vertical-align: middle; margin-right: 2px; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${SHARE_ICON_PATH}"></path></svg>` : '';
-            const icon = this.getMediaIcon(note.type);
+            const icon = this.itemIconHtml(note.type);
             const deleteTitle = !isMediaFile
                 ? this.t('toolbar.delete_note')
                 : note.type === 'drawing'
@@ -624,7 +628,7 @@ function treeFeature() {
                     onmouseover="window.$root.handleItemHover(this, true)"
                     onmouseout="window.$root.handleItemHover(this, false)"
                 >
-                    <span class="truncate" style="display: block; padding-right: 30px;" title="${esc(note.name)}">${shareIcon}${icon}${icon ? ' ' : ''}${esc(note.name)}</span>
+                    <span class="truncate" style="display: block; padding-right: 30px;" title="${esc(note.name)}">${shareIcon}${icon}${esc(note.name)}</span>
                     <button 
                         data-path="${esc(note.path)}"
                         data-name="${esc(note.name)}"
@@ -644,11 +648,20 @@ function treeFeature() {
         
         // Render root-level items (notes and media not in any folder)
         renderRootItems() {
-            const root = this.folderTree['__root__'];
-            if (!root || !root.notes || root.notes.length === 0) {
-                return '';
+            return this.renderTreeItems(this.folderTree['__root__']?.notes);
+        },
+
+        // Notes first, then the other files under a small "Files" heading
+        renderTreeItems(items) {
+            if (!items?.length) return '';
+            const notes = items.filter((item) => item.type === 'note');
+            const files = items.filter((item) => item.type !== 'note');
+            let html = notes.map((note) => this.renderNoteItem(note)).join('');
+            if (files.length) {
+                html += `<div class="tree-files-heading">${this.escapeHtmlAttr(this.t('sidebar.files'))}</div>`;
+                html += files.map((file) => this.renderNoteItem(file)).join('');
             }
-            return root.notes.map(note => this.renderNoteItem(note)).join('');
+            return html;
         },
         
         // Toggle folder expansion
@@ -665,22 +678,6 @@ function treeFeature() {
         // Check if folder is expanded
         isFolderExpanded(folderPath) {
             return this.expandedFolders.has(folderPath);
-        },
-        
-        // Expand all folders
-        expandAllFolders() {
-            this.allFolders.forEach(folder => {
-                this.expandedFolders.add(folder);
-            });
-            // Force Alpine reactivity
-            this.expandedFolders = new Set(this.expandedFolders);
-        },
-        
-        // Collapse all folders
-        collapseAllFolders() {
-            this.expandedFolders.clear();
-            // Force Alpine reactivity
-            this.expandedFolders = new Set(this.expandedFolders);
         },
         
         // Expand folder tree to show a specific note

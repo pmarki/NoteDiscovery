@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "FICHIERS",
     "favorites_title": "Favoris",
-    "folders_and_notes": "Dossiers et Notes",
     "new_button": "+ Nouveau",
     "new_note": "Nouvelle Note",
     "new_folder": "Nouveau Dossier",
@@ -41,16 +40,13 @@
     "search_placeholder": "Rechercher des notes...",
     "search_hint": "Tapez pour rechercher vos notes",
     "clear_search": "Effacer la recherche",
-    "drag_hint": "💡 Glisser=Déplacer",
-    "root_folder": "📂 Dossier racine",
+    "drag_hint": "Glisser pour déplacer",
     "no_notes": "Pas encore de notes. Créez votre première note !",
     "no_notes_yet": "Pas encore de notes ni de dossiers.",
     "create_first": "Créez votre première note ou dossier !",
     "loading_notes": "Chargement de vos notes…",
     "no_favorites": "Pas encore de favoris",
     "no_results": "Aucun résultat trouvé",
-    "expand_all": "Développer tous les dossiers",
-    "collapse_all": "Réduire tous les dossiers",
     "sort_a-z": "Trier A-Z",
     "sort_z-a": "Trier Z-A",
     "sort_newest": "Trier par plus récent (fichiers uniquement)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "\"{{name}}\" : vos dernières modifications n'ont pas été enregistrées, la note a changé ailleurs."
   },
   "folders": {
+    "expand": "Déplier le dossier",
+    "collapse": "Replier le dossier",
     "confirm_delete": "Déplacer le dossier « {{name}} » et tout son contenu vers la corbeille ?",
     "already_exists": "Un dossier nommé \"{{name}}\" existe déjà à cet emplacement.\nVeuillez choisir un autre nom.",
     "prompt_name": "Entrez le nom du dossier :",
@@ -131,7 +129,6 @@
     "delete_drawing": "Supprimer le dessin",
     "export_html": "Exporter en HTML",
     "print_preview": "Aperçu avant impression",
-    "copy_link": "Copier le lien dans le presse-papiers",
     "add_favorite": "Ajouter aux favoris",
     "remove_favorite": "Retirer des favoris"
   },

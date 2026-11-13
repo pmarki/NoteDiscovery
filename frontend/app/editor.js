@@ -931,10 +931,10 @@ function editorFeature() {
             
             if (!media) {
                 const name = attrs.target || attrs.src || '';
-                const type = this.getMediaType(name.split(/[?#]/)[0]);
-                const icon = { audio: '🎵', video: '🎬', document: '📄' }[type] || '🖼️';
+                const type = this.getMediaType(name.split(/[?#]/)[0]) || 'image';
                 element.className = 'note-chip wikilink-broken';
-                element.textContent = `${icon} ${name}`;
+                element.innerHTML = this.itemIconHtml(type);
+                element.append(name);
                 return;
             }
             if (media.type === 'image' || media.type === 'drawing') {
@@ -952,7 +952,8 @@ function editorFeature() {
             if (!embed) {
                 // External audio, video and PDFs are never embedded
                 element.className = 'note-chip';
-                element.textContent = `${media.type === 'document' ? '📄' : '🔗'} ${media.name}`;
+                element.innerHTML = media.type === 'document' ? this.itemIconHtml('document') : '<span class="item-icon" aria-hidden="true">🔗</span>';
+                element.append(media.name);
                 return;
             }
             element.className = 'note-media note-media-block';
@@ -961,7 +962,8 @@ function editorFeature() {
                 // Clicks inside the PDF never reach the page, so it needs something to click
                 const bar = document.createElement('span');
                 bar.className = 'note-media-bar';
-                bar.textContent = `📄 ${media.name}`;
+                bar.innerHTML = this.itemIconHtml('document');
+                bar.append(media.name);
                 element.appendChild(bar);
             }
             element.appendChild(embed);

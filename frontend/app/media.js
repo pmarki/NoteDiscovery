@@ -485,6 +485,16 @@ function mediaFeature() {
             return icons[type] || '';
         },
         
+        // The icon of a note, folder or file, the same in every list. Markup, for x-html.
+        itemIconHtml(type) {
+            const outline = (path) => `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${path}"/></svg>`;
+            const inner = type === 'note' ? NOTE_ICON_SVG
+                : type === 'folder' ? outline(FOLDER_ICON_PATH)
+                : type === 'document' ? PDF_ICON_SVG
+                : this.getMediaIcon(type);
+            return inner ? `<span class="item-icon" aria-hidden="true">${inner}</span>` : '';
+        },
+
         // Images and drawings show a scaled-down preview in the file cards and lists
         hasPreview(type) {
             return type === 'image' || type === 'drawing';

@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "PLIKI",
     "favorites_title": "Ulubione",
-    "folders_and_notes": "Foldery i notatki",
     "new_button": "+ Nowe",
     "new_note": "Nowa notatka",
     "new_folder": "Nowy folder",
@@ -41,16 +40,13 @@
     "search_placeholder": "Szukaj notatek...",
     "search_hint": "Wpisz coś by wyszukać notatki",
     "clear_search": "Wyczyść wyszukiwanie",
-    "drag_hint": "💡 Przeciągnij=Przenieś",
-    "root_folder": "📂 Root folder",
+    "drag_hint": "Przeciągnij, aby przenieść",
     "no_notes": "Brak notatek. Stwórz swoją pierwszą notatkę!",
     "no_notes_yet": "Nie ma jeszcze żadnych notatek ani folderów.",
     "create_first": "Stwórz swoją pierwszą notatkę lub folder!",
     "loading_notes": "Wczytuję Twoje notatki…",
     "no_favorites": "Brak ulubionych",
     "no_results": "Nic nie znaleziono",
-    "expand_all": "Rozwiń foldery",
-    "collapse_all": "Zwiń foldery",
     "sort_a-z": "Sortuj A do Z",
     "sort_z-a": "Sortuj Z do A",
     "sort_newest": "Sortuj według najnowszych (tylko pliki)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "„{{name}}”: ostatnie zmiany nie zostały zapisane, notatka zmieniła się gdzie indziej."
   },
   "folders": {
+    "expand": "Rozwiń folder",
+    "collapse": "Zwiń folder",
     "confirm_delete": "Przenieść folder „{{name}}” i całą jego zawartość do kosza?",
     "already_exists": "Folder o nazwie „{{name}}” już istnieje w tej lokalizacji.\nWybierz inną nazwę.",
     "prompt_name": "Wprowadź nazwę folderu:",
@@ -131,7 +129,6 @@
     "delete_drawing": "Usuń szkic",
     "export_html": "Eksportuj jako HTML",
     "print_preview": "Podgląd wydruku",
-    "copy_link": "Skopiuj link do schowka",
     "add_favorite": "Dodaj do ulubionych",
     "remove_favorite": "Usuń z ulubionych"
   },

@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "DATEIEN",
     "favorites_title": "Favoriten",
-    "folders_and_notes": "Ordner & Notizen",
     "new_button": "+ Neu",
     "new_note": "Neue Notiz",
     "new_folder": "Neuer Ordner",
@@ -41,16 +40,13 @@
     "search_placeholder": "Notizen durchsuchen...",
     "search_hint": "Tippe, um deine Notizen zu durchsuchen",
     "clear_search": "Suche löschen",
-    "drag_hint": "💡 Ziehen=Verschieben",
-    "root_folder": "📂 Hauptordner",
+    "drag_hint": "Zum Verschieben ziehen",
     "no_notes": "Du hast noch keine Notizen. Erstelle deine erste!",
     "no_notes_yet": "Noch keine Notizen oder Ordner.",
     "create_first": "Erstelle deine erste Notiz oder Ordner!",
     "loading_notes": "Notizen werden geladen…",
     "no_favorites": "Noch keine Favoriten",
     "no_results": "Keine Ergebnisse gefunden",
-    "expand_all": "Alle Ordner aufklappen",
-    "collapse_all": "Alle Ordner zuklappen",
     "sort_a-z": "Sortieren A-Z",
     "sort_z-a": "Sortieren Z-A",
     "sort_newest": "Nach neuesten sortieren (nur Dateien)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "\"{{name}}\": Deine letzten Änderungen wurden nicht gespeichert, die Notiz wurde anderswo geändert."
   },
   "folders": {
+    "expand": "Ordner aufklappen",
+    "collapse": "Ordner zuklappen",
     "confirm_delete": "Den Ordner \"{{name}}\" mit seinem gesamten Inhalt in den Papierkorb verschieben?",
     "already_exists": "Ein Ordner mit dem Namen \"{{name}}\" existiert bereits an diesem Ort.\nBitte wähle einen anderen Namen.",
     "prompt_name": "Ordnername eingeben:",
@@ -131,7 +129,6 @@
     "delete_drawing": "Zeichnung löschen",
     "export_html": "Als HTML exportieren",
     "print_preview": "Druckvorschau",
-    "copy_link": "Link in Zwischenablage kopieren",
     "add_favorite": "Zu Favoriten hinzufügen",
     "remove_favorite": "Aus Favoriten entfernen"
   },

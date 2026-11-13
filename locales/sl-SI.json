@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "DATOTEKE",
     "favorites_title": "Priljubljene",
-    "folders_and_notes": "Mape in zapiski",
     "new_button": "+ Novo",
     "new_note": "Nov zapis",
     "new_folder": "Nova mapa",
@@ -41,16 +40,13 @@
     "search_placeholder": "Išči zapiske...",
     "search_hint": "Tipkajte za iskanje zapiskov",
     "clear_search": "Počisti iskanje",
-    "drag_hint": "💡 Vlečenje = Premik",
-    "root_folder": "📂 Korenska mapa",
+    "drag_hint": "Povleci za premik",
     "no_notes": "Ni še zapiskov. Ustvarite svoj prvi zapis!",
     "no_notes_yet": "Ni še zapiskov ali map.",
     "create_first": "Ustvarite svoj prvi zapis ali mapo!",
     "loading_notes": "Nalaganje vaših zapiskov…",
     "no_favorites": "Ni priljubljenih",
     "no_results": "Ni najdenih rezultatov",
-    "expand_all": "Razširi vse mape",
-    "collapse_all": "Strni vse mape",
     "sort_a-z": "Razvrsti A-Ž",
     "sort_z-a": "Razvrsti Ž-A",
     "sort_newest": "Razvrsti po najnovejših (samo datoteke)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "\"{{name}}\": vaše zadnje spremembe niso bile shranjene, zapis se je spremenil drugje."
   },
   "folders": {
+    "expand": "Razširi mapo",
+    "collapse": "Strni mapo",
     "confirm_delete": "Premaknem mapo \"{{name}}\" in vso njeno vsebino v koš?",
     "already_exists": "Mapa z imenom \"{{name}}\" na tej lokaciji že obstaja.\nProsimo, izberite drugo ime.",
     "prompt_name": "Vnesite ime mape:",
@@ -131,7 +129,6 @@
     "delete_drawing": "Izbriši risbo",
     "export_html": "Izvozi kot HTML",
     "print_preview": "Predogled tiskanja",
-    "copy_link": "Kopiraj povezavo v odložišče",
     "add_favorite": "Dodaj med priljubljene",
     "remove_favorite": "Odstrani iz priljubljenih"
   },

@@ -68,7 +68,7 @@
                                             :style="currentNote === note.path ? 'background-color: var(--accent-light); color: var(--accent-primary);' : 'color: var(--text-primary);'"
                                             :title="note.path"
                                         >
-                                            <span class="truncate block" x-text="note.name"></span>
+                                            <span class="truncate block"><span class="contents" x-html="itemIconHtml(note.type || 'note')"></span><span x-text="note.name"></span></span>
                                         </div>
                                     </template>
                                     <div x-show="searchResults.length === 0" class="px-3 py-4 text-center text-xs" style="color: var(--text-tertiary);" x-text="t('tags.no_matches')">
