@@ -219,10 +219,14 @@ body {
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     text-decoration: none;
-    cursor: pointer;
+    cursor: default;
     user-select: none;
 }
-.note-editor-content .link-card:hover {
+/* Only reading opens the page on a click; while editing, only the card's buttons act */
+.note-editor-content[contenteditable="false"] .link-card {
+    cursor: pointer;
+}
+.note-editor-content[contenteditable="false"] .link-card:hover {
     background-color: var(--bg-hover);
 }
 .note-editor-content .link-card-loading {
@@ -278,6 +282,12 @@ body {
     border-radius: 4px;
     color: var(--text-tertiary);
     cursor: pointer;
+}
+/* Open in a new tab, inline before the title */
+.note-editor-content .link-card-open {
+    display: inline-flex;
+    margin: -0.3em 0.15em -0.3em -0.3em;
+    vertical-align: middle;
 }
 .note-editor-content .link-card-action:hover {
     background-color: var(--bg-primary);

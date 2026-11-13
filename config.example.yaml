@@ -93,6 +93,8 @@ archivebox:
   # and screenshot, served through Keep It's login. Off while url is empty.
   # See documentation/ARCHIVEBOX.md. Override via ARCHIVEBOX_URL, ARCHIVEBOX_API_KEY
   # and ARCHIVEBOX_TAG.
+  # The url must use the host in ArchiveBox's own BASE_URL (see its
+  # /data/ArchiveBox.conf), or it refuses new pages with a 403.
   url: ""          # e.g. http://archivebox:5797
   api_key: ""      # an API token from ArchiveBox's admin
   tag: "keepit"

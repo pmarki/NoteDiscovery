@@ -62,12 +62,30 @@ Set, in `config.yaml` or as environment variables:
 ArchiveBox needs `PUBLIC_SNAPSHOTS=True`: Keep It reads the saved files
 without logging in.
 
-ArchiveBox 0.9 takes new pages only at the host name in its own `BASE_URL`
-(`http://localhost:5797` unless you set it); any other name gets *"control plane
-disabled on this host"*. So `archivebox.url` must use that same host name, or set
-ArchiveBox's `BASE_URL` to the address Keep It uses, such as
-`http://archivebox:5797` in a compose network. Keep its port off the internet; the compose file only opens it
-on `127.0.0.1`.
+ArchiveBox 0.9 takes new pages only at the host name in its own `BASE_URL`; any
+other name gets a 403, *"control plane disabled on this host"*, and the card says
+*"ArchiveBox takes new pages only at the address in its BASE_URL"*. ArchiveBox
+writes `BASE_URL` into its data folder on first start, even if you never set it, so
+look there to see what it is:
+
+```bash
+docker exec archivebox grep BASE_URL /data/ArchiveBox.conf
+# BASE_URL = http://192.168.0.169:5797
+```
+
+Then either:
+
+- **Point Keep It at that address** (simplest): `archivebox.url: "http://192.168.0.169:5797"`,
+  just the address, not the whole `BASE_URL = …` line. Keep It's container must be
+  able to reach it, so ArchiveBox's port has to be published on that address, not
+  only on `127.0.0.1`.
+- **Or change ArchiveBox's `BASE_URL`** to the address Keep It uses, such as
+  `http://archivebox:5797` in a compose network:
+  `docker exec archivebox archivebox config --set BASE_URL=http://archivebox:5797`, then
+  restart it. Its admin then also works only at that name, so a browser needs it in
+  its hosts file.
+
+Keep its port off the internet; the compose file only opens it on `127.0.0.1`.
 
 ## What to know
 

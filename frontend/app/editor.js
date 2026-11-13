@@ -716,7 +716,11 @@ function editorFeature() {
                 return node;
             };
             const body = part('span', 'link-card-body');
-            body.append(part('span', 'link-card-title', usable ? preview.title : host));
+            const title = part('span', 'link-card-title');
+            const open = this._linkCardButton(part, this.t('format.open_link'), ACTION_ICONS.openNewTab, () => this.openLinkAddress(href));
+            open.classList.add('link-card-open');
+            title.append(open, usable ? preview.title : host);
+            body.append(title);
             const description = usable ? preview.description : href;
             if (description) body.append(part('span', 'link-card-description', description));
             const site = part('span', 'link-card-site');
@@ -745,8 +749,8 @@ function editorFeature() {
             if (preview?.archive?.status === 'pending') this._pollLinkArchive(href);
         },
         
-        // Changing the address, fetching its preview again and opening it. Only edit
-        // mode shows them; reading, the card opens the page itself.
+        // Changing the address and fetching its preview again. Only edit mode shows
+        // them; opening it, before the title, shows in both.
         _linkCardActions(element, href, part) {
             const actions = part('span', 'link-card-actions');
             const button = (label, icon, run) => actions.append(this._linkCardButton(part, label, icon, run));
@@ -755,7 +759,6 @@ function editorFeature() {
                 this.openLinkPrompt('link');
             });
             button(this.t('link_card.refresh'), ACTION_ICONS.refresh, () => this.refreshLinkCard(href));
-            button(this.t('format.open_link'), ACTION_ICONS.openNewTab, () => this.openLinkAddress(href));
             return actions;
         },
         
