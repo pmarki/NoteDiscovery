@@ -235,9 +235,13 @@
     "title": "Вход",
     "tagline": "Ваша локальная база знаний",
     "password_placeholder": "Введите пароль",
+    "pin_placeholder": "Введите PIN-код",
+    "remember_device": "Запомнить это устройство",
     "unlock_button": "🔓 Разблокировать",
     "footer": "🔒 Безопасно и локально",
-    "error_incorrect_password": "Неверный пароль. Попробуйте снова."
+    "error_incorrect_password": "Неверный пароль. Попробуйте снова.",
+    "error_incorrect_pin": "Неверный PIN-код. Попробуйте снова.",
+    "error_locked": "Слишком много попыток. Повторите через {{time}}."
   },
   "drawing": {
     "tool_freehand": "Карандаш — от руки",

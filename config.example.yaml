@@ -61,8 +61,34 @@ authentication:
   # ⚠️ Default password is "admin" - CHANGE THIS for production!
   password: "admin"
   
-  # Session expiry in seconds (default: 7 days)
+  # PIN of 4 to 6 digits (hashed automatically at startup). When set, the login page
+  # asks for the PIN instead of the password. Wrong tries make the next one wait
+  # longer, but a 4-digit PIN is still weak on its own on the internet: prefer 6
+  # digits, or put Cloudflare Access or similar in front. Leave empty for the password.
+  pin: ""
+
+  # Session expiry in seconds (default: 7 days) for "Remember this device".
+  # Renewed whenever the app is used, so a device in use stays logged in.
   session_max_age: 604800
+
+  # Without "Remember this device", a login ends this many hours after it began
+  short_session_hours: 12
+
+  # Proxies whose reported client address is trusted (IPs or CIDRs), such as
+  # cloudflared or nginx. Wrong tries are counted per client: without this, everyone
+  # behind the proxy counts as one client. Example: ["172.16.0.0/12"] for Docker.
+  trusted_proxies: []
+
+  # Cloudflare Access: requests it lets through need no PIN or password, and anything
+  # else (the local network, a path Access bypasses) gets the login page. Set both:
+  #   team_domain: your Zero Trust team domain, e.g. "myteam.cloudflareaccess.com"
+  #   aud: the Access application's "Application Audience (AUD) Tag"
+  # allowed_emails limits it to these users (a service token by its Client ID, "….access");
+  # empty lets in anyone Access lets in.
+  cloudflare_access:
+    team_domain: ""
+    aud: ""
+    allowed_emails: []
   
   # API Key Authentication (for external integrations)
   # Usage (choose one):

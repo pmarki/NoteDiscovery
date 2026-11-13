@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-app-name="__APP_NAME__">
+<html lang="en" data-app-name="__APP_NAME__" data-login-mode="__LOGIN_MODE__">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -147,6 +147,45 @@
             box-shadow: 0 0 0 3px var(--accent-light, rgba(102, 126, 234, 0.1));
         }
         
+        input.pin {
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 0.5em;
+        }
+        
+        input.pin::placeholder {
+            font-size: 1rem;
+            letter-spacing: normal;
+        }
+        
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            text-align: left;
+        }
+        
+        .remember input {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+        
+        input:disabled, button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        button:disabled:hover {
+            background-color: var(--accent-primary);
+            transform: none;
+            box-shadow: none;
+        }
+        
         button {
             width: 100%;
             padding: 0.875rem 1rem;
@@ -243,8 +282,12 @@
                     required 
                     autofocus
                 >
-                <div class="error-message" id="error-message" style="display: none;"></div>
+                <div class="error-message" id="error-message" style="display: none;" role="alert"></div>
             </div>
+            <label class="remember">
+                <input type="checkbox" name="remember" value="1" id="remember">
+                <span id="remember-label"></span>
+            </label>
             <button type="submit" id="submit-btn"></button>
         </form>
         
@@ -254,20 +297,56 @@
     </div>
     
     <script>
+        var pinMode = document.documentElement.dataset.loginMode === 'pin';
+        var passwordEl = document.getElementById('password');
+        var submitEl = document.getElementById('submit-btn');
+
         // Apply translations after DOM is ready
         document.getElementById('tagline').textContent = t('login.tagline');
-        document.getElementById('password').placeholder = t('login.password_placeholder');
         document.getElementById('submit-btn').textContent = t('login.unlock_button');
+        document.getElementById('remember-label').textContent = t('login.remember_device');
         document.getElementById('footer-text').textContent = t('login.footer');
         // Read from the data attribute so the name is escaped once, as HTML
         document.title = t('login.title') + ' - ' + document.documentElement.dataset.appName;
+
+        if (pinMode) {
+            // Still type=password, so the digits are hidden and managers fill it
+            passwordEl.classList.add('pin');
+            passwordEl.inputMode = 'numeric';
+            passwordEl.pattern = '[0-9]{4,6}';
+            passwordEl.maxLength = 6;
+            passwordEl.autocomplete = 'current-password';
+            passwordEl.placeholder = t('login.pin_placeholder');
+        } else {
+            passwordEl.placeholder = t('login.password_placeholder');
+        }
         
         // Handle error from URL params
         var urlParams = new URLSearchParams(window.location.search);
         var errorCode = urlParams.get('error');
-        if (errorCode) {
-            var errorEl = document.getElementById('error-message');
-            var passwordEl = document.getElementById('password');
+        var errorEl = document.getElementById('error-message');
+        if (errorCode === 'locked') {
+            // Counts down to when the server takes another try
+            var until = Date.now() + (parseInt(urlParams.get('wait'), 10) || 0) * 1000;
+            passwordEl.disabled = true;
+            submitEl.disabled = true;
+            errorEl.style.display = 'flex';
+            var tick = function() {
+                var left = Math.ceil((until - Date.now()) / 1000);
+                if (left <= 0) {
+                    clearInterval(timer);
+                    errorEl.style.display = 'none';
+                    passwordEl.disabled = false;
+                    submitEl.disabled = false;
+                    passwordEl.focus();
+                    return;
+                }
+                var time = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+                errorEl.textContent = t('login.error_locked').replace('{{time}}', time);
+            };
+            var timer = setInterval(tick, 1000);
+            tick();
+        } else if (errorCode) {
             errorEl.textContent = t('login.error_' + errorCode);
             errorEl.style.display = 'flex';
             passwordEl.classList.add('error');

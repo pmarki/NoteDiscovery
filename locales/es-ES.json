@@ -235,9 +235,13 @@
     "title": "Iniciar sesión",
     "tagline": "Tu Base de Conocimientos Autoalojada",
     "password_placeholder": "Introduce tu contraseña",
+    "pin_placeholder": "Introduce tu PIN",
+    "remember_device": "Recordar este dispositivo",
     "unlock_button": "🔓 Desbloquear",
     "footer": "🔒 Seguro y Autoalojado",
-    "error_incorrect_password": "Contraseña incorrecta. Por favor, inténtalo de nuevo."
+    "error_incorrect_password": "Contraseña incorrecta. Por favor, inténtalo de nuevo.",
+    "error_incorrect_pin": "PIN incorrecto. Por favor, inténtalo de nuevo.",
+    "error_locked": "Demasiados intentos. Vuelve a intentarlo en {{time}}."
   },
   "drawing": {
     "tool_freehand": "Lápiz — trazo libre",

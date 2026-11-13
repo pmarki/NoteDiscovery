@@ -235,9 +235,13 @@
     "title": "Accesso",
     "tagline": "La tua base di conoscenza personale",
     "password_placeholder": "Inserisci la tua password",
+    "pin_placeholder": "Inserisci il PIN",
+    "remember_device": "Ricorda questo dispositivo",
     "unlock_button": "🔓 Sblocca",
     "footer": "🔒 Sicuro e ospitato localmente",
-    "error_incorrect_password": "Password errata. Riprova."
+    "error_incorrect_password": "Password errata. Riprova.",
+    "error_incorrect_pin": "PIN errato. Riprova.",
+    "error_locked": "Troppi tentativi. Riprova tra {{time}}."
   },
   "drawing": {
     "tool_freehand": "Matita — mano libera",

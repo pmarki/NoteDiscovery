@@ -235,9 +235,13 @@
     "title": "ログイン",
     "tagline": "セルフホスト型ナレッジベース",
     "password_placeholder": "パスワードを入力",
+    "pin_placeholder": "PINを入力",
+    "remember_device": "このデバイスを記憶する",
     "unlock_button": "🔓 ロック解除",
     "footer": "🔒 安全なセルフホスト",
-    "error_incorrect_password": "パスワードが正しくありません。もう一度お試しください。"
+    "error_incorrect_password": "パスワードが正しくありません。もう一度お試しください。",
+    "error_incorrect_pin": "PINが正しくありません。もう一度お試しください。",
+    "error_locked": "試行回数が多すぎます。{{time}} 後にもう一度お試しください。"
   },
   "drawing": {
     "tool_freehand": "鉛筆（フリーハンド）",

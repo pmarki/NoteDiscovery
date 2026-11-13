@@ -235,9 +235,13 @@
     "title": "Anmelden",
     "tagline": "Deine selbstgehostete Wissensdatenbank",
     "password_placeholder": "Passwort eingeben",
+    "pin_placeholder": "PIN eingeben",
+    "remember_device": "Dieses Gerät merken",
     "unlock_button": "🔓 Entsperren",
     "footer": "🔒 Sicher & Selbstgehostet",
-    "error_incorrect_password": "Falsches Passwort. Bitte versuche es erneut."
+    "error_incorrect_password": "Falsches Passwort. Bitte versuche es erneut.",
+    "error_incorrect_pin": "Falsche PIN. Bitte versuche es erneut.",
+    "error_locked": "Zu viele Versuche. Versuche es in {{time}} erneut."
   },
   "drawing": {
     "tool_freehand": "Stift — Freihand",
