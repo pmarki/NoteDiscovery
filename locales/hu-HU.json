@@ -231,6 +231,14 @@
   "export": {
     "failed": "Hiba a HTML exportálása során: {{error}}"
   },
+  "session": {
+    "ended_title": "A bejelentkezésed lejárt",
+    "ended_message": "Jelentkezz be újra a folytatáshoz.",
+    "ended_message_note": "Jelentkezz be újra a folytatáshoz. A jegyzet nem mentett módosításai megmaradnak.",
+    "login_again": "Bejelentkezés újra",
+    "keep_failed": "A jegyzet nem mentett módosításait nem sikerült megőrizni a bejelentkezés utánra. Előbb másold ki őket, aztán jelentkezz be.",
+    "login_anyway": "Bejelentkezés, a módosítások elvesznek"
+  },
   "login": {
     "title": "Bejelentkezés",
     "tagline": "A Saját, Önálló Tudásbázisod",

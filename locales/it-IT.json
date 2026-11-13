@@ -231,6 +231,14 @@
   "export": {
     "failed": "Esportazione HTML fallita: {{error}}"
   },
+  "session": {
+    "ended_title": "La sessione è scaduta",
+    "ended_message": "Accedi di nuovo per continuare.",
+    "ended_message_note": "Accedi di nuovo per continuare. Le modifiche non salvate a questa nota vengono conservate.",
+    "login_again": "Accedi di nuovo",
+    "keep_failed": "Non è stato possibile conservare le modifiche non salvate a questa nota per dopo l'accesso. Copiale altrove prima, poi accedi.",
+    "login_anyway": "Accedi e perdi le modifiche"
+  },
   "login": {
     "title": "Accesso",
     "tagline": "La tua base di conoscenza personale",

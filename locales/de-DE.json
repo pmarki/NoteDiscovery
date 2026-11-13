@@ -231,6 +231,14 @@
   "export": {
     "failed": "HTML-Export fehlgeschlagen: {{error}}"
   },
+  "session": {
+    "ended_title": "Deine Anmeldung ist abgelaufen",
+    "ended_message": "Melde dich erneut an, um weiterzuarbeiten.",
+    "ended_message_note": "Melde dich erneut an, um weiterzuarbeiten. Deine ungespeicherten Änderungen an dieser Notiz bleiben erhalten.",
+    "login_again": "Erneut anmelden",
+    "keep_failed": "Deine ungespeicherten Änderungen an dieser Notiz konnten nicht für nach der Anmeldung aufbewahrt werden. Kopiere sie zuerst woandershin und melde dich dann an.",
+    "login_anyway": "Anmelden und Änderungen verwerfen"
+  },
   "login": {
     "title": "Anmelden",
     "tagline": "Deine selbstgehostete Wissensdatenbank",

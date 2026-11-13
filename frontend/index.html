@@ -11,8 +11,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon.svg">
     <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
     
-    <!-- PWA Manifest (served from root so the service worker does not cache a stale app name) -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- PWA Manifest (served from root so the service worker does not cache a stale app name).
+         With credentials: browsers fetch it without cookies otherwise, and a login in front
+         of the app, such as Cloudflare Access, redirects that request to its login page. -->
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     
     <!-- PWA Meta Tags -->
     <meta name="application-name" content="__APP_NAME__">
@@ -298,6 +300,8 @@
     
     <!-- include: partials/dialogs/save-conflict.html -->
     
+    <!-- include: partials/dialogs/login-ended.html -->
+    
     <!-- include: partials/dialogs/quick-switcher.html -->
 
     <!-- include: partials/dialogs/share.html -->
@@ -323,6 +327,7 @@
     <script src="/static/app/home.js?v=__APP_VERSION__"></script>
     <script src="/static/app/share-target.js?v=__APP_VERSION__"></script>
     <script src="/static/app/graph.js?v=__APP_VERSION__"></script>
+    <script src="/static/app/session.js?v=__APP_VERSION__"></script>
     <script src="/static/app.js?v=__APP_VERSION__"></script>
     
     <!-- PWA Service Worker Registration -->

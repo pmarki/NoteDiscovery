@@ -1,0 +1,29 @@
+    <!-- The login ended while the app was open (see app/session.js). No Escape or outside
+         click: nothing works until the user logs in again. -->
+    <template x-if="loginEnded">
+    <div class="fixed inset-0 flex items-center justify-center p-4"
+         style="background-color: rgba(0, 0, 0, 0.5); z-index: 1300;">
+        <div class="rounded-lg shadow-xl p-6 max-w-md w-full mx-auto"
+             style="background-color: var(--bg-secondary); color: var(--text-primary);"
+             role="alertdialog"
+             aria-modal="true"
+             aria-labelledby="login-ended-title"
+             aria-describedby="login-ended-desc">
+            <h2 id="login-ended-title" class="text-xl font-bold mb-3" x-text="t('session.ended_title')"></h2>
+            <p id="login-ended-desc" class="text-sm mb-4 leading-relaxed" style="color: var(--text-secondary);"
+               x-text="loginKeepFailed ? t('session.keep_failed') : (currentNote ? t('session.ended_message_note') : t('session.ended_message'))"></p>
+            <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                <template x-if="loginKeepFailed">
+                    <button type="button" @click="loginAgain({ force: true })"
+                            class="w-full sm:w-auto px-4 py-2.5 rounded font-medium save-conflict-button"
+                            x-text="t('session.login_anyway')"></button>
+                </template>
+                <template x-if="!loginKeepFailed">
+                    <button type="button" @click="loginAgain()"
+                            class="w-full sm:w-auto px-4 py-2.5 rounded font-medium text-white save-conflict-button is-primary"
+                            x-text="t('session.login_again')" x-init="$nextTick(() => $el.focus())"></button>
+                </template>
+            </div>
+        </div>
+    </div>
+    </template>

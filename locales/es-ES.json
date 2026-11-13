@@ -231,6 +231,14 @@
   "export": {
     "failed": "Error al exportar HTML: {{error}}"
   },
+  "session": {
+    "ended_title": "Tu sesión ha terminado",
+    "ended_message": "Vuelve a iniciar sesión para seguir trabajando.",
+    "ended_message_note": "Vuelve a iniciar sesión para seguir trabajando. Tus cambios sin guardar en esta nota se conservan.",
+    "login_again": "Iniciar sesión de nuevo",
+    "keep_failed": "No se pudieron conservar tus cambios sin guardar en esta nota para después de iniciar sesión. Cópialos en otro sitio primero y luego inicia sesión.",
+    "login_anyway": "Iniciar sesión y perder los cambios"
+  },
   "login": {
     "title": "Iniciar sesión",
     "tagline": "Tu Base de Conocimientos Autoalojada",
