@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "笔记",
+    "section_recent": "最近的笔记",
     "section_files": "文件",
     "title": "首页",
     "welcome": "欢迎使用 Keep It",
@@ -312,10 +313,6 @@
     "folder_empty": "此文件夹为空",
     "note_singular": "笔记",
     "note_plural": "笔记",
-    "folder_singular": "文件夹",
-    "folder_plural": "文件夹",
-    "file_singular": "文件",
-    "file_plural": "文件",
     "upload": "上传",
     "view_cards": "卡片视图",
     "view_list": "列表视图"

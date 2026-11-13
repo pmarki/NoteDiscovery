@@ -12,6 +12,7 @@ function homeFeature() {
         
         // Homepage constants
         HOMEPAGE_MAX_NOTES: 50,
+        HOMEPAGE_RECENT_NOTES: 5,
         // Read before init() so the first paint matches the saved layout.
         homepageView: localStorage.getItem('homepageView') === 'list' ? 'list' : 'cards',
         // Name filter for the current homepage folder. Separate from searchQuery,
@@ -142,11 +143,19 @@ function homeFeature() {
             return this._filterHomepageByName(this.homepageFolders(), 'folders');
         },
 
-        // "3 notes", "1 folder", "2 files"
-        homepageCount(kind, count) {
-            return `${count} ${this.t(`homepage.${kind}_${count === 1 ? 'singular' : 'plural'}`)}`;
+        // The last few notes changed anywhere, for the top of the home view.
+        // Kept until the notes list itself is replaced.
+        homepageRecentNotes() {
+            const notes = this.notes || [];
+            if (this._recentNotesCache?.source === notes) return this._recentNotesCache.result;
+            const result = notes
+                .filter(note => note.type === 'note')
+                .sort((a, b) => String(b.modified || '').localeCompare(String(a.modified || '')))
+                .slice(0, this.HOMEPAGE_RECENT_NOTES);
+            this._recentNotesCache = { source: notes, result };
+            return result;
         },
-        
+
         // Folders as tiles (no heading), then notes under "Notes" and media under "Files".
         // Empty sections are left out; folders are never cut short.
         homepageSections() {
