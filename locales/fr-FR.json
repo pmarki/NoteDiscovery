@@ -231,6 +231,14 @@
   "export": {
     "failed": "Échec de l'export HTML : {{error}}"
   },
+  "session": {
+    "ended_title": "Votre session a expiré",
+    "ended_message": "Reconnectez-vous pour continuer.",
+    "ended_message_note": "Reconnectez-vous pour continuer. Vos modifications non enregistrées de cette note sont conservées.",
+    "login_again": "Se reconnecter",
+    "keep_failed": "Vos modifications non enregistrées de cette note n'ont pas pu être conservées pour après la connexion. Copiez-les ailleurs d'abord, puis connectez-vous.",
+    "login_anyway": "Se connecter et perdre les modifications"
+  },
   "login": {
     "title": "Connexion",
     "tagline": "Votre Base de Connaissances Auto-Hébergée",

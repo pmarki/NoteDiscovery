@@ -231,6 +231,14 @@
   "export": {
     "failed": "Failed to export HTML: {{error}}"
   },
+  "session": {
+    "ended_title": "Your login has ended",
+    "ended_message": "Log in again to keep working.",
+    "ended_message_note": "Log in again to keep working. Your unsaved changes to this note are kept.",
+    "login_again": "Log in again",
+    "keep_failed": "Your unsaved changes to this note couldn't be kept for after the login. Copy them somewhere first, then log in.",
+    "login_anyway": "Log in and lose changes"
+  },
   "login": {
     "title": "Login",
     "tagline": "Your Self-Hosted Knowledge Base",

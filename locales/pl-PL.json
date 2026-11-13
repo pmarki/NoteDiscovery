@@ -231,6 +231,14 @@
   "export": {
     "failed": "Nie udało się wyeksportować HTML: {{error}}"
   },
+  "session": {
+    "ended_title": "Twoje logowanie wygasło",
+    "ended_message": "Zaloguj się ponownie, aby kontynuować.",
+    "ended_message_note": "Zaloguj się ponownie, aby kontynuować. Niezapisane zmiany w tej notatce zostaną zachowane.",
+    "login_again": "Zaloguj się ponownie",
+    "keep_failed": "Nie udało się zachować niezapisanych zmian w tej notatce na czas logowania. Najpierw skopiuj je w inne miejsce, potem się zaloguj.",
+    "login_anyway": "Zaloguj i utrać zmiany"
+  },
   "login": {
     "title": "Logowanie",
     "tagline": "Twoja baza wiedzy na własnym serwerze",

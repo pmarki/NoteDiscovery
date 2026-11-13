@@ -231,6 +231,14 @@
   "export": {
     "failed": "Izvoz v HTML ni uspel: {{error}}"
   },
+  "session": {
+    "ended_title": "Vaša prijava je potekla",
+    "ended_message": "Za nadaljevanje se znova prijavite.",
+    "ended_message_note": "Za nadaljevanje se znova prijavite. Neshranjene spremembe tega zapiska bodo ohranjene.",
+    "login_again": "Znova se prijavi",
+    "keep_failed": "Neshranjenih sprememb tega zapiska ni bilo mogoče ohraniti za po prijavi. Najprej jih kopirajte drugam, nato se prijavite.",
+    "login_anyway": "Prijava z izgubo sprememb"
+  },
   "login": {
     "title": "Prijava",
     "tagline": "Vaša lastna baza znanja",

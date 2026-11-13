@@ -32,6 +32,7 @@ const PRECACHE_ASSETS = [
   '/static/app/home.js?v=__APP_VERSION__',
   '/static/app/share-target.js?v=__APP_VERSION__',
   '/static/app/graph.js?v=__APP_VERSION__',
+  '/static/app/session.js?v=__APP_VERSION__',
   '/static/app.js?v=__APP_VERSION__',
   '/static/app.css?v=__APP_VERSION__',
   '/static/note-editor.bundle.js?v=__APP_VERSION__'
@@ -77,7 +78,7 @@ async function receiveShare(request) {
   return Response.redirect('/?share=1', 303);
 }
 
-// Fetch event - network first, fallback to cache for assets
+// Fetch event - cache first for /static/, everything else straight to the network
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
@@ -105,10 +106,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // For everything else, network first
-  event.respondWith(
-    fetch(event.request)
-      .catch(() => caches.match(event.request))
-  );
+  // Everything else goes to the network as if there were no worker. Only /static/
+  // is ever cached, so there was nothing to fall back on, and a failed fetch, such as
+  // a login in front of the app (Cloudflare Access) redirecting, became a broken
+  // response instead of the browser following the redirect to the login page.
 });
 

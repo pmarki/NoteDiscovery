@@ -231,6 +231,14 @@
   "export": {
     "failed": "导出 HTML 失败：{{error}}"
   },
+  "session": {
+    "ended_title": "登录已过期",
+    "ended_message": "请重新登录以继续。",
+    "ended_message_note": "请重新登录以继续。此笔记中未保存的更改会被保留。",
+    "login_again": "重新登录",
+    "keep_failed": "无法在登录后保留此笔记中未保存的更改。请先将其复制到别处，然后再登录。",
+    "login_anyway": "登录并丢弃更改"
+  },
   "login": {
     "title": "登录",
     "tagline": "您的自托管知识库",

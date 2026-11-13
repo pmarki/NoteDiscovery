@@ -42,6 +42,8 @@ function coreFeature() {
             
             // Store global reference for native event handlers in x-html content
             window.$root = this;
+            // Before any request, so an ended login is noticed from the first one
+            this.watchLogin();
             
             // ESC key to cancel drag operations
             document.addEventListener('keydown', (e) => {
@@ -79,8 +81,9 @@ function coreFeature() {
                 if (document.hidden) saveOnLeave();
             });
             
-            // Parse URL and load specific note if provided
-            this.loadItemFromURL();
+            // Back from logging in again: the note that was open, with its unsaved text.
+            // Otherwise the note or file in the URL.
+            if (!(await this.restoreAfterLogin())) this.loadItemFromURL();
             // Something shared from another app, maybe from before a login
             this.checkPendingShare();
             
