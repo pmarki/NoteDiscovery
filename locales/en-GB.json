@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "Notes",
+    "section_recent": "Recent notes",
     "section_files": "Files",
     "title": "Home",
     "welcome": "Welcome to Keep It",
@@ -312,10 +313,6 @@
     "folder_empty": "This folder is empty",
     "note_singular": "note",
     "note_plural": "notes",
-    "folder_singular": "folder",
-    "folder_plural": "folders",
-    "file_singular": "file",
-    "file_plural": "files",
     "upload": "Upload",
     "view_cards": "Card view",
     "view_list": "List view"

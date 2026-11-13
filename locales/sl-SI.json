@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "Zapiski",
+    "section_recent": "Nedavni zapiski",
     "section_files": "Datoteke",
     "title": "Domov",
     "welcome": "Dobrodošli v Keep It",
@@ -312,10 +313,6 @@
     "folder_empty": "Ta mapa je prazna",
     "note_singular": "zapis",
     "note_plural": "zapiski",
-    "folder_singular": "mapa",
-    "folder_plural": "mape",
-    "file_singular": "datoteka",
-    "file_plural": "datotek",
     "upload": "Naloži",
     "view_cards": "Pogled kartic",
     "view_list": "Pogled seznama"

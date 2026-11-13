@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "Notatki",
+    "section_recent": "Ostatnie notatki",
     "section_files": "Pliki",
     "title": "Strona główna",
     "welcome": "Witaj w Keep It",
@@ -312,10 +313,6 @@
     "folder_empty": "Ten folder jest pusty",
     "note_singular": "notatka",
     "note_plural": "notatki/ek",
-    "folder_singular": "folder",
-    "folder_plural": "foldery/ów",
-    "file_singular": "plik",
-    "file_plural": "pliki/ów",
     "upload": "Prześlij",
     "view_cards": "Widok kart",
     "view_list": "Widok listy"

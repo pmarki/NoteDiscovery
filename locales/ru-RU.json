@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "Заметки",
+    "section_recent": "Недавние заметки",
     "section_files": "Файлы",
     "title": "Главная",
     "welcome": "Добро пожаловать в Keep It",
@@ -312,10 +313,6 @@
     "folder_empty": "Эта папка пуста",
     "note_singular": "заметка",
     "note_plural": "заметок",
-    "folder_singular": "папка",
-    "folder_plural": "папок",
-    "file_singular": "файл",
-    "file_plural": "файлов",
     "upload": "Загрузить",
     "view_cards": "Вид карточками",
     "view_list": "Вид списком"

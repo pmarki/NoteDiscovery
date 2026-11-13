@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "Notizen",
+    "section_recent": "Zuletzt bearbeitet",
     "section_files": "Dateien",
     "title": "Startseite",
     "welcome": "Willkommen bei Keep It",
@@ -312,10 +313,6 @@
     "folder_empty": "Dieser Ordner ist leer",
     "note_singular": "Notiz",
     "note_plural": "Notizen",
-    "folder_singular": "Ordner",
-    "folder_plural": "Ordner",
-    "file_singular": "Datei",
-    "file_plural": "Dateien",
     "upload": "Hochladen",
     "view_cards": "Kartenansicht",
     "view_list": "Listenansicht"

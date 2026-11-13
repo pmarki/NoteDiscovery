@@ -1535,16 +1535,32 @@ body {
 .homepage-action.is-primary:hover {
     background-color: var(--accent-hover);
 }
-/* On phones the search gets its own line and the buttons show icons only */
-@media (max-width: 640px) {
-    .homepage-toolbar-row > .relative {
-        flex-basis: 100%;
-    }
-    .homepage-action span {
+/* On phones the header holds search and the actions instead; it stays in view
+   and is as tall as a note's header */
+.homepage-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 0.4375rem 0.5rem;
+}
+.homepage-mobile-header input {
+    font-size: 1rem;
+    padding-top: 0.3125rem;
+    padding-bottom: 0.3125rem;
+    line-height: 1.5;
+}
+.homepage-mobile-header input::-webkit-search-cancel-button {
+    display: none;
+}
+@media (max-width: 768px) {
+    .homepage-toolbar {
         display: none;
     }
 }
 
+.homepage-recent {
+    margin-bottom: 1.5rem;
+}
 .homepage-section + .homepage-section {
     margin-top: 1.5rem;
 }

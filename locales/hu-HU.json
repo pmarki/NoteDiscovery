@@ -303,6 +303,7 @@
   },
   "homepage": {
     "section_notes": "Jegyzetek",
+    "section_recent": "Legutóbbi jegyzetek",
     "section_files": "Fájlok",
     "title": "Főoldal",
     "welcome": "Üdvözöllek a Keep It-ben",
@@ -312,10 +313,6 @@
     "folder_empty": "Ez a mappa üres",
     "note_singular": "jegyzet",
     "note_plural": "jegyzet",
-    "folder_singular": "mappa",
-    "folder_plural": "mappa",
-    "file_singular": "fájl",
-    "file_plural": "fájl",
     "upload": "Feltöltés",
     "view_cards": "Kártyanézet",
     "view_list": "Listanézet"
