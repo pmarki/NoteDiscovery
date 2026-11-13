@@ -105,6 +105,21 @@ const ACTION_ICONS = {
 };
 
 /** Heroicons outline "share" (same d= as shared-note icon in the file tree) */
+// The note icon of partials/note-icon.html, and the folder icon, for markup built in JS
+const NOTE_ICON_SVG = '<svg class="note-icon" viewBox="12 7 48 50" aria-hidden="true">'
+    + '<path d="M19 11h19l9 9v31a3 3 0 0 1-3 3H19a3 3 0 0 1-3-3V14a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/>'
+    + '<path d="M38 11v7a2 2 0 0 0 2 2h7" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/>'
+    + '<path d="M23 27h15M23 35h9" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'
+    + '<circle cx="45" cy="45" r="10" fill="#fbbf24"/>'
+    + '</svg>';
+const FOLDER_ICON_PATH = 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z';
+// The PDF icon of partials/pdf-icon.html, for markup built in JS (the file tree)
+const PDF_ICON_SVG = '<svg class="pdf-icon" viewBox="0 0 48 56" aria-hidden="true">'
+    + '<path d="M6 2h26l14 14v36a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="var(--bg-primary)" stroke="var(--border-primary)" stroke-width="2"/>'
+    + '<path d="M32 2v12a2 2 0 0 0 2 2h12" fill="none" stroke="var(--border-primary)" stroke-width="2"/>'
+    + '<rect x="0" y="30" width="36" height="16" rx="3" fill="#e5252a"/>'
+    + '<text x="18" y="42" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="system-ui, sans-serif">PDF</text>'
+    + '</svg>';
 const SHARE_ICON_PATH = 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z';
 
 /**

@@ -147,17 +147,20 @@ function homeFeature() {
             return `${count} ${this.t(`homepage.${kind}_${count === 1 ? 'singular' : 'plural'}`)}`;
         },
         
-        // Folders and notes under "Notes", media under "Files". Empty sections are left out.
+        // Folders as tiles (no heading), then notes under "Notes" and media under "Files".
+        // Empty sections are left out; folders are never cut short.
         homepageSections() {
             const items = this.homepageVisibleNotes();
             const notes = items.filter(item => item.type === 'note');
             const files = items.filter(item => item.type !== 'note');
+            const folders = this.homepageVisibleFolders();
             return [
-                { key: 'notes', label: 'homepage.section_notes', folders: this.homepageVisibleFolders(), items: notes, total: notes.length },
-                { key: 'files', label: 'homepage.section_files', folders: [], items: files.map(file => ({ ...file, label: file.path.split('/').pop() })), total: files.length },
+                { key: 'folders', label: null, items: folders, total: folders.length },
+                { key: 'notes', label: 'homepage.section_notes', items: notes, total: notes.length },
+                { key: 'files', label: 'homepage.section_files', items: files.map(file => ({ ...file, label: file.path.split('/').pop() })), total: files.length },
             ]
-                .filter(section => section.folders.length || section.items.length)
-                .map(section => ({ ...section, items: section.items.slice(0, this.HOMEPAGE_MAX_NOTES) }));
+                .filter(section => section.items.length)
+                .map(section => section.key === 'folders' ? section : { ...section, items: section.items.slice(0, this.HOMEPAGE_MAX_NOTES) });
         },
         
         // Helper: Format file size nicely

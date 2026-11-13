@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "ARCHIVOS",
     "favorites_title": "Favoritos",
-    "folders_and_notes": "Carpetas y Notas",
     "new_button": "+ Nuevo",
     "new_note": "Nueva Nota",
     "new_folder": "Nueva Carpeta",
@@ -41,16 +40,13 @@
     "search_placeholder": "Buscar notas...",
     "search_hint": "Escribe para buscar tus notas",
     "clear_search": "Limpiar búsqueda",
-    "drag_hint": "💡 Arrastrar=Mover",
-    "root_folder": "📂 Carpeta raíz",
+    "drag_hint": "Arrastra para mover",
     "no_notes": "Aún no hay notas. ¡Crea tu primera nota!",
     "no_notes_yet": "Aún no hay notas ni carpetas.",
     "create_first": "¡Crea tu primera nota o carpeta!",
     "loading_notes": "Cargando tus notas…",
     "no_favorites": "Aún no hay favoritos",
     "no_results": "No se encontraron resultados",
-    "expand_all": "Expandir todas las carpetas",
-    "collapse_all": "Contraer todas las carpetas",
     "sort_a-z": "Ordenar A-Z",
     "sort_z-a": "Ordenar Z-A",
     "sort_newest": "Ordenar por más reciente (solo archivos)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "\"{{name}}\": tus últimos cambios no se guardaron, la nota cambió en otro lugar."
   },
   "folders": {
+    "expand": "Expandir carpeta",
+    "collapse": "Contraer carpeta",
     "confirm_delete": "¿Mover la carpeta \"{{name}}\" y todo su contenido a la papelera?",
     "already_exists": "Ya existe una carpeta llamada \"{{name}}\" en esta ubicación.\nPor favor, elige un nombre diferente.",
     "prompt_name": "Introduce el nombre de la carpeta:",
@@ -131,7 +129,6 @@
     "delete_drawing": "Eliminar dibujo",
     "export_html": "Exportar como HTML",
     "print_preview": "Vista previa de impresión",
-    "copy_link": "Copiar enlace al portapapeles",
     "add_favorite": "Añadir a favoritos",
     "remove_favorite": "Quitar de favoritos"
   },

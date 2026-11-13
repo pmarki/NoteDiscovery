@@ -144,10 +144,10 @@
                                 <p class="text-sm text-center py-8" style="color: var(--text-tertiary);" x-text="t('sidebar.no_results')"></p>
                             </template>
 
-                            <!-- Notes (with folders) and Files, each in its own section -->
+                            <!-- Folder tiles, Notes and Files, each in its own section -->
                             <template x-for="section in homepageSections()" :key="section.key">
                             <section class="homepage-section">
-                            <h2 class="homepage-section-title" x-text="t(section.label)"></h2>
+                            <h2 x-show="section.label" class="homepage-section-title" x-text="section.label ? t(section.label) : ''"></h2>
 
                             <template x-if="section.key === 'files'">
                                 <div x-data="{ get files() { return section.items }, get filesView() { return homepageView } }">
@@ -155,17 +155,16 @@
                                 </div>
                             </template>
 
-                            <!-- Folders and Notes Grid -->
-                            <template x-if="section.key === 'notes' && homepageView !== 'list'">
+                            <!-- Folder tiles, in both views -->
+                            <template x-if="section.key === 'folders'">
                                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
-                                    <!-- Folders First -->
-                                    <template x-for="folder in section.folders" :key="folder.path">
+                                    <template x-for="folder in section.items" :key="folder.path">
                                         <div 
                                             @click="goToHomepageFolder(folder.path)"
                                             class="homepage-card p-2 sm:p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg"
-                                            style="background-color: var(--bg-secondary); border-color: var(--accent-primary); display: flex; flex-direction: column; border-width: 2px; position: relative;"
-                                            onmouseover="this.style.borderColor='var(--accent-hover)'; this.style.transform='translateY(-2px)'; this.querySelector('.card-delete-btn').style.opacity='1';"
-                                            onmouseout="this.style.borderColor='var(--accent-primary)'; this.style.transform='translateY(0)'; this.querySelector('.card-delete-btn').style.opacity='0';"
+                                            style="background-color: var(--bg-secondary); border-color: var(--border-primary); display: flex; flex-direction: column; position: relative;"
+                                            onmouseover="this.style.borderColor='var(--accent-primary)'; this.style.transform='translateY(-2px)'; this.querySelector('.card-delete-btn').style.opacity='1';"
+                                            onmouseout="this.style.borderColor='var(--border-primary)'; this.style.transform='translateY(0)'; this.querySelector('.card-delete-btn').style.opacity='0';"
                                         >
                                             <!-- Delete Button -->
                                             <button 
@@ -199,6 +198,12 @@
                                         </div>
                                     </template>
                                     
+                                </div>
+                            </template>
+
+                            <!-- Notes Grid -->
+                            <template x-if="section.key === 'notes' && homepageView !== 'list'">
+                                <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                                     <!-- Notes -->
                                     <template x-for="note in section.items" :key="note.path">
                                         <div 
@@ -223,7 +228,7 @@
                                             </button>
                                             
                                             <!-- Note Title -->
-                                            <h3 class="font-semibold text-sm sm:text-base mb-1 sm:mb-2" style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="note.name"></h3>
+                                            <h3 class="font-semibold text-sm sm:text-base mb-1 sm:mb-2" style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" ><span class="contents" x-html="itemIconHtml(note.type || 'note')"></span><span x-text="note.name"></span></h3>
                                             
                                             <!-- Metadata -->
                                             <div class="flex items-center justify-between text-xs mt-auto pt-1 sm:pt-2" style="color: var(--text-tertiary);">
@@ -235,41 +240,16 @@
                                 </div>
                             </template>
 
-                            <!-- Folders and Notes List -->
+                            <!-- Notes List -->
                             <template x-if="section.key === 'notes' && homepageView === 'list'">
                                 <div class="homepage-list">
-                                    <template x-for="folder in section.folders" :key="folder.path">
-                                        <div
-                                            @click="goToHomepageFolder(folder.path)"
-                                            class="homepage-list-row"
-                                        >
-                                            <span class="homepage-list-icon" aria-hidden="true">
-                                                <svg class="w-4 h-4" style="color: var(--accent-primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                                </svg>
-                                            </span>
-                                            <span class="font-medium text-sm truncate flex-1 min-w-0" x-text="folder.name"></span>
-                                            <span class="text-xs flex-shrink-0" style="color: var(--text-tertiary);" x-text="folder.noteCount + ' ' + (folder.noteCount === 1 ? t('homepage.note_singular') : t('homepage.note_plural'))"></span>
-                                            <button
-                                                @click.stop="deleteFolder(folder.path, folder.name)"
-                                                class="homepage-list-delete hidden sm:block"
-                                                :title="t('common.delete')"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </template>
                                     <template x-for="note in section.items" :key="note.path">
                                         <div
                                             @click="openItem(note.path, note.type)"
                                             class="homepage-list-row"
                                         >
                                             <span class="homepage-list-icon" aria-hidden="true">
-                                                <svg class="w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                                </svg>
+                                                <!-- include: partials/note-icon.html -->
                                             </span>
                                             <span class="font-medium text-sm truncate flex-1 min-w-0" x-text="note.name"></span>
                                             <span class="text-xs flex-shrink-0" style="color: var(--text-tertiary);" x-text="formatDate(note.modified)"></span>
@@ -289,7 +269,7 @@
                             </template>
                             
                             <!-- Show More Indicator -->
-                            <div x-show="section.total > HOMEPAGE_MAX_NOTES" class="mt-6 text-center">
+                            <div x-show="section.total > section.items.length" class="mt-6 text-center">
                                 <p class="text-sm" style="color: var(--text-secondary);">
                                     Showing <span x-text="HOMEPAGE_MAX_NOTES"></span> of <span x-text="section.total"></span> in this folder.
                                 </p>

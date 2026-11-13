@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "ファイル",
     "favorites_title": "お気に入り",
-    "folders_and_notes": "フォルダとノート",
     "new_button": "+ 新規",
     "new_note": "新規ノート",
     "new_folder": "新規フォルダ",
@@ -41,16 +40,13 @@
     "search_placeholder": "ノートを検索...",
     "search_hint": "ノートを検索",
     "clear_search": "検索をクリア",
-    "drag_hint": "💡 ドラッグで移動",
-    "root_folder": "📂 ルートフォルダ",
+    "drag_hint": "ドラッグで移動",
     "no_notes": "ノートがありません。最初のノートを作成しましょう！",
     "no_notes_yet": "ノートやフォルダがありません。",
     "create_first": "最初のノートまたはフォルダを作成しましょう！",
     "loading_notes": "ノートを読み込み中…",
     "no_favorites": "お気に入りがありません",
     "no_results": "結果が見つかりません",
-    "expand_all": "すべて展開",
-    "collapse_all": "すべて折りたたむ",
     "sort_a-z": "A-Z順",
     "sort_z-a": "Z-A順",
     "sort_newest": "新しい順（ファイルのみ）",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "「{{name}}」：最後の変更は保存されませんでした。ノートが別の場所で変更されています。"
   },
   "folders": {
+    "expand": "フォルダーを展開",
+    "collapse": "フォルダーを折りたたむ",
     "confirm_delete": "フォルダ「{{name}}」とその中身をすべてゴミ箱に移動しますか?",
     "already_exists": "「{{name}}」という名前のフォルダは既に存在します。\n別の名前を選択してください。",
     "prompt_name": "フォルダ名を入力:",
@@ -131,7 +129,6 @@
     "delete_drawing": "お絵かきを削除",
     "export_html": "HTMLとしてエクスポート",
     "print_preview": "印刷プレビュー",
-    "copy_link": "リンクをクリップボードにコピー",
     "add_favorite": "お気に入りに追加",
     "remove_favorite": "お気に入りから削除"
   },

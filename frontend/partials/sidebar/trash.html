@@ -14,7 +14,7 @@
                         <div class="py-2 px-2">
                             <template x-for="item in trashItems" :key="item.id">
                                 <div class="px-2 py-1.5 text-sm mb-1 rounded" style="color: var(--text-primary);" :title="item.path">
-                                    <div class="font-medium truncate" x-text="item.name"></div>
+                                    <div class="font-medium truncate"><span class="contents" x-html="itemIconHtml(item.type === 'media' ? getMediaType(item.name) : item.type)"></span><span x-text="item.name"></span></div>
                                     <div class="text-xs truncate" style="color: var(--text-tertiary);" x-text="[item.folder, formatDate(item.deletedAt)].filter(Boolean).join(' · ')"></div>
                                     <div class="flex items-center gap-3 mt-1">
                                         <button @click="restoreTrashItem(item)" class="text-xs" style="color: var(--accent-primary);" x-text="t('trash.restore')"></button>

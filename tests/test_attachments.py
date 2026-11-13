@@ -275,3 +275,13 @@ def test_export_prefers_a_file_named_with_a_hash(vault):
     (vault / "a").write_bytes(b"other")
 
     assert "data:image/png;base64," in process_media_for_export("![[a#b.png]]", vault, vault)
+
+
+def test_listing_names_notes_without_md_and_files_whole(vault):
+    write_note(vault, "work/meeting.md", "# Meeting")
+    (vault / "work" / "photo.png").write_bytes(b"x")
+    (vault / "work" / "report.pdf").write_bytes(b"x")
+
+    notes, _ = utils.scan_notes_fast_walk(str(vault), use_cache=False, include_media=True)
+
+    assert sorted(n["name"] for n in notes) == ["meeting", "photo.png", "report.pdf"]

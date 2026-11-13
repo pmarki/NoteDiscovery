@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "FILES",
     "favorites_title": "Favorites",
-    "folders_and_notes": "Folders & Notes",
     "new_button": "+ New",
     "new_note": "New Note",
     "new_folder": "New Folder",
@@ -41,16 +40,13 @@
     "search_placeholder": "Search notes...",
     "search_hint": "Type to search your notes",
     "clear_search": "Clear search",
-    "drag_hint": "💡 Drag=Move",
-    "root_folder": "📂 Root folder",
+    "drag_hint": "Drag to move",
     "no_notes": "No notes yet. Create your first note!",
     "no_notes_yet": "No notes or folders yet.",
     "create_first": "Create your first note or folder!",
     "loading_notes": "Loading your notes…",
     "no_favorites": "No favorites yet",
     "no_results": "No results found",
-    "expand_all": "Expand all folders",
-    "collapse_all": "Collapse all folders",
     "sort_a-z": "Sort A to Z",
     "sort_z-a": "Sort Z to A",
     "sort_newest": "Sort by newest (files only)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "\"{{name}}\": your last changes were not saved, the note changed elsewhere."
   },
   "folders": {
+    "expand": "Expand folder",
+    "collapse": "Collapse folder",
     "confirm_delete": "Move the folder \"{{name}}\" and everything in it to the trash?",
     "already_exists": "A folder named \"{{name}}\" already exists in this location.\nPlease choose a different name.",
     "prompt_name": "Enter folder name:",
@@ -131,7 +129,6 @@
     "delete_drawing": "Delete drawing",
     "export_html": "Export as HTML",
     "print_preview": "Print preview",
-    "copy_link": "Copy link to clipboard",
     "add_favorite": "Add to favorites",
     "remove_favorite": "Remove from favorites"
   },

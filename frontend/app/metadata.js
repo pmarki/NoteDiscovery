@@ -366,8 +366,9 @@ function metadataFeature() {
             } else {
                 html += `<span class="note-frontmatter-label">${this.escapeHtml(this.t('editor.properties'))}</span>`;
             }
-            html += `<span class="note-frontmatter-chevron" aria-hidden="true">${open ? '▲' : '▼'}</span>`;
-            summary.innerHTML = html;
+            // The arrow stays outside the items, which a phone cuts to one line
+            summary.innerHTML = `<span class="note-frontmatter-items">${html}</span>`
+                + `<span class="note-frontmatter-chevron" aria-hidden="true">${open ? '▲' : '▼'}</span>`;
             summary.setAttribute('aria-label', this.t('editor.properties'));
             summary.querySelectorAll('[data-tag]').forEach((button) => {
                 button.addEventListener('click', () => this.toggleTag(button.dataset.tag.toLowerCase()));

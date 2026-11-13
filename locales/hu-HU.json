@@ -30,7 +30,6 @@
   "sidebar": {
     "title": "FÁJLOK",
     "favorites_title": "Kedvencek",
-    "folders_and_notes": "Mappák & Jegyzetek",
     "new_button": "+ Új",
     "new_note": "Új Jegyzet",
     "new_folder": "Új Mappa",
@@ -41,16 +40,13 @@
     "search_placeholder": "Jegyzetek keresése...",
     "search_hint": "Írj a jegyzetek kereséséhez",
     "clear_search": "Keresés törlése",
-    "drag_hint": "💡 Húzás=Mozgatás",
-    "root_folder": "📂 Gyökér mappa",
+    "drag_hint": "Húzással áthelyezhető",
     "no_notes": "Még nincsenek jegyzetek. Hozd létre az első jegyzeted!",
     "no_notes_yet": "Még nincsenek jegyzetek vagy mappák.",
     "create_first": "Hozd létre az első jegyzeted vagy mappád!",
     "loading_notes": "Jegyzetek betöltése…",
     "no_favorites": "Még nincsenek kedvencek",
     "no_results": "Nincs találat",
-    "expand_all": "Mappák kibontása",
-    "collapse_all": "Mappák összecsukása",
     "sort_a-z": "Rendezés A-Z",
     "sort_z-a": "Rendezés Z-A",
     "sort_newest": "Legújabb elöl (csak fájlok)",
@@ -106,6 +102,8 @@
     "save_conflict_unsaved": "\"{{name}}\": a legutóbbi módosításaid nem lettek mentve, a jegyzet máshol módosult."
   },
   "folders": {
+    "expand": "Mappa kibontása",
+    "collapse": "Mappa összecsukása",
     "confirm_delete": "Áthelyezed a(z) \"{{name}}\" mappát és teljes tartalmát a lomtárba?",
     "already_exists": "A(z) \"{{name}}\" nevű mappa már létezik.\nKérlek válassz egy másik nevet.",
     "prompt_name": "Add meg a mappa nevét:",
@@ -131,7 +129,6 @@
     "delete_drawing": "Rajz törlése",
     "export_html": "Exportálás HTML-ként",
     "print_preview": "Nyomtatási előnézet",
-    "copy_link": "Link másolása",
     "add_favorite": "Hozzáadás a kedvencekhez",
     "remove_favorite": "Eltávolítás a kedvencek közül"
   },
