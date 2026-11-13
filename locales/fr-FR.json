@@ -96,10 +96,19 @@
     "no_content": "Aucun contenu à exporter",
     "open_first": "Veuillez d'abord ouvrir une note avant de télécharger des images.",
     "save_conflict_title": "Note modifiée ailleurs",
-    "save_conflict_message": "La note \"{{name}}\" a changé sur le disque depuis son ouverture : un autre onglet, un outil de synchronisation ou un agent IA y a écrit.\n\nRecharger affiche la version du disque ; vos modifications non enregistrées sont abandonnées.\nÉcraser enregistre votre version à la place de la leur.",
-    "save_conflict_overwrite": "Écraser",
-    "save_conflict_reload": "Recharger",
-    "save_conflict_unsaved": "\"{{name}}\" : vos dernières modifications n'ont pas été enregistrées, la note a changé ailleurs."
+    "save_conflict_message": "« {{name}} » a changé sur le disque pendant que vous le modifiiez : un autre onglet, un outil de synchronisation ou un agent IA l'a modifié. Quelle version voulez-vous ?",
+    "save_conflict_overwrite": "Garder la mienne",
+    "save_conflict_reload": "Utiliser celle du disque",
+    "save_conflict_unsaved": "« {{name}} » a changé ailleurs, vos dernières modifications ont donc été enregistrées sous « {{copy}} ».",
+    "save_conflict_compare": "Comparer les versions",
+    "save_conflict_hide_compare": "Masquer la comparaison",
+    "save_conflict_keep_both": "Garder les deux",
+    "save_conflict_keep_both_hint": "Garder les deux enregistre votre version à côté sous « {{name}} ({{suffix}} …) » et l'ouvre ; la note garde la version du disque.",
+    "save_conflict_copy_saved": "Votre version a été enregistrée sous « {{copy}} » ; la note garde la version du disque.",
+    "save_conflict_legend_disk": "Seulement sur le disque",
+    "save_conflict_legend_mine": "Seulement dans la vôtre",
+    "save_conflict_unchanged": "⋯ {{count}} lignes inchangées",
+    "save_conflict_suffix": "conflit"
   },
   "folders": {
     "expand": "Déplier le dossier",

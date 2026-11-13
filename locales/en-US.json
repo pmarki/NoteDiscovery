@@ -96,10 +96,19 @@
     "no_content": "No note content to export",
     "open_first": "Please open a note first before uploading images.",
     "save_conflict_title": "Note changed elsewhere",
-    "save_conflict_message": "\"{{name}}\" changed on disk since you opened it: another tab, a sync tool or an AI agent wrote to it.\n\nReload shows the version on disk; your unsaved changes are discarded.\nOverwrite saves your version in place of theirs.",
-    "save_conflict_overwrite": "Overwrite",
-    "save_conflict_reload": "Reload",
-    "save_conflict_unsaved": "\"{{name}}\": your last changes were not saved, the note changed elsewhere."
+    "save_conflict_message": "\"{{name}}\" changed on disk while you were editing it: another tab, a sync tool or an AI agent wrote to it. Which version do you want?",
+    "save_conflict_overwrite": "Keep mine",
+    "save_conflict_reload": "Use disk version",
+    "save_conflict_unsaved": "\"{{name}}\" changed elsewhere, so your last changes were saved as \"{{copy}}\".",
+    "save_conflict_compare": "Compare versions",
+    "save_conflict_hide_compare": "Hide comparison",
+    "save_conflict_keep_both": "Keep both",
+    "save_conflict_keep_both_hint": "Keep both saves your version next to it as \"{{name}} ({{suffix}} …)\" and opens it; the note keeps the disk version.",
+    "save_conflict_copy_saved": "Your version was saved as \"{{copy}}\"; the note keeps the disk version.",
+    "save_conflict_legend_disk": "Only on disk",
+    "save_conflict_legend_mine": "Only in yours",
+    "save_conflict_unchanged": "⋯ {{count}} unchanged lines",
+    "save_conflict_suffix": "conflict"
   },
   "folders": {
     "expand": "Expand folder",

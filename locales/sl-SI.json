@@ -96,10 +96,19 @@
     "no_content": "Ni vsebine za izvoz",
     "open_first": "Prosimo, najprej odprite zapis, preden naložite slike.",
     "save_conflict_title": "Zapis spremenjen drugje",
-    "save_conflict_message": "Zapis \"{{name}}\" se je na disku spremenil, odkar ste ga odprli: vanj je pisal drug zavihek, orodje za sinhronizacijo ali agent UI.\n\nZnova naloži prikaže različico z diska; neshranjene spremembe bodo zavržene.\nPrepiši shrani vašo različico namesto njihove.",
-    "save_conflict_overwrite": "Prepiši",
-    "save_conflict_reload": "Znova naloži",
-    "save_conflict_unsaved": "\"{{name}}\": vaše zadnje spremembe niso bile shranjene, zapis se je spremenil drugje."
+    "save_conflict_message": "„{{name}}\" se je na disku spremenil med urejanjem: vanj je pisal drug zavihek, orodje za sinhronizacijo ali agent UI. Katero različico želite?",
+    "save_conflict_overwrite": "Obdrži mojo",
+    "save_conflict_reload": "Uporabi različico z diska",
+    "save_conflict_unsaved": "„{{name}}\" se je spremenil drugje, zato so bile vaše zadnje spremembe shranjene kot „{{copy}}\".",
+    "save_conflict_compare": "Primerjaj različici",
+    "save_conflict_hide_compare": "Skrij primerjavo",
+    "save_conflict_keep_both": "Obdrži obe",
+    "save_conflict_keep_both_hint": "Obdrži obe shrani vašo različico poleg kot „{{name}} ({{suffix}} …)\" in jo odpre; zapisek obdrži različico z diska.",
+    "save_conflict_copy_saved": "Vaša različica je shranjena kot „{{copy}}\"; zapisek obdrži različico z diska.",
+    "save_conflict_legend_disk": "Samo na disku",
+    "save_conflict_legend_mine": "Samo v vaši",
+    "save_conflict_unchanged": "⋯ {{count}} nespremenjenih vrstic",
+    "save_conflict_suffix": "spor"
   },
   "folders": {
     "expand": "Razširi mapo",

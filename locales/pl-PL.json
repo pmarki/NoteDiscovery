@@ -96,10 +96,19 @@
     "no_content": "Brak treści notatki do wyeksportowania",
     "open_first": "Najpierw otwórz notatkę, aby przesłać obrazy.",
     "save_conflict_title": "Notatka zmieniona gdzie indziej",
-    "save_conflict_message": "Notatka „{{name}}” zmieniła się na dysku od czasu jej otwarcia: zapisała do niej inna karta, narzędzie do synchronizacji lub agent AI.\n\nPrzeładuj pokazuje wersję z dysku; niezapisane zmiany zostaną odrzucone.\nNadpisz zapisuje Twoją wersję w miejsce tamtej.",
-    "save_conflict_overwrite": "Nadpisz",
-    "save_conflict_reload": "Przeładuj",
-    "save_conflict_unsaved": "„{{name}}”: ostatnie zmiany nie zostały zapisane, notatka zmieniła się gdzie indziej."
+    "save_conflict_message": "„{{name}}\" zmieniła się na dysku podczas edycji: zapisała ją inna karta, narzędzie do synchronizacji lub agent AI. Którą wersję zachować?",
+    "save_conflict_overwrite": "Zachowaj moją",
+    "save_conflict_reload": "Użyj wersji z dysku",
+    "save_conflict_unsaved": "„{{name}}\" zmieniła się gdzie indziej, więc Twoje ostatnie zmiany zapisano jako „{{copy}}\".",
+    "save_conflict_compare": "Porównaj wersje",
+    "save_conflict_hide_compare": "Ukryj porównanie",
+    "save_conflict_keep_both": "Zachowaj obie",
+    "save_conflict_keep_both_hint": "Zachowaj obie zapisze Twoją wersję obok jako „{{name}} ({{suffix}} …)\" i ją otworzy; notatka zachowa wersję z dysku.",
+    "save_conflict_copy_saved": "Twoją wersję zapisano jako „{{copy}}\"; notatka zachowuje wersję z dysku.",
+    "save_conflict_legend_disk": "Tylko na dysku",
+    "save_conflict_legend_mine": "Tylko w Twojej",
+    "save_conflict_unchanged": "⋯ {{count}} niezmienionych wierszy",
+    "save_conflict_suffix": "konflikt"
   },
   "folders": {
     "expand": "Rozwiń folder",

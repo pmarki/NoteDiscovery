@@ -96,10 +96,19 @@
     "no_content": "没有可导出的笔记内容",
     "open_first": "请先打开一篇笔记，然后再上传图片。",
     "save_conflict_title": "笔记已在别处修改",
-    "save_conflict_message": "笔记 \"{{name}}\" 在你打开后已在磁盘上被修改：另一个标签页、同步工具或 AI 代理写入了它。\n\n“重新加载”显示磁盘上的版本；未保存的更改将被丢弃。\n“覆盖”用你的版本替换它。",
-    "save_conflict_overwrite": "覆盖",
-    "save_conflict_reload": "重新加载",
-    "save_conflict_unsaved": "\"{{name}}\"：你最后的更改未保存，笔记已在别处修改。"
+    "save_conflict_message": "\"{{name}}\" 在你编辑时已在磁盘上被更改：可能是另一个标签页、同步工具或 AI 代理写入的。你要保留哪个版本？",
+    "save_conflict_overwrite": "保留我的",
+    "save_conflict_reload": "使用磁盘版本",
+    "save_conflict_unsaved": "\"{{name}}\" 在别处被更改，你最近的修改已另存为 \"{{copy}}\"。",
+    "save_conflict_compare": "比较版本",
+    "save_conflict_hide_compare": "隐藏比较",
+    "save_conflict_keep_both": "两者都保留",
+    "save_conflict_keep_both_hint": "\"两者都保留\"会把你的版本另存为旁边的 \"{{name}} ({{suffix}} …)\" 并打开它；笔记保留磁盘上的版本。",
+    "save_conflict_copy_saved": "你的版本已另存为 \"{{copy}}\"；笔记保留磁盘上的版本。",
+    "save_conflict_legend_disk": "仅在磁盘版本中",
+    "save_conflict_legend_mine": "仅在你的版本中",
+    "save_conflict_unchanged": "⋯ {{count}} 行未更改",
+    "save_conflict_suffix": "冲突"
   },
   "folders": {
     "expand": "展开文件夹",
