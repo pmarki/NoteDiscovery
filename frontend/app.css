@@ -1728,6 +1728,28 @@ body {
     font-size: 14px;
     cursor: pointer;
 }
+/* Opens and closes a folder; as wide as the gap a row without one keeps */
+.share-target-toggle,
+.share-target-toggle-space {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    margin: -4px -6px -4px -4px;
+}
+.share-target-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--text-tertiary);
+    transition: transform 0.2s;
+}
+.share-target-toggle.expanded {
+    transform: rotate(90deg);
+}
+.share-target-item.selected .share-target-toggle {
+    color: inherit;
+}
 .share-target-item:hover {
     background-color: var(--bg-hover);
 }
