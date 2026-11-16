@@ -386,6 +386,13 @@
     "title": "MODO DEMO",
     "warning": "El contenido se reinicia diariamente. Los cambios pueden ser sobrescritos por otros usuarios."
   },
+  "viewer": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "close": "Cerrar",
+    "counter": "{{index}} de {{count}}",
+    "edit_drawing": "Editar dibujo"
+  },
   "embed": {
     "download": "Descargar",
     "open_new_tab": "Abrir en una pestaña nueva",

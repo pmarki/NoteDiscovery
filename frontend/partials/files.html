@@ -7,7 +7,7 @@
                                 <template x-if="filesView !== 'list'">
                                     <div class="files-grid">
                                         <template x-for="file in files" :key="file.path">
-                                            <div @click="openItem(file.path, file.type)" class="file-card" :title="file.label"
+                                            <div @click="file.type === 'note' ? openItem(file.path, file.type) : openViewer(files, file.path)" class="file-card" :title="file.label"
                                                  draggable="true" @dragstart="onItemDragStart(file.path, file.type, $event)" @dragend="onItemDragEnd()">
                                                 <div class="file-card-preview" aria-hidden="true">
                                                     <template x-if="file.type === 'document'">
@@ -44,7 +44,7 @@
                                 <template x-if="filesView === 'list'">
                                     <div class="homepage-list files-list">
                                         <template x-for="file in files" :key="file.path">
-                                            <div @click="openItem(file.path, file.type)" class="homepage-list-row" :title="file.label"
+                                            <div @click="file.type === 'note' ? openItem(file.path, file.type) : openViewer(files, file.path)" class="homepage-list-row" :title="file.label"
                                                  draggable="true" @dragstart="onItemDragStart(file.path, file.type, $event)" @dragend="onItemDragEnd()">
                                                 <span class="homepage-list-icon" aria-hidden="true">
                                                     <template x-if="file.type === 'document'">

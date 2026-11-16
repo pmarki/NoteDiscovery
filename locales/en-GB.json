@@ -386,6 +386,13 @@
     "title": "DEMO MODE",
     "warning": "Contents reset daily. Changes may be overwritten by other users."
   },
+  "viewer": {
+    "previous": "Previous",
+    "next": "Next",
+    "close": "Close",
+    "counter": "{{index}} of {{count}}",
+    "edit_drawing": "Edit drawing"
+  },
   "embed": {
     "download": "Download",
     "open_new_tab": "Open in new tab",

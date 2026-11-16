@@ -386,6 +386,13 @@
     "title": "デモモード",
     "warning": "コンテンツは毎日リセットされます。変更は他のユーザーによって上書きされる場合があります。"
   },
+  "viewer": {
+    "previous": "前へ",
+    "next": "次へ",
+    "close": "閉じる",
+    "counter": "{{index}} / {{count}}",
+    "edit_drawing": "描画を編集"
+  },
   "embed": {
     "download": "ダウンロード",
     "open_new_tab": "新しいタブで開く",

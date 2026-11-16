@@ -95,6 +95,11 @@ function coreFeature() {
             
             // Listen for browser back/forward navigation
             window.addEventListener('popstate', (e) => {
+                // Back from a file in the viewer: only the viewer closes
+                if (this.viewer.open) {
+                    this.closeViewer({ fromHistory: true });
+                    return;
+                }
                 if (e.state && e.state.notePath) {
                     // Navigating to a note
                     const searchQuery = e.state.searchQuery || '';

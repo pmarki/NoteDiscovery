@@ -1,0 +1,75 @@
+    <!-- An attachment or folder file, with the ones it was opened among either side -->
+    <div x-show="viewer.open"
+         @keydown.window="viewerKey($event)"
+         class="viewer-backdrop"
+         x-cloak>
+        <div class="viewer" role="dialog" aria-modal="true" :aria-label="viewerName()">
+            <div class="viewer-bar">
+                <div class="viewer-title">
+                    <span class="truncate" x-text="viewerName()"></span>
+                    <span x-show="viewer.items.length > 1" class="viewer-counter"
+                          x-text="t('viewer.counter', { index: viewer.index + 1, count: viewer.items.length })"></span>
+                </div>
+                <button x-show="viewerCurrent()?.type === 'drawing'" type="button" class="viewer-button"
+                        @click="viewerEditDrawing()" :title="t('viewer.edit_drawing')" :aria-label="t('viewer.edit_drawing')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="ACTION_ICONS.edit"></path></svg>
+                </button>
+                <button type="button" class="viewer-button" @click="viewerDownload()" :title="t('embed.download')" :aria-label="t('embed.download')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="ACTION_ICONS.download"></path></svg>
+                </button>
+                <button type="button" class="viewer-button" @click="viewerOpenNewTab()" :title="t('embed.open_new_tab')" :aria-label="t('embed.open_new_tab')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="ACTION_ICONS.openNewTab"></path></svg>
+                </button>
+                <button type="button" class="viewer-button viewer-delete" @click="viewerDelete()"
+                        :title="viewerCurrent()?.type === 'drawing' ? t('toolbar.delete_drawing') : t('toolbar.delete_image')"
+                        :aria-label="viewerCurrent()?.type === 'drawing' ? t('toolbar.delete_drawing') : t('toolbar.delete_image')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="ACTION_ICONS.delete"></path></svg>
+                </button>
+                <button type="button" class="viewer-button" @click="closeViewer()" :title="t('viewer.close')" :aria-label="t('viewer.close')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- A click beside the file closes; a sideways swipe steps -->
+            <div class="viewer-stage"
+                 @click.self="closeViewer()"
+                 @touchstart.passive="viewerTouchStart($event)"
+                 @touchend.passive="viewerTouchEnd($event)">
+                <!-- Keyed on the path, so a step replaces the element and stops any playback -->
+                <template x-for="item in (viewerCurrent() ? [viewerCurrent()] : [])" :key="item.path">
+                    <div class="viewer-item" @click.self="closeViewer()">
+                        <template x-if="item.type === 'image' || item.type === 'drawing'">
+                            <img :src="viewerUrl(item)" :alt="viewerName()" class="viewer-image" draggable="false">
+                        </template>
+                        <template x-if="item.type === 'audio'">
+                            <div class="viewer-audio">
+                                <div class="text-6xl" aria-hidden="true">🎵</div>
+                                <audio controls :src="viewerUrl(item)"></audio>
+                            </div>
+                        </template>
+                        <template x-if="item.type === 'video'">
+                            <video controls :src="viewerUrl(item)" class="viewer-video"></video>
+                        </template>
+                        <template x-if="item.type === 'document'">
+                            <div class="viewer-document">
+                                <iframe :src="viewerUrl(item)" :title="viewerName()"></iframe>
+                                <!-- Android shows no PDF in a frame -->
+                                <button type="button" class="viewer-document-open" @click="viewerOpenNewTab()" x-text="t('embed.open_new_tab')"></button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <button x-show="viewer.items.length > 1" type="button" class="viewer-step viewer-prev"
+                        @click="viewerMove(-1)" :disabled="viewer.index === 0"
+                        :title="t('viewer.previous')" :aria-label="t('viewer.previous')">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button x-show="viewer.items.length > 1" type="button" class="viewer-step viewer-next"
+                        @click="viewerMove(1)" :disabled="viewer.index === viewer.items.length - 1"
+                        :title="t('viewer.next')" :aria-label="t('viewer.next')">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>

@@ -386,6 +386,13 @@
     "title": "TRYB DEMO",
     "warning": "Zawartość jest resetowana codziennie. Zmiany mogą zostać nadpisane przez innych użytkowników."
   },
+  "viewer": {
+    "previous": "Poprzedni",
+    "next": "Następny",
+    "close": "Zamknij",
+    "counter": "{{index}} z {{count}}",
+    "edit_drawing": "Edytuj rysunek"
+  },
   "embed": {
     "download": "Pobierz",
     "open_new_tab": "Otwórz w nowej karcie",
