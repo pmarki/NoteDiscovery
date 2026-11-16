@@ -13,6 +13,7 @@ function shareTargetFeature() {
             previews: [],        // object URLs of image files, parallel to files
             query: '',
             dest: null,          // { kind: 'folder' | 'note', path }
+            expanded: {},        // folder path -> true while its contents show
             noteName: '',
             busy: false,
         },
@@ -42,6 +43,7 @@ function shareTargetFeature() {
                     previews: files.map(file => (file.type.startsWith('image/') ? URL.createObjectURL(file) : '')),
                     query: '',
                     dest: { kind: 'folder', path: folder },
+                    expanded: this._shareTargetStartExpanded(folder),
                     busy: false,
                 });
                 this.shareTarget.noteName = this.shareTargetNoteName();
@@ -83,7 +85,24 @@ function shareTargetFeature() {
             return name || this._autoTitleTimestamp();
         },
 
-        // The root, then each folder followed by its notes, as in the tree
+        // Top-level folders open, deeper ones closed, plus the way to the folder
+        // that starts selected so it shows
+        _shareTargetStartExpanded(folder) {
+            const expanded = { '': true };
+            for (const path of this.allFolders) {
+                if (!path.includes('/')) expanded[path] = true;
+            }
+            const parts = folder ? folder.split('/') : [];
+            for (let i = 1; i < parts.length; i++) expanded[parts.slice(0, i).join('/')] = true;
+            return expanded;
+        },
+
+        toggleShareTargetFolder(path) {
+            this.shareTarget.expanded[path] = !this.shareTarget.expanded[path];
+        },
+
+        // The root, then each folder followed by its notes, as in the tree. While
+        // searching, every match shows, closed folders or not.
         shareTargetItems() {
             const query = this.shareTarget.query.trim().toLowerCase();
             const matches = (text) => !query || text.toLowerCase().includes(query);
@@ -97,9 +116,20 @@ function shareTargetFeature() {
             // Attachment folders belong to their note, as in the sidebar
             const visible = this.allFolders.filter(folder => !folder.split('/').some(part => part.endsWith('.attachments')));
             const folders = ['', ...visible.sort((a, b) => a.localeCompare(b))];
+            const parentOf = (path) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+            const hasSubfolders = new Set(visible.map(parentOf));
+            const { expanded } = this.shareTarget;
+            // Shown when every folder above it is open
+            const open = (folder) => {
+                for (let path = folder; path; path = parentOf(path)) {
+                    if (!expanded[path]) return false;
+                }
+                return true;
+            };
             const items = [];
             for (const folder of folders) {
                 const depth = folder ? folder.split('/').length : 0;
+                if (!query && folder && !open(parentOf(folder))) continue;
                 if (matches(folder || this.t('share_target.root'))) {
                     items.push({
                         kind: 'folder',
@@ -107,8 +137,12 @@ function shareTargetFeature() {
                         label: folder ? folder.split('/').pop() : this.t('share_target.root'),
                         secondary: query && folder.includes('/') ? folder.slice(0, folder.lastIndexOf('/')) : '',
                         depth,
+                        // The root always shows what's in it
+                        toggle: !query && !!folder && (hasSubfolders.has(folder) || notesIn.has(folder)),
+                        expanded: !!expanded[folder],
                     });
                 }
+                if (!query && !open(folder)) continue;
                 const notes = (notesIn.get(folder) || []).sort((a, b) => a.name.localeCompare(b.name));
                 for (const note of notes) {
                     const label = note.name.replace(/\.md$/i, '');

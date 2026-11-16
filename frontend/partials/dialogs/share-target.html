@@ -43,6 +43,16 @@
                          :class="{ selected: isShareTargetSelected(item) }"
                          :style="`padding-left: ${8 + Math.min(item.depth, 6) * 14}px`"
                          @click="selectShareTarget(item)">
+                        <button x-show="item.toggle" type="button" class="share-target-toggle"
+                                :class="{ expanded: item.expanded }"
+                                @click.stop="toggleShareTargetFolder(item.path)"
+                                :aria-expanded="item.expanded"
+                                :aria-label="t(item.expanded ? 'folders.collapse' : 'folders.expand')">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                <path d="M6 4l4 4-4 4V4z"/>
+                            </svg>
+                        </button>
+                        <span x-show="!item.toggle && item.depth > 0" class="share-target-toggle-space" aria-hidden="true"></span>
                         <template x-if="item.kind === 'folder'">
                             <svg class="w-4 h-4 flex-shrink-0" style="color: var(--accent-primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>

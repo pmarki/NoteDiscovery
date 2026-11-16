@@ -52,5 +52,18 @@ services:
       - PUBLIC_ADD_VIEW=False
       # Don't also send every link to the Wayback Machine
       - ARCHIVEDOTORG_ENABLED=False
+      # Keep It shows the single-file page, PDF, screenshot and reader view.
+      # These others it never shows, and they take most of the space: the site
+      # mirrored by wget, a second copy as MHTML, videos and galleries, git repos.
+      # Set one to True to keep it anyway. For videos, YTDLP_ENABLED=True with
+      # YTDLP_MAX_SIZE=50m skips the bigger ones.
+      - WGET_ENABLED=False
+      - WGET_WARC_ENABLED=False
+      - CHROME_MHTML_ENABLED=False
+      - YTDLP_ENABLED=False
+      - GALLERYDL_ENABLED=False
+      - FORUMDL_ENABLED=False
+      - PAPERSDL_ENABLED=False
+      - GIT_ENABLED=False
     volumes:
       - ./archivebox:/data
