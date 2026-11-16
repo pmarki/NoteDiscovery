@@ -1,7 +1,7 @@
 {
   "id": "/",
   "name": "__APP_NAME__",
-  "short_name": "Notes",
+  "short_name": "__APP_NAME__",
   "description": "A beautiful, self-hosted markdown notes application",
   "start_url": "/",
   "display": "standalone",
