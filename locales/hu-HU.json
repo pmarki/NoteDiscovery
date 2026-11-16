@@ -386,6 +386,13 @@
     "title": "DEMÓ MÓD",
     "warning": "A tartalom naponta visszaáll. A módosításokat más felhasználók felülírhatják."
   },
+  "viewer": {
+    "previous": "Előző",
+    "next": "Következő",
+    "close": "Bezárás",
+    "counter": "{{index}} / {{count}}",
+    "edit_drawing": "Rajz szerkesztése"
+  },
   "embed": {
     "download": "Letöltés",
     "open_new_tab": "Megnyitás új lapon",

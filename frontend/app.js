@@ -31,5 +31,6 @@ function noteApp() {
         shareTargetFeature(),
         graphFeature(),
         sessionFeature(),
+        viewerFeature(),
     );
 }

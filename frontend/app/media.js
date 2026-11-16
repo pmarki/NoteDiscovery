@@ -588,6 +588,7 @@ function mediaFeature() {
             this._optimisticRemoveNote(mediaPath);
             this._rebuildTreeAfterMutation();
             if (this.currentMedia === mediaPath) this.currentMedia = '';
+            this._viewerForget(mediaPath);
             
             try {
                 const response = await fetch(`/api/notes/${encodeURIComponent(mediaPath)}`, {

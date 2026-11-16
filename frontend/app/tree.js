@@ -471,7 +471,9 @@ function treeFeature() {
         
         // Item (note/media) handlers - read from dataset
         handleItemClick(el) {
-            this.openItem(el.dataset.path, el.dataset.type);
+            const { path, type } = el.dataset;
+            if ((type || 'note') !== 'note') this.openViewer(this.viewerSiblings(path), path);
+            else this.openItem(path, type);
         },
         handleItemHover(el, isEnter) {
             const path = el.dataset.path;

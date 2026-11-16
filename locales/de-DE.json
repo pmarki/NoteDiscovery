@@ -386,6 +386,13 @@
     "title": "DEMO-MODUS",
     "warning": "Inhalte werden täglich zurückgesetzt. Änderungen können von anderen Benutzern überschrieben werden."
   },
+  "viewer": {
+    "previous": "Zurück",
+    "next": "Weiter",
+    "close": "Schließen",
+    "counter": "{{index}} von {{count}}",
+    "edit_drawing": "Zeichnung bearbeiten"
+  },
   "embed": {
     "download": "Herunterladen",
     "open_new_tab": "In neuem Tab öffnen",

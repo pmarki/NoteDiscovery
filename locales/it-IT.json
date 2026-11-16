@@ -386,6 +386,13 @@
     "title": "MODALITÀ DEMO",
     "warning": "I contenuti vengono ripristinati ogni giorno. Le modifiche potrebbero essere sovrascritte da altri utenti."
   },
+  "viewer": {
+    "previous": "Precedente",
+    "next": "Successivo",
+    "close": "Chiudi",
+    "counter": "{{index}} di {{count}}",
+    "edit_drawing": "Modifica disegno"
+  },
   "embed": {
     "download": "Scarica",
     "open_new_tab": "Apri in una nuova scheda",

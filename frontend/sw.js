@@ -33,6 +33,7 @@ const PRECACHE_ASSETS = [
   '/static/app/share-target.js?v=__APP_VERSION__',
   '/static/app/graph.js?v=__APP_VERSION__',
   '/static/app/session.js?v=__APP_VERSION__',
+  '/static/app/viewer.js?v=__APP_VERSION__',
   '/static/app.js?v=__APP_VERSION__',
   '/static/app.css?v=__APP_VERSION__',
   '/static/note-editor.bundle.js?v=__APP_VERSION__'

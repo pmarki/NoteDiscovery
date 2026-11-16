@@ -386,6 +386,13 @@
     "title": "DEMO NAČIN",
     "warning": "Vsebina se dnevno ponastavi. Spremembe lahko prepišejo drugi uporabniki."
   },
+  "viewer": {
+    "previous": "Prejšnja",
+    "next": "Naslednja",
+    "close": "Zapri",
+    "counter": "{{index}} od {{count}}",
+    "edit_drawing": "Uredi risbo"
+  },
   "embed": {
     "download": "Prenesi",
     "open_new_tab": "Odpri v novem zavihku",
