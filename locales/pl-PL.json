@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "Odśwież podgląd",
     "refresh_failed": "Nie udało się odświeżyć podglądu: {{error}}",
+    "remove": "Usuń link",
     "archiving": "Zapisywanie kopii offline…",
     "archived": "Offline",
     "archive_failed": "Nie udało się zapisać kopii offline",

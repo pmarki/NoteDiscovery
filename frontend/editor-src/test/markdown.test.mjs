@@ -404,6 +404,24 @@ test('a www. address is written as typed and gets a card', () => {
     assert.equal(drawnCards.at(-1), 'http://www.example.com/b');
 });
 
+test('removing a card deletes its address, and undo brings it back', () => {
+    const cases = [
+        ['Intro\n\nhttps://example.com/a\n\nOutro\n', 'Intro\n\nOutro\n'],
+        ['https://example.com/a\n', ''],
+        ['- one\n- https://example.com/a\n', '- one\n'],
+        ['- https://example.com/a\n', ''],
+        ['> https://example.com/a\n\nOutro\n', 'Outro\n'],
+    ];
+    for (const [markdown, left] of cases) {
+        cardEditor.setMarkdown(markdown, { resetHistory: true });
+        cardRoot.querySelector('.link-card').removeAddress();
+        assert.equal(cardEditor.getMarkdown().trim(), left.trim());
+        assert.equal(cardCount(), 0);
+        cardTiptap().commands.undo();
+        assert.equal(cardEditor.getMarkdown(), markdown);
+    }
+});
+
 test('a www. text pointing elsewhere keeps the link form', () => {
     assert.equal(roundTrip('[www.example.com](https://other.example/)\n'), '[www.example.com](https://other.example/)\n');
 });

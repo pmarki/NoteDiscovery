@@ -130,6 +130,29 @@ export const LinkCards = Extension.create({
                 view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, pos - 1)));
                 view.focus();
             };
+            // Deletes the address above, as typing would: one undoable step
+            dom.removeAddress = () => {
+                const pos = getPos();
+                if (pos === undefined || !view.editable) return;
+                const { doc } = view.state;
+                const paragraph = doc.resolve(pos).nodeBefore;
+                if (!paragraph) return;
+                let from = pos - paragraph.nodeSize;
+                let to = pos;
+                // A list item or quote holding only the address goes with it
+                let $from = doc.resolve(from);
+                while ($from.depth > 0 && $from.parent.childCount === 1) {
+                    from = $from.before();
+                    to = $from.after();
+                    $from = doc.resolve(from);
+                }
+                const tr = view.state.tr;
+                // The note keeps an empty line
+                if (doc.childCount === 1 && $from.depth === 0) tr.replaceWith(from, to, doc.type.schema.nodes.paragraph.create());
+                else tr.delete(from, to);
+                view.dispatch(tr.scrollIntoView());
+                view.focus();
+            };
             // The card is a link, so a press would take the focus off the editor
             dom.addEventListener('mousedown', (event) => {
                 if (!event.target.closest('button')) event.preventDefault();

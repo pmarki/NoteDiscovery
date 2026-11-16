@@ -759,6 +759,7 @@ function editorFeature() {
                 this.openLinkPrompt('link');
             });
             button(this.t('link_card.refresh'), ACTION_ICONS.refresh, () => this.refreshLinkCard(href));
+            button(this.t('link_card.remove'), ACTION_ICONS.delete, () => element.removeAddress?.());
             return actions;
         },
         

@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "プレビューを更新",
     "refresh_failed": "プレビューを更新できませんでした: {{error}}",
+    "remove": "リンクを削除",
     "archiving": "オフラインコピーを保存中…",
     "archived": "オフライン",
     "archive_failed": "オフラインコピーに失敗しました",

@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "Előnézet frissítése",
     "refresh_failed": "Nem sikerült frissíteni az előnézetet: {{error}}",
+    "remove": "Hivatkozás eltávolítása",
     "archiving": "Offline másolat mentése…",
     "archived": "Offline",
     "archive_failed": "Az offline másolat sikertelen",

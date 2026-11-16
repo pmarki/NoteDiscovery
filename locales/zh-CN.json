@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "刷新预览",
     "refresh_failed": "无法刷新预览：{{error}}",
+    "remove": "删除链接",
     "archiving": "正在保存离线副本…",
     "archived": "离线",
     "archive_failed": "离线副本保存失败",
