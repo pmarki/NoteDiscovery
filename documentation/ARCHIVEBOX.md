@@ -97,9 +97,42 @@ Keep its port off the internet; the compose file only opens it on `127.0.0.1`.
   text is kept in the notes folder, for search.
 - **Pages saved before texts were kept** get theirs the next time their card is shown.
 - **Size:** the ArchiveBox image is over 1 GB, and each page takes from a few hundred
-  KB to tens of MB.
+  KB to a few MB, more with videos. See [Keeping copies small](#keeping-copies-small).
 - **Versions:** ArchiveBox's REST API is still in alpha and changes between
   releases. The compose file uses 0.9.77, the version Keep It was tested
   with; `ARCHIVEBOX_VERSION` picks another, but try it before relying on it.
 - **Privacy:** the compose file turns off ArchiveBox's submission to the Wayback
   Machine, so pages stay on your server.
+
+## Keeping copies small
+
+ArchiveBox saves each page in many ways, and Keep It shows only four: the
+single-file page, the PDF, the screenshot and the reader view (made from the
+page's HTML and the images the browser loaded). The rest take most of the space,
+so the compose file turns them off:
+
+| Setting | What it saves |
+|---|---|
+| `WGET_ENABLED`, `WGET_WARC_ENABLED` | the site mirrored by wget, and a WARC of it |
+| `CHROME_MHTML_ENABLED` | a second copy of the page, as MHTML |
+| `YTDLP_ENABLED` | videos and audio on the page |
+| `GALLERYDL_ENABLED`, `FORUMDL_ENABLED`, `PAPERSDL_ENABLED` | image galleries, forum threads, papers |
+| `GIT_ENABLED` | git repositories, cloned whole |
+
+With an ArchiveBox you already run, set them to `False` in its environment, or
+with `docker exec archivebox archivebox config --set WGET_ENABLED=False` and so on.
+To keep videos but not big ones, leave `YTDLP_ENABLED` on and set
+`YTDLP_MAX_SIZE=50m` (the default is 750m).
+
+`RESPONSES_ENABLED=False` saves the most of what's left, often a third or more,
+but the reader view then shows no pictures.
+
+After changing the environment, `docker compose -f docker-compose.archivebox.yml up -d`
+recreates the container with it (`restart` does not). Check with:
+
+```bash
+docker exec archivebox archivebox config | grep -E '_ENABLED|MAX_SIZE'
+```
+
+The settings apply to pages saved from then on; copies already saved keep their
+files until you delete them in ArchiveBox's admin.
