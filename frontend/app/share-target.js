@@ -14,7 +14,8 @@ function shareTargetFeature() {
             query: '',
             dest: null,          // { kind: 'folder' | 'note', path }
             expanded: {},        // folder path -> true while its contents show
-            noteName: '',
+            noteName: '',        // empty: the timestamp in noteNameDefault
+            noteNameDefault: '',
             busy: false,
         },
 
@@ -46,7 +47,8 @@ function shareTargetFeature() {
                     expanded: this._shareTargetStartExpanded(folder),
                     busy: false,
                 });
-                this.shareTarget.noteName = this.shareTargetNoteName();
+                this.shareTarget.noteName = '';
+                this.shareTarget.noteNameDefault = this._autoTitleTimestamp();
                 this.shareTarget.open = true;
             } catch (error) {
                 console.warn('Could not read a shared item:', error);
@@ -70,19 +72,6 @@ function shareTargetFeature() {
         // A new note is made for text shared into a folder
         shareTargetMakesNote() {
             return this.shareTarget.dest?.kind === 'folder' && this._sharedHasText();
-        },
-
-        // From the title, else the first line of the text, else a timestamp
-        shareTargetNoteName() {
-            const { title, text, url } = this.shareTarget;
-            const firstLine = (text || '').split('\n').find(line => line.trim()) || '';
-            const source = title || (firstLine && firstLine !== url ? firstLine : '');
-            const name = source
-                .replace(new RegExp(FilenameValidator.FORBIDDEN_CHARS.source, 'g'), ' ')
-                .replace(/\s+/g, ' ')
-                .slice(0, 60)
-                .replace(/^[\s.]+|[\s.]+$/g, '');
-            return name || this._autoTitleTimestamp();
         },
 
         // Top-level folders open, deeper ones closed, plus the way to the folder
@@ -212,7 +201,8 @@ function shareTargetFeature() {
         },
 
         async _shareIntoNewNote(folder) {
-            const validation = FilenameValidator.validateFilename(this.shareTarget.noteName);
+            const { noteName, noteNameDefault } = this.shareTarget;
+            const validation = FilenameValidator.validateFilename(noteName.trim() || noteNameDefault);
             if (!validation.valid) {
                 this.toast(this.getValidationErrorMessage(validation, 'note'), { type: 'warning' });
                 return false;

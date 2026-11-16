@@ -70,12 +70,14 @@
             <!-- A new note's name, for text going into a folder -->
             <label x-show="shareTargetMakesNote()" class="share-target-name">
                 <span x-text="t('share_target.note_name')"></span>
-                <input type="text" x-model="shareTarget.noteName" autocomplete="off" @keydown.enter="saveShare()">
+                <input type="text" x-model="shareTarget.noteName" :placeholder="shareTarget.noteNameDefault" autocomplete="off" @keydown.enter="saveShare()">
             </label>
 
+            <!-- Only single clicks: the keyboard opening for the name slides these up
+                 under the finger, so a double or triple tap on the name would land here -->
             <div class="share-target-actions">
-                <button type="button" class="share-target-cancel" @click="cancelShare()" :disabled="shareTarget.busy" x-text="t('common.cancel')"></button>
-                <button type="button" class="share-target-save" @click="saveShare()" :disabled="!shareTarget.dest || shareTarget.busy"
+                <button type="button" class="share-target-cancel" @click="$event.detail <= 1 && cancelShare()" :disabled="shareTarget.busy" x-text="t('common.cancel')"></button>
+                <button type="button" class="share-target-save" @click="$event.detail <= 1 && saveShare()" :disabled="!shareTarget.dest || shareTarget.busy"
                         x-text="shareTarget.busy ? t('common.saving') : t('common.save')"></button>
             </div>
         </div>
