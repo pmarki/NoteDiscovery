@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "Aggiorna anteprima",
     "refresh_failed": "Impossibile aggiornare l'anteprima: {{error}}",
+    "remove": "Rimuovi link",
     "archiving": "Salvataggio copia offline…",
     "archived": "Offline",
     "archive_failed": "Copia offline non riuscita",

@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "Actualiser l'aperçu",
     "refresh_failed": "Impossible d'actualiser l'aperçu : {{error}}",
+    "remove": "Supprimer le lien",
     "archiving": "Enregistrement hors ligne…",
     "archived": "Hors ligne",
     "archive_failed": "Échec de la copie hors ligne",

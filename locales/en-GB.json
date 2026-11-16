@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "Refresh preview",
     "refresh_failed": "Couldn't refresh the preview: {{error}}",
+    "remove": "Remove link",
     "archiving": "Saving offline copy…",
     "archived": "Offline",
     "archive_failed": "Offline copy failed",

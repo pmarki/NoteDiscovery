@@ -405,6 +405,7 @@
   "link_card": {
     "refresh": "Vorschau aktualisieren",
     "refresh_failed": "Vorschau konnte nicht aktualisiert werden: {{error}}",
+    "remove": "Link entfernen",
     "archiving": "Offline-Kopie wird gespeichert…",
     "archived": "Offline",
     "archive_failed": "Offline-Kopie fehlgeschlagen",
