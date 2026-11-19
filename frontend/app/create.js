@@ -269,6 +269,9 @@ function createFeature() {
                 return true;
             } catch (error) {
                 ErrorHandler.handle('create note', error);
+                // The resync below fails too when the login has ended, so take it back here
+                this._optimisticRemoveNote(notePath);
+                this._rebuildTreeAfterMutation();
                 await this.loadNotes({ silent: true });
                 return false;
             }

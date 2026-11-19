@@ -171,7 +171,8 @@ const ErrorHandler = {
      */
     handle(operation, error, notify = true) {
         console.error(`Failed to ${operation}:`, error);
-        if (notify) {
+        // Behind the "login has ended" dialog a toast only adds noise
+        if (notify && !window.$root?.loginEnded) {
             const message = `Failed to ${operation}. Please try again.`;
             window.dispatchEvent(new CustomEvent('keepit:toast', {
                 detail: { message, type: 'error' }

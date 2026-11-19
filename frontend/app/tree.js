@@ -68,6 +68,7 @@ function treeFeature() {
             }
             try {
                 const response = await fetch('/api/notes');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 this.notes = data.notes;
                 this.allFolders = data.folders || [];
@@ -81,6 +82,16 @@ function treeFeature() {
                 this.notesLoading = false;
                 this.notesLoadingShowOverlay = false;
             }
+        },
+        
+        // The note list, shares and trash again, as when the app opens. Quietly, and not
+        // offline: the app coming back into view shouldn't bring an error with it.
+        async refreshFromServer() {
+            if (this.notesLoading || this.loginEnded || !navigator.onLine) return;
+            await this.loadNotes({ silent: true });
+            if (this.loginEnded) return;
+            this.loadSharedNotePaths();
+            this.loadTrash();
         },
         
         // Build lookup maps for O(1) wikilink resolution

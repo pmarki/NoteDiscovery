@@ -77,8 +77,14 @@ function coreFeature() {
                 if (this.saveTimeout) this.saveNote({ keepalive: true });
             };
             window.addEventListener('pagehide', saveOnLeave);
+            // Back in the app: pick up changes made on other devices. It also finds an
+            // ended login now, rather than on the next thing the user does.
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) saveOnLeave();
+                else this.refreshFromServer();
+            });
+            window.addEventListener('pageshow', (e) => {
+                if (e.persisted) this.refreshFromServer();
             });
             
             // Back from logging in again: the note that was open, with its unsaved text.
